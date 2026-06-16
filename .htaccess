@@ -1,0 +1,16 @@
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /lee/
+
+    # 1) public/ 에 실제로 존재하는 정적 파일(이미지, build 등)은 그대로 서빙
+    #    단, index.php 는 제외해야 함 (제외하지 않으면 2)에서 넘어온 요청이
+    #    public/index.php 로 다시 잡혀 base 경로(/lee)가 어긋남)
+    RewriteCond %{DOCUMENT_ROOT}/lee/public/$1 -f
+    RewriteCond $1 !^index\.php$
+    RewriteRule ^(.*)$ public/$1 [L]
+
+    # 2) 그 외 모든 요청은 루트 index.php(Laravel)로 전달 → base 경로 = /lee
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+</IfModule>
