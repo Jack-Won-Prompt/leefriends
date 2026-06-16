@@ -42,6 +42,28 @@ return [
             'synchronous' => null,
         ],
 
+        'leefriends' => [
+            'driver' => 'mysql',
+            'url' => '',
+            'host'     => env('DB_HOST',                  '43.203.246.90'),
+            'port'     => env('DB_PORT',                  '3306'),
+            // database 만 connection 전용 변수로 분리 — worktree 격리 시 다른 DB
+            // (supportworks_ai_test) 로 override 가능. fallback: DB_DATABASE → hardcoded.
+            'database' => env('DB_LEEFRIENDS_DATABASE', env('DB_DATABASE', 'leefriends')),
+            'username' => env('DB_USERNAME',              'leefriends'),
+            'password' => env('DB_PASSWORD',              'leefriends!@^'),
+            'unix_socket' => '',
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => false,
+            'engine' => 'InnoDB',
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
         'mysql' => [
             'driver' => 'mysql',
             'url' => env('DB_URL'),
