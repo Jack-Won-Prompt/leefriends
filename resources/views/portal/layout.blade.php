@@ -3,6 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', '포털') · LEEFRIENDS 발주포털</title>
     <link rel="icon" href="{{ asset('images/menu/mango-cheese-bingsu.svg') }}">
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable.min.css">
@@ -23,6 +24,7 @@
     $menus = [
         'hq' => [
             ['대시보드', '📊', [['portal.dashboard', '대시보드', []]]],
+            ['채팅', '💬', [['portal.chat.index', '채팅', []]]],
             ['주문 · 판매', '📦', [
                 ['portal.hq.orders.index', '발주(구매주문)', ['portal.hq.orders.show']],
                 ['portal.hq.sales_orders.index', '판매주문', ['portal.hq.sales_orders.show']],
@@ -41,9 +43,13 @@
                 ['portal.hq.suppliers.index', '공급처 관리', []],
                 ['portal.hq.stores.index', '매장 관리', []],
             ]],
+            ['창업 문의', '📨', [
+                ['portal.hq.inquiries.index', '창업 문의', ['portal.hq.inquiries.show']],
+            ]],
         ],
         'store' => [
             ['대시보드', '📊', [['portal.dashboard', '대시보드', []]]],
+            ['채팅', '💬', [['portal.chat.index', '본사 채팅', []]]],
             ['발주', '🛒', [
                 ['portal.store.orders.create', '재료 발주하기', []],
                 ['portal.store.orders.index', '발주 내역', ['portal.store.orders.show','portal.store.orders.edit']],
@@ -60,6 +66,7 @@
         ],
         'supplier' => [
             ['대시보드', '📊', [['portal.dashboard', '대시보드', []]]],
+            ['채팅', '💬', [['portal.chat.index', '본사 채팅', []]]],
             ['물품', '🗂️', [
                 ['portal.supplier.products.index', '물품 관리', []],
             ]],
@@ -103,7 +110,7 @@
         <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
             @foreach ($nav as [$groupLabel, $groupIcon, $children])
                 @php $groupActive = collect($children)->contains(fn ($c) => $isChildActive($c)); @endphp
-                @if (count($children) === 1 && empty($children[0][2]) && in_array($children[0][0], ['portal.dashboard'], true))
+                @if (count($children) === 1 && empty($children[0][2]) && in_array($children[0][0], ['portal.dashboard', 'portal.chat.index'], true))
                     {{-- 단일 링크 그룹 (대시보드) --}}
                     @php [$r, $label, $also] = $children[0]; $active = $isChildActive($children[0]); @endphp
                     <a href="{{ route($r) }}"
@@ -154,9 +161,8 @@
                 <div class="relative" x-data="{ open: false }">
                     <button @click="open = !open" class="relative w-10 h-10 grid place-items-center rounded-xl hover:bg-neutral-100">
                         <span class="text-xl">🔔</span>
-                        @if ($unreadCount > 0)
-                            <span class="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 grid place-items-center text-[10px] font-bold text-white bg-rose-500 rounded-full">{{ $unreadCount > 99 ? '99+' : $unreadCount }}</span>
-                        @endif
+                        <span id="noti-badge" data-count="{{ $unreadCount }}"
+                              class="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 grid place-items-center text-[10px] font-bold text-white bg-rose-500 rounded-full {{ $unreadCount > 0 ? '' : 'hidden' }}">{{ $unreadCount > 99 ? '99+' : $unreadCount }}</span>
                     </button>
                     <div x-show="open" x-cloak @click.outside="open = false" x-transition.origin.top.right
                          class="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-neutral-100 overflow-hidden z-50">
@@ -242,6 +248,74 @@
 </div>
 <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+{{-- 실시간 토스트 알림 (Pusher) --}}
+<div id="toast-container" class="fixed bottom-5 right-5 z-[100] flex flex-col gap-2 w-80 max-w-[90vw] pointer-events-none"></div>
+@if (config('broadcasting.connections.pusher.key') && auth()->id())
+<script src="https://js.pusher.com/8.4/pusher.min.js"></script>
+<script>
+(function () {
+    const KEY = @json(config('broadcasting.connections.pusher.key'));
+    const CLUSTER = @json(config('broadcasting.connections.pusher.options.cluster'));
+    const USER_ID = @json(auth()->id());
+    const csrf = document.querySelector('meta[name=csrf-token]')?.content;
+
+    let pusher;
+    try {
+        pusher = new Pusher(KEY, {
+            cluster: CLUSTER,
+            forceTLS: true,
+            authEndpoint: @json(url('/broadcasting/auth')),
+            auth: { headers: { 'X-CSRF-TOKEN': csrf, 'X-Requested-With': 'XMLHttpRequest' } },
+        });
+    } catch (e) { console.error('Pusher init 실패', e); return; }
+
+    // 다른 페이지 스크립트(채팅 등)에서 동일 연결 재사용
+    window.appPusher = pusher;
+
+    const channel = pusher.subscribe('private-portal.user.' + USER_ID);
+    channel.bind('app.notification', function (data) {
+        showToast(data && data.title || '알림', data && data.body || '');
+        bumpBadge();
+    });
+
+    function bumpBadge() {
+        const b = document.getElementById('noti-badge');
+        if (!b) return;
+        const n = (parseInt(b.dataset.count || '0', 10) || 0) + 1;
+        b.dataset.count = n;
+        b.textContent = n > 99 ? '99+' : n;
+        b.classList.remove('hidden');
+    }
+
+    function showToast(title, body) {
+        const c = document.getElementById('toast-container');
+        if (!c) return;
+        const el = document.createElement('div');
+        el.className = 'pointer-events-auto rounded-xl bg-white shadow-lg border border-neutral-200 px-4 py-3 ' +
+                       'flex items-start gap-3 translate-x-6 opacity-0 transition-all duration-300';
+        el.innerHTML =
+            '<span class="text-xl shrink-0">🔔</span>' +
+            '<div class="min-w-0 flex-1">' +
+              '<p class="js-t text-sm font-bold text-neutral-900"></p>' +
+              '<p class="js-b text-xs text-neutral-500 mt-0.5 break-words"></p>' +
+            '</div>' +
+            '<button class="js-x text-neutral-300 hover:text-neutral-500 shrink-0 leading-none" aria-label="닫기">✕</button>';
+        el.querySelector('.js-t').textContent = title;
+        el.querySelector('.js-b').textContent = body;
+        c.appendChild(el);
+        requestAnimationFrame(() => el.classList.remove('translate-x-6', 'opacity-0'));
+        const timer = setTimeout(remove, 6000);
+        el.querySelector('.js-x').onclick = remove;
+        function remove() {
+            clearTimeout(timer);
+            el.classList.add('translate-x-6', 'opacity-0');
+            setTimeout(() => el.remove(), 300);
+        }
+    }
+})();
+</script>
+@endif
 @stack('scripts')
 </body>
 </html>

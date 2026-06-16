@@ -24,7 +24,8 @@ class OrderChangeService
     {
         $items = $itemsSnapshot ?? $order->items()->get();
         $store = $order->store;
-        $storeName = $store->name ?? '매장';
+        // 알림 노출용 매장명: 브랜드 접두어(리프렌즈) 제거
+        $storeName = trim(str_replace(['리프렌즈', '리프랜즈'], '', $store->name ?? '')) ?: '매장';
         $typeLabel = OrderChange::TYPES[$type] ?? $type;
 
         // 영향받는 판매자 집합

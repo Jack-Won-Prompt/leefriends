@@ -33,5 +33,7 @@ Route::prefix('v1')->group(function () {
         Route::get('orders', [OrderController::class, 'index'])->name('api.orders.index');
         Route::post('orders', [OrderController::class, 'store'])->name('api.orders.store');
         Route::get('orders/{order}', [OrderController::class, 'show'])->name('api.orders.show');
+        Route::put('orders/{order}', [OrderController::class, 'update'])->name('api.orders.update');
+        Route::delete('orders/{order}', [OrderController::class, 'destroy'])->name('api.orders.destroy');
     });
 });

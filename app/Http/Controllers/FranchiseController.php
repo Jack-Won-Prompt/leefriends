@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\FranchiseInquiry;
 use App\Models\Store;
+use App\Models\User;
+use App\Services\Notification\NotificationService;
 use Illuminate\Http\Request;
 
 class FranchiseController extends Controller
@@ -15,7 +17,7 @@ class FranchiseController extends Controller
         return view('franchise', compact('storeCount'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request, NotificationService $notifications)
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:50'],
@@ -34,7 +36,16 @@ class FranchiseController extends Controller
         $validated['agree_privacy'] = true;
         $validated['status'] = 'new';
 
-        FranchiseInquiry::create($validated);
+        $inquiry = FranchiseInquiry::create($validated);
+
+        // 본사 전원에게 실시간 알림(인앱+토스트) — 접수 즉시 확인 가능
+        $notifications->notifyUsers(
+            User::where('role', 'hq')->get(),
+            'franchise_inquiry',
+            '📨 새 창업 문의',
+            "{$inquiry->name}님이 창업 문의를 남겼습니다." . ($inquiry->region ? " (희망지역: {$inquiry->region})" : ''),
+            ['inquiry_id' => $inquiry->id],
+        );
 
         return redirect()->route('franchise.thanks');
     }

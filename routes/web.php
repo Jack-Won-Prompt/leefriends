@@ -73,6 +73,11 @@ Route::prefix('portal')->name('portal.')->group(function () {
         Route::post('notifications/read-all', [Portal\NotificationController::class, 'readAll'])->name('notifications.read_all');
         Route::post('notifications/{notification}/read', [Portal\NotificationController::class, 'read'])->name('notifications.read');
 
+        // 실시간 채팅 (본사 ↔ 매장 / 본사 ↔ 공급처)
+        Route::get('chat', [Portal\ChatController::class, 'index'])->name('chat.index');
+        Route::post('chat/{conversation}/send', [Portal\ChatController::class, 'send'])->name('chat.send');
+        Route::get('chat/{conversation}/poll', [Portal\ChatController::class, 'poll'])->name('chat.poll');
+
         // 매장 주문 변경 확인(반영) - 본사/공급처
         Route::middleware('role:hq,supplier')->group(function () {
             Route::get('order-changes', [Portal\OrderChangeController::class, 'index'])->name('order_changes.index');
@@ -139,6 +144,12 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::post('stores/{store}/reinvite', [Portal\Hq\StoreController::class, 'reinvite'])->name('stores.reinvite');
             Route::get('invoices', [Portal\Hq\InvoiceController::class, 'index'])->name('invoices.index');
             Route::get('invoices/{invoice}', [Portal\Hq\InvoiceController::class, 'show'])->name('invoices.show');
+
+            // 창업 문의 (온라인 접수 확인/관리)
+            Route::get('inquiries', [Portal\Hq\InquiryController::class, 'index'])->name('inquiries.index');
+            Route::get('inquiries/{inquiry}', [Portal\Hq\InquiryController::class, 'show'])->name('inquiries.show');
+            Route::patch('inquiries/{inquiry}', [Portal\Hq\InquiryController::class, 'update'])->name('inquiries.update');
+            Route::delete('inquiries/{inquiry}', [Portal\Hq\InquiryController::class, 'destroy'])->name('inquiries.destroy');
         });
 
         // 공급처

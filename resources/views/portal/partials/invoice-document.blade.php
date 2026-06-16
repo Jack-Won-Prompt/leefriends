@@ -27,10 +27,10 @@
             <div class="rounded-xl border border-neutral-200 overflow-hidden">
                 <div class="bg-neutral-100 px-4 py-2 text-xs font-bold text-neutral-500">공 급 받 는 자 (본사)</div>
                 <table class="w-full text-sm">
-                    <tr class="border-b border-neutral-100"><td class="px-4 py-2 text-neutral-400 w-24">등록번호</td><td class="px-4 py-2 font-semibold">123-45-67890</td></tr>
-                    <tr class="border-b border-neutral-100"><td class="px-4 py-2 text-neutral-400">상호</td><td class="px-4 py-2 font-bold">(주)리프렌즈</td></tr>
-                    <tr class="border-b border-neutral-100"><td class="px-4 py-2 text-neutral-400">대표자</td><td class="px-4 py-2">홍길동</td></tr>
-                    <tr><td class="px-4 py-2 text-neutral-400">주소</td><td class="px-4 py-2 text-neutral-600">서울특별시 강남구 테헤란로 123 망고빌딩</td></tr>
+                    <tr class="border-b border-neutral-100"><td class="px-4 py-2 text-neutral-400 w-24">등록번호</td><td class="px-4 py-2 font-semibold">827-81-03115</td></tr>
+                    <tr class="border-b border-neutral-100"><td class="px-4 py-2 text-neutral-400">상호</td><td class="px-4 py-2 font-bold">주식회사 오다네트웍스</td></tr>
+                    <tr class="border-b border-neutral-100"><td class="px-4 py-2 text-neutral-400">대표자</td><td class="px-4 py-2">이윤석</td></tr>
+                    <tr><td class="px-4 py-2 text-neutral-400">주소</td><td class="px-4 py-2 text-neutral-600">경기도 의정부시 천보로 14, 1113호(민락동)</td></tr>
                 </table>
             </div>
         </div>

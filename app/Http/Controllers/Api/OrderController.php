@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\SalesOrder;
 use App\Models\SupplyProduct;
+use App\Services\Fulfillment\OrderChangeService;
 use App\Services\Fulfillment\SalesOrderGenerator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -66,9 +68,9 @@ class OrderController extends Controller
             'items.*.qty' => ['required', 'integer', 'min:1', 'max:9999'],
         ]);
 
-        $lines = collect($data['items'])->filter(fn ($i) => (int) $i['qty'] > 0);
+        $lines = $this->validLines($data['items']);
         if ($lines->isEmpty()) {
-            return response()->json(['message' => '발주할 품목의 수량을 입력해 주세요.'], 422);
+            return response()->json(['message' => '유효한 품목이 없습니다. 품목 정보를 다시 확인해 주세요.'], 422);
         }
 
         $user = $request->user();
@@ -95,7 +97,108 @@ class OrderController extends Controller
         ], 201);
     }
 
+    /**
+     * PUT /api/v1/orders/{order}  — 발주 수정 (출고 전에만 가능)
+     * body: { note?, items: [{ product_id, unit_id?, qty }] }
+     */
+    public function update(Request $request, Order $order, OrderChangeService $changes): JsonResponse
+    {
+        $this->authorizeStore($request, $order);
+        if (! $this->isEditable($order)) {
+            return response()->json(
+                ['message' => '이미 출고가 진행되었거나 취소/완료된 발주는 수정할 수 없습니다.'],
+                409,
+            );
+        }
+
+        $data = $request->validate([
+            'note' => ['nullable', 'string', 'max:1000'],
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.product_id' => ['required', 'integer'],
+            'items.*.unit_id' => ['nullable', 'integer'],
+            'items.*.qty' => ['required', 'integer', 'min:1', 'max:9999'],
+        ]);
+
+        $lines = $this->validLines($data['items']);
+        if ($lines->isEmpty()) {
+            return response()->json(['message' => '유효한 품목이 없습니다. 품목 정보를 다시 확인해 주세요.'], 422);
+        }
+
+        $oldItems = $order->items()->get();
+
+        DB::transaction(function () use ($order, $lines, $data) {
+            // 기존 판매주문/품목 제거 후 재생성 (미출고 상태에서만 허용)
+            SalesOrder::where('order_id', $order->id)->delete();
+            $order->items()->delete();
+            $order->update(['status' => 'pending', 'note' => $data['note'] ?? null]);
+
+            $this->buildItems($order, $lines);
+            (new SalesOrderGenerator())->generate($order);
+        });
+
+        // 본사·공급처에 변경 알림 + 미반영 기록
+        $changes->record($order, 'updated', $oldItems);
+
+        $order->load('items');
+
+        return response()->json([
+            'message' => '발주가 수정되었습니다. 본사·공급처에 변경 알림이 전송되었습니다.',
+            'data' => $this->detail($order),
+        ]);
+    }
+
+    /**
+     * DELETE /api/v1/orders/{order}  — 발주 취소 (출고 전에만 가능)
+     */
+    public function destroy(Request $request, Order $order, OrderChangeService $changes): JsonResponse
+    {
+        $this->authorizeStore($request, $order);
+        if (! $this->isEditable($order)) {
+            return response()->json(
+                ['message' => '이미 출고가 진행되었거나 취소/완료된 발주는 취소할 수 없습니다.'],
+                409,
+            );
+        }
+
+        $snapshot = $order->items()->get();
+
+        DB::transaction(function () use ($order) {
+            SalesOrder::where('order_id', $order->id)->update(['status' => 'canceled']);
+            $order->update(['status' => 'canceled']);
+        });
+
+        $changes->record($order, 'canceled', $snapshot);
+
+        $order->load('items');
+
+        return response()->json([
+            'message' => '발주가 취소되었습니다. 본사·공급처에 취소 알림이 전송되었습니다.',
+            'data' => $this->detail($order),
+        ]);
+    }
+
     /* ----------------- helpers ----------------- */
+
+    /** 수정/취소 가능: 미취소·미완료 + 어떤 품목도 출고에 묶이지 않음 */
+    private function isEditable(Order $order): bool
+    {
+        return ! in_array($order->status, ['canceled', 'completed'], true)
+            && ! $order->items()->whereNotNull('shipment_id')->exists();
+    }
+
+    /** 요청 items 중 활성 품목(qty>0)만 남긴 컬렉션 */
+    private function validLines(array $items)
+    {
+        $lines = collect($items)->filter(fn ($i) => (int) $i['qty'] > 0);
+        $validIds = SupplyProduct::active()
+            ->whereIn('id', $lines->pluck('product_id')->all())
+            ->pluck('id')
+            ->all();
+
+        return $lines
+            ->filter(fn ($i) => in_array((int) $i['product_id'], $validIds, true))
+            ->values();
+    }
 
     private function buildItems(Order $order, $lines): void
     {
@@ -171,8 +274,11 @@ class OrderController extends Controller
     {
         return array_merge($this->summary($o), [
             'note' => $o->note,
+            'editable' => $this->isEditable($o),
             'items' => $o->items->map(fn (OrderItem $it) => [
                 'id' => $it->id,
+                'product_id' => $it->supply_product_id,
+                'unit_id' => $it->supply_product_unit_id,
                 'product_name' => $it->product_name,
                 'unit' => $it->unit,
                 'qty' => (int) $it->qty,
