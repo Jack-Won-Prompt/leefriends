@@ -61,7 +61,7 @@ class OrderController extends Controller
         ]);
     }
 
-    public function store(Request $request)
+    public function store(Request $request, \App\Services\Notification\NotificationService $notifications)
     {
         $user = Auth::user();
         abort_unless($user->store_id, 403, '연결된 매장이 없습니다.');
@@ -87,6 +87,9 @@ class OrderController extends Controller
 
             return $order;
         });
+
+        // 본사 + 해당 공급처에 새 발주 알림(FCM)
+        $notifications->notifyNewOrder($order);
 
         if ($type === 'sample') {
             return redirect()->route('portal.store.orders.show', $order)

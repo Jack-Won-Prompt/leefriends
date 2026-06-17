@@ -77,37 +77,8 @@ class ChatController extends Controller
             return response()->json(['error' => '메시지 또는 파일을 입력하세요.'], 422);
         }
 
-        $attrs = [
-            'conversation_id' => $conversation->id,
-            'user_id' => $user->id,
-            'sender_role' => $user->role,
-            'sender_name' => $user->name,
-            'body' => $request->input('body'),
-        ];
-
-        if ($file = $request->file('attachment')) {
-            $attrs['attachment_path'] = $file->store('chat/'.$conversation->id, 'public');
-            $attrs['attachment_name'] = $file->getClientOriginalName();
-            $attrs['attachment_mime'] = $file->getMimeType();
-            $attrs['attachment_size'] = $file->getSize();
-        }
-
-        $message = Message::create($attrs);
-
-        // 대화방 메타 갱신 + 상대측 미읽음 증가
-        $preview = $message->body ?: '📎 '.$message->attachment_name;
-        $conversation->forceFill([
-            'last_message' => mb_strimwidth($preview, 0, 60, '…'),
-            'last_message_at' => $message->created_at,
-        ]);
-        if ($user->role === 'hq') {
-            $conversation->party_unread = $conversation->party_unread + 1;
-        } else {
-            $conversation->hq_unread = $conversation->hq_unread + 1;
-        }
-        $conversation->save();
-
-        broadcast(new MessageSent($message));
+        $message = app(\App\Services\Chat\ChatService::class)
+            ->send($conversation, $user, $request->input('body'), $request->file('attachment'));
 
         return response()->json(['message' => $message->toBroadcast()]);
     }

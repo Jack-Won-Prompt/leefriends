@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\ChatController;
 use App\Http\Controllers\Api\DeviceTokenController;
 use App\Http\Controllers\Api\InboundController;
 use App\Http\Controllers\Api\InventoryController;
@@ -69,6 +70,15 @@ Route::prefix('v1')->group(function () {
         Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('api.notifications.unread');
         Route::post('notifications/read-all', [NotificationController::class, 'readAll'])->name('api.notifications.read_all');
         Route::post('notifications/{notification}/read', [NotificationController::class, 'read'])->name('api.notifications.read');
+
+        // 채팅 (본사 ↔ 매장/공급처)
+        Route::prefix('chat')->name('api.chat.')->group(function () {
+            Route::get('conversations', [ChatController::class, 'conversations'])->name('conversations');
+            Route::get('open', [ChatController::class, 'open'])->name('open');
+            Route::get('unread', [ChatController::class, 'unread'])->name('unread');
+            Route::get('conversations/{conversation}/messages', [ChatController::class, 'messages'])->name('messages');
+            Route::post('conversations/{conversation}/messages', [ChatController::class, 'send'])->name('send');
+        });
 
         // 본사/공급처 (판매자) — 받은 발주/판매주문 처리 + 출고
         Route::prefix('seller')->name('api.seller.')->group(function () {

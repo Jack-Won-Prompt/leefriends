@@ -56,7 +56,7 @@ class OrderController extends Controller
      * POST /api/v1/orders  — 발주 접수
      * body: { note?, items: [{ product_id, unit_id?, qty }] }
      */
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, \App\Services\Notification\NotificationService $notifications): JsonResponse
     {
         $storeId = $this->storeId($request);
 
@@ -90,6 +90,9 @@ class OrderController extends Controller
         });
 
         $order->load('items');
+
+        // 본사 + 해당 공급처에 새 발주 알림(FCM)
+        $notifications->notifyNewOrder($order);
 
         return response()->json([
             'message' => '발주가 접수되었습니다.',

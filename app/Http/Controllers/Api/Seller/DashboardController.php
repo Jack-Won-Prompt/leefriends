@@ -28,14 +28,28 @@ class DashboardController extends Controller
         $shipmentsToConfirm = Shipment::forSeller($type, $sid)->where('status', 'created')->count();
         $inTransit = Shipment::forSeller($type, $sid)->where('status', 'confirmed')->count();
 
-        // 오늘 받은 발주 (본사: 전체 / 공급처: 자사 품목 포함)
+        // 오늘 받은 발주 + 최근 발주 (본사: 전체 / 공급처: 자사 품목 포함)
         if ($type === 'supplier') {
-            $todayOrders = Order::whereHas('items', fn ($q) => $q
-                ->where('supplier_id', $sid)->where('supply_type', 'supplier'))
-                ->whereDate('created_at', today())->count();
+            $mine = fn ($q) => $q->where('supplier_id', $sid)->where('supply_type', 'supplier');
+            $ordersQuery = fn () => Order::whereHas('items', $mine);
         } else {
-            $todayOrders = Order::whereDate('created_at', today())->count();
+            $ordersQuery = fn () => Order::query();
         }
+
+        $todayOrders = $ordersQuery()->whereDate('created_at', today())->count();
+
+        $recent = $ordersQuery()
+            ->with('store')->withCount('items')->latest()->limit(5)->get()
+            ->map(fn (Order $o) => [
+                'id' => $o->id,
+                'order_no' => $o->order_no,
+                'status' => $o->status,
+                'status_label' => Order::STATUSES[$o->status] ?? $o->status,
+                'store_name' => $o->store?->name,
+                'item_count' => $o->items_count,
+                'store_amount' => (int) $o->store_amount,
+                'created_at' => $o->created_at?->format('Y-m-d H:i'),
+            ]);
 
         return response()->json([
             'data' => [
@@ -45,6 +59,7 @@ class DashboardController extends Controller
                 'shipments_to_confirm' => $shipmentsToConfirm,   // 송장 입력 대기
                 'in_transit' => $inTransit,                       // 배송중
                 'today_orders' => $todayOrders,
+                'recent_orders' => $recent,
             ],
         ]);
     }

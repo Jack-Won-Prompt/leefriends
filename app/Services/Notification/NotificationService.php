@@ -23,6 +23,39 @@ class NotificationService
         $this->notifyUsers($users, $type, $title, $body, $data);
     }
 
+    /**
+     * 새 발주 접수 → 본사 전원 + 해당 발주에 포함된 공급처에 알림.
+     */
+    public function notifyNewOrder(\App\Models\Order $order): void
+    {
+        $order->loadMissing(['items', 'store']);
+
+        $storeName = $order->store?->name ?? '매장';
+        $title = '🧾 새 발주가 접수되었습니다';
+        $body = "{$storeName} · {$order->order_no} ({$order->items->count()}품목)";
+        $data = ['order_id' => $order->id, 'order_no' => $order->order_no];
+
+        // 본사 (전체 발주 관할)
+        $this->notifyUsers(
+            User::where('role', 'hq')->get(),
+            'order_created', $title, $body, $data,
+        );
+
+        // 해당 발주에 품목이 있는 공급처
+        $supplierIds = $order->items
+            ->where('supply_type', 'supplier')
+            ->pluck('supplier_id')
+            ->filter()
+            ->unique();
+
+        foreach ($supplierIds as $supplierId) {
+            $this->notifyUsers(
+                User::where('role', 'supplier')->where('supplier_id', $supplierId)->get(),
+                'order_created', $title, $body, $data,
+            );
+        }
+    }
+
     /** @param \Illuminate\Support\Collection|User[] $users */
     public function notifyUsers($users, string $type, string $title, string $body, array $data = []): void
     {
