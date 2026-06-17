@@ -1,0 +1,106 @@
+<?php
+
+namespace App\Http\Controllers\Api\Seller;
+
+use App\Http\Controllers\Controller;
+use App\Models\Order;
+use App\Models\OrderItem;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+
+/**
+ * 본사/공급처가 받은 매장 발주 조회.
+ *  - 본사: 전체 주문
+ *  - 공급처: 자사 품목이 포함된 주문 (자사 품목만 노출)
+ */
+class OrderController extends Controller
+{
+    use ResolvesSeller;
+
+    /**
+     * GET /api/v1/seller/orders?status=all|pending|processing|shipping|completed|canceled
+     */
+    public function index(Request $request): JsonResponse
+    {
+        [$type, $sid] = $this->seller($request);
+        $status = $request->query('status', 'all');
+
+        if ($type === 'supplier') {
+            $mine = fn ($q) => $q->where('supplier_id', $sid)->where('supply_type', 'supplier');
+            $query = Order::whereHas('items', $mine)->with(['store', 'items' => $mine]);
+        } else {
+            $query = Order::with('store')->withCount('items');
+        }
+        $query->latest();
+        if (array_key_exists($status, Order::STATUSES)) {
+            $query->where('status', $status);
+        }
+        $orders = $query->paginate(20);
+
+        return response()->json([
+            'data' => $orders->getCollection()->map(fn (Order $o) => $this->summary($o, $type))->values(),
+            'meta' => [
+                'status' => $status,
+                'statuses' => collect(Order::STATUSES)
+                    ->map(fn ($l, $k) => ['key' => $k, 'label' => $l])->values(),
+                'current_page' => $orders->currentPage(),
+                'last_page' => $orders->lastPage(),
+                'total' => $orders->total(),
+            ],
+        ]);
+    }
+
+    /**
+     * GET /api/v1/seller/orders/{order}
+     */
+    public function show(Request $request, Order $order): JsonResponse
+    {
+        [$type, $sid] = $this->seller($request);
+
+        if ($type === 'supplier') {
+            $mine = fn ($q) => $q->where('supplier_id', $sid)->where('supply_type', 'supplier');
+            abort_unless($order->items()->where($mine)->exists(), 403);
+            $order->load(['store', 'items' => $mine]);
+        } else {
+            $order->load(['store', 'items']);
+        }
+
+        return response()->json([
+            'data' => array_merge($this->summary($order, $type), [
+                'note' => $order->note,
+                'items' => $order->items->map(fn (OrderItem $it) => [
+                    'id' => $it->id,
+                    'product_name' => $it->product_name,
+                    'unit' => $it->unit,
+                    'qty' => (int) $it->qty,
+                    'supplier_name' => $it->supplier_name,
+                    'supply_type' => $it->supply_type,
+                    'store_line_amount' => (int) $it->store_line_amount,
+                    'supply_line_amount' => (int) $it->supply_line_amount,
+                    'fulfillment_status' => $it->fulfillment_status,
+                ])->values(),
+            ]),
+        ]);
+    }
+
+    private function summary(Order $o, string $type): array
+    {
+        // 공급처는 자사 품목 합계만 의미가 있으므로 로드된 items 기준 집계
+        $itemCount = $o->items_count ?? $o->items->count();
+        $supply = $type === 'supplier'
+            ? (int) $o->items->sum('supply_line_amount')
+            : (int) $o->supply_amount;
+
+        return [
+            'id' => $o->id,
+            'order_no' => $o->order_no,
+            'status' => $o->status,
+            'status_label' => Order::STATUSES[$o->status] ?? $o->status,
+            'store_name' => $o->store?->name,
+            'item_count' => $itemCount,
+            'store_amount' => (int) $o->store_amount,
+            'supply_amount' => $supply,
+            'created_at' => $o->created_at?->format('Y-m-d H:i'),
+        ];
+    }
+}

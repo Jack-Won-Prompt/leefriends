@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\NoticeController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\PurchaseController;
+use App\Http\Controllers\Api\Seller;
 use App\Http\Controllers\Api\StoreLocatorController;
 use App\Http\Controllers\Api\SupplyProductController;
 use Illuminate\Support\Facades\Route;
@@ -68,5 +69,23 @@ Route::prefix('v1')->group(function () {
         Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('api.notifications.unread');
         Route::post('notifications/read-all', [NotificationController::class, 'readAll'])->name('api.notifications.read_all');
         Route::post('notifications/{notification}/read', [NotificationController::class, 'read'])->name('api.notifications.read');
+
+        // 본사/공급처 (판매자) — 받은 발주/판매주문 처리 + 출고
+        Route::prefix('seller')->name('api.seller.')->group(function () {
+            Route::get('dashboard', [Seller\DashboardController::class, 'index'])->name('dashboard');
+
+            Route::get('orders', [Seller\OrderController::class, 'index'])->name('orders.index');
+            Route::get('orders/{order}', [Seller\OrderController::class, 'show'])->name('orders.show');
+
+            Route::get('sales-orders', [Seller\SalesOrderController::class, 'index'])->name('sales_orders.index');
+            Route::get('sales-orders/{salesOrder}', [Seller\SalesOrderController::class, 'show'])->name('sales_orders.show');
+            Route::patch('sales-orders/{salesOrder}/confirm', [Seller\SalesOrderController::class, 'confirm'])->name('sales_orders.confirm');
+
+            Route::get('shipments', [Seller\ShipmentController::class, 'index'])->name('shipments.index');
+            Route::get('shipments/candidates', [Seller\ShipmentController::class, 'candidates'])->name('shipments.candidates');
+            Route::post('shipments', [Seller\ShipmentController::class, 'store'])->name('shipments.store');
+            Route::get('shipments/{shipment}', [Seller\ShipmentController::class, 'show'])->name('shipments.show');
+            Route::patch('shipments/{shipment}/confirm', [Seller\ShipmentController::class, 'confirm'])->name('shipments.confirm');
+        });
     });
 });
