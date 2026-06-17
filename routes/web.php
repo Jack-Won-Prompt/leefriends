@@ -78,6 +78,12 @@ Route::prefix('portal')->name('portal.')->group(function () {
         Route::post('chat/{conversation}/send', [Portal\ChatController::class, 'send'])->name('chat.send');
         Route::get('chat/{conversation}/poll', [Portal\ChatController::class, 'poll'])->name('chat.poll');
 
+        // 본사 공지사항 열람 (매장/공급처)
+        Route::middleware('role:store,supplier')->group(function () {
+            Route::get('notices', [Portal\NoticeController::class, 'index'])->name('notices.index');
+            Route::get('notices/{notice}', [Portal\NoticeController::class, 'show'])->name('notices.show');
+        });
+
         // 매장 주문 변경 확인(반영) - 본사/공급처
         Route::middleware('role:hq,supplier')->group(function () {
             Route::get('order-changes', [Portal\OrderChangeController::class, 'index'])->name('order_changes.index');
@@ -144,6 +150,11 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::post('stores/{store}/reinvite', [Portal\Hq\StoreController::class, 'reinvite'])->name('stores.reinvite');
             Route::get('invoices', [Portal\Hq\InvoiceController::class, 'index'])->name('invoices.index');
             Route::get('invoices/{invoice}', [Portal\Hq\InvoiceController::class, 'show'])->name('invoices.show');
+
+            // 공지사항 발송 (매장/공급처 대상)
+            Route::get('notices', [Portal\Hq\NoticeController::class, 'index'])->name('notices.index');
+            Route::post('notices', [Portal\Hq\NoticeController::class, 'store'])->name('notices.store');
+            Route::delete('notices/{notice}', [Portal\Hq\NoticeController::class, 'destroy'])->name('notices.destroy');
 
             // 창업 문의 (온라인 접수 확인/관리)
             Route::get('inquiries', [Portal\Hq\InquiryController::class, 'index'])->name('inquiries.index');

@@ -43,6 +43,7 @@
                 ['portal.hq.suppliers.index', '공급처 관리', []],
                 ['portal.hq.stores.index', '매장 관리', []],
             ]],
+            ['공지사항', '📢', [['portal.hq.notices.index', '공지사항', []]]],
             ['창업 문의', '📨', [
                 ['portal.hq.inquiries.index', '창업 문의', ['portal.hq.inquiries.show']],
             ]],
@@ -50,6 +51,7 @@
         'store' => [
             ['대시보드', '📊', [['portal.dashboard', '대시보드', []]]],
             ['채팅', '💬', [['portal.chat.index', '본사 채팅', []]]],
+            ['공지사항', '📢', [['portal.notices.index', '공지사항', []]]],
             ['발주', '🛒', [
                 ['portal.store.orders.create', '재료 발주하기', []],
                 ['portal.store.orders.index', '발주 내역', ['portal.store.orders.show','portal.store.orders.edit']],
@@ -67,6 +69,7 @@
         'supplier' => [
             ['대시보드', '📊', [['portal.dashboard', '대시보드', []]]],
             ['채팅', '💬', [['portal.chat.index', '본사 채팅', []]]],
+            ['공지사항', '📢', [['portal.notices.index', '공지사항', []]]],
             ['물품', '🗂️', [
                 ['portal.supplier.products.index', '물품 관리', []],
             ]],
@@ -110,7 +113,7 @@
         <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
             @foreach ($nav as [$groupLabel, $groupIcon, $children])
                 @php $groupActive = collect($children)->contains(fn ($c) => $isChildActive($c)); @endphp
-                @if (count($children) === 1 && empty($children[0][2]) && in_array($children[0][0], ['portal.dashboard', 'portal.chat.index'], true))
+                @if (count($children) === 1 && empty($children[0][2]) && in_array($children[0][0], ['portal.dashboard', 'portal.chat.index', 'portal.hq.notices.index', 'portal.notices.index'], true))
                     {{-- 단일 링크 그룹 (대시보드) --}}
                     @php [$r, $label, $also] = $children[0]; $active = $isChildActive($children[0]); @endphp
                     <a href="{{ route($r) }}"

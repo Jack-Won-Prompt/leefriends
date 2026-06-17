@@ -73,7 +73,8 @@
                         <th class="text-left font-semibold px-5 py-3 hidden md:table-cell">규격</th>
                         <th class="text-left font-semibold px-5 py-3 hidden md:table-cell">단위</th>
                         <th class="text-left font-semibold px-5 py-3">공급구분</th>
-                        <th class="text-right font-semibold px-5 py-3">단가</th>
+                        <th class="text-right font-semibold px-5 py-3">판매가</th>
+                        <th class="text-right font-semibold px-5 py-3 hidden lg:table-cell">원가 · 마진</th>
                         <th class="text-center font-semibold px-5 py-3">승인상태</th>
                         <th class="text-center font-semibold px-5 py-3 hidden md:table-cell">노출</th>
                         <th class="text-right font-semibold px-5 py-3 w-28">관리</th>
@@ -103,6 +104,14 @@
                                 @endif
                             </td>
                             <td class="px-5 py-3.5 text-right font-semibold text-mango-700">{{ number_format($p->store_price) }}원</td>
+                            <td class="px-5 py-3.5 text-right hidden lg:table-cell">
+                                @if ($p->supply_type === 'supplier' && $p->supply_price > 0)
+                                    <span class="font-semibold text-neutral-700">{{ number_format($p->supply_price) }}원</span>
+                                    <span class="block text-[11px] text-emerald-600">마진 {{ number_format($p->margin) }}@if ($p->store_price > 0) ({{ round($p->margin / $p->store_price * 100) }}%)@endif</span>
+                                @else
+                                    <span class="text-neutral-300">-</span>
+                                @endif
+                            </td>
                             <td class="px-5 py-3.5 text-center">
                                 @php $ap = $p->approval_status; @endphp
                                 <div class="flex flex-col items-center gap-1.5">
@@ -193,7 +202,7 @@
                     <input type="text" name="unit" x-model="form.unit" required class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400" placeholder="BOX / EA">
                 </div>
                 <div>
-                    <label class="block text-sm font-bold text-neutral-700 mb-1.5">단가 (원)</label>
+                    <label class="block text-sm font-bold text-neutral-700 mb-1.5">판매가 (원) <span class="text-neutral-400 font-normal">매장 판매가</span></label>
                     <input type="number" name="store_price" x-model="form.store_price" required min="0" class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400">
                 </div>
                 <div>
@@ -232,7 +241,7 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-sm font-bold text-neutral-700 mb-1.5">공급가 (원) <span class="text-neutral-400 font-normal">(공급처 → 본사)</span></label>
+                        <label class="block text-sm font-bold text-neutral-700 mb-1.5">원가 (원) <span class="text-neutral-400 font-normal">공급처 공급단가 (공급처 → 본사)</span></label>
                         <input type="number" name="supply_price" x-model="form.supply_price" min="0"
                                class="w-full rounded-xl border-neutral-200 focus:border-sky-400 focus:ring-sky-400">
                     </div>

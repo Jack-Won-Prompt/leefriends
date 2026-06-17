@@ -30,6 +30,10 @@
             </nav>
 
             <div class="hidden lg:flex items-center gap-3">
+                <a href="{{ route('portal.login') }}"
+                   class="header-login inline-flex items-center gap-1.5 rounded-full border border-neutral-300 px-5 py-2.5 text-sm font-bold text-neutral-700 hover:border-mango-400 hover:text-mango-600 transition">
+                    로그인
+                </a>
                 <a href="{{ route('franchise') }}#inquiry"
                    class="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-mango-500 to-mango-600 px-5 py-2.5 text-sm font-bold text-white shadow-soft hover:brightness-105 active:scale-95 transition">
                     창업문의 <span class="text-base leading-none">→</span>
@@ -51,8 +55,10 @@
             @foreach ($nav as [$label, $url])
                 <a href="{{ $url }}" class="py-3 text-[17px] font-semibold text-neutral-800 border-b border-neutral-100">{{ $label }}</a>
             @endforeach
+            <a href="{{ route('portal.login') }}"
+               class="mt-4 text-center rounded-full border border-neutral-300 px-5 py-3 font-bold text-neutral-800 hover:border-mango-400 hover:text-mango-600">로그인</a>
             <a href="{{ route('franchise') }}#inquiry"
-               class="mt-4 text-center rounded-full bg-gradient-to-r from-mango-500 to-mango-600 px-5 py-3 font-bold text-white">창업문의 하기</a>
+               class="mt-2 text-center rounded-full bg-gradient-to-r from-mango-500 to-mango-600 px-5 py-3 font-bold text-white">창업문의 하기</a>
         </nav>
     </div>
 
@@ -62,6 +68,9 @@
         #site-header:not(.is-solid) nav a:hover { color: #fff; }
         #site-header:not(.is-solid) .text-neutral-900 { color: #fff; }
         #site-header:not(.is-solid) button { color: #fff; }
+        /* 로그인 버튼: 투명 헤더(히어로 위)에서는 흰색 외곽선 */
+        #site-header:not(.is-solid) .header-login { color: #fff; border-color: rgba(255,255,255,.55); }
+        #site-header:not(.is-solid) .header-login:hover { border-color: #fff; color: #fff; }
     </style>
 </header>
 

@@ -67,21 +67,37 @@ class ChatController extends Controller
         $user = Auth::user();
         abort_unless($conversation->accessibleBy($user), 403);
 
-        $data = $request->validate([
-            'body' => ['required', 'string', 'max:2000'],
+        $request->validate([
+            'body' => ['nullable', 'string', 'max:2000'],
+            'attachment' => ['nullable', 'file', 'max:10240', // 10MB
+                'mimes:jpg,jpeg,png,gif,webp,heic,pdf,doc,docx,xls,xlsx,ppt,pptx,txt,csv,zip'],
         ]);
 
-        $message = Message::create([
+        if (! $request->filled('body') && ! $request->hasFile('attachment')) {
+            return response()->json(['error' => '메시지 또는 파일을 입력하세요.'], 422);
+        }
+
+        $attrs = [
             'conversation_id' => $conversation->id,
             'user_id' => $user->id,
             'sender_role' => $user->role,
             'sender_name' => $user->name,
-            'body' => $data['body'],
-        ]);
+            'body' => $request->input('body'),
+        ];
+
+        if ($file = $request->file('attachment')) {
+            $attrs['attachment_path'] = $file->store('chat/'.$conversation->id, 'public');
+            $attrs['attachment_name'] = $file->getClientOriginalName();
+            $attrs['attachment_mime'] = $file->getMimeType();
+            $attrs['attachment_size'] = $file->getSize();
+        }
+
+        $message = Message::create($attrs);
 
         // 대화방 메타 갱신 + 상대측 미읽음 증가
+        $preview = $message->body ?: '📎 '.$message->attachment_name;
         $conversation->forceFill([
-            'last_message' => mb_strimwidth($message->body, 0, 60, '…'),
+            'last_message' => mb_strimwidth($preview, 0, 60, '…'),
             'last_message_at' => $message->created_at,
         ]);
         if ($user->role === 'hq') {
