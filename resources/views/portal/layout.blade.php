@@ -39,7 +39,7 @@
             ]],
             ['기준정보', '🗂️', [
                 ['portal.hq.products.index', '품목 관리', []],
-                ['portal.hq.materials.index', '재료 관리', []],
+                ['portal.hq.categories.index', '카테고리 관리', []],
                 ['portal.hq.suppliers.index', '공급처 관리', []],
                 ['portal.hq.stores.index', '매장 관리', []],
             ]],
@@ -279,7 +279,7 @@
     const channel = pusher.subscribe('private-portal.user.' + USER_ID);
     channel.bind('app.notification', function (data) {
         showToast(data && data.title || '알림', data && data.body || '');
-        bumpBadge();
+        if (data && data.id) bumpBadge(); // 영구 알림(id 있음)만 벨 카운트 증가, 채팅 토스트는 제외
     });
 
     function bumpBadge() {

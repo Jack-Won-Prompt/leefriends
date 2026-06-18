@@ -9,15 +9,19 @@
     @else
         <a href="{{ route('portal.store.orders.index') }}" class="inline-flex items-center gap-1.5 text-sm font-bold text-neutral-500 hover:text-mango-600">← 발주 내역</a>
     @endif
-    @if (! empty($editable))
-        <div class="flex gap-2">
+    <div class="flex gap-2">
+        @unless ($isSample)
+            <a href="{{ route('portal.store.orders.statement', $order) }}" target="_blank"
+               class="rounded-lg bg-neutral-900 hover:bg-mango-600 text-white px-4 py-2 font-bold text-sm">🧾 거래명세서</a>
+        @endunless
+        @if (! empty($editable))
             <a href="{{ route('portal.store.orders.edit', $order) }}" class="rounded-lg bg-neutral-100 hover:bg-neutral-200 px-4 py-2 font-bold text-sm">✏️ 수정</a>
             <form method="POST" action="{{ route('portal.store.orders.destroy', $order) }}" onsubmit="return confirm('이 발주를 취소할까요? 본사·공급처에 취소 알림이 전송됩니다.')">
                 @csrf @method('DELETE')
                 <button class="rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 px-4 py-2 font-bold text-sm">발주 취소</button>
             </form>
-        </div>
-    @endif
+        @endif
+    </div>
 </div>
 
 <div class="rounded-2xl bg-white shadow-sm border border-neutral-100 p-7 mb-6">

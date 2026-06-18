@@ -83,6 +83,32 @@ class OrderController extends Controller
         ]);
     }
 
+    /**
+     * PATCH /api/v1/seller/orders/{order}/items/{item}  — 본사 직공급 품목 배송상태 처리 (본사 전용)
+     * body: { fulfillment_status: pending|shipping|delivered }
+     */
+    public function updateItem(Request $request, Order $order, OrderItem $item): JsonResponse
+    {
+        [$type] = $this->seller($request);
+        abort_unless($type === 'hq', 403, '본사 계정만 사용할 수 있습니다.');
+        abort_unless($item->order_id === $order->id && $item->supply_type === 'hq', 403,
+            '본사 직공급 품목만 처리할 수 있습니다.');
+
+        $data = $request->validate([
+            'fulfillment_status' => ['required', 'in:pending,shipping,delivered'],
+        ]);
+
+        $item->fulfillment_status = $data['fulfillment_status'];
+        $item->shipped_at = in_array($data['fulfillment_status'], ['shipping', 'delivered'], true)
+            ? ($item->shipped_at ?? now())
+            : null;
+        $item->save();
+
+        $order->syncStatus();
+
+        return response()->json(['message' => '본사 공급 품목의 배송상태가 변경되었습니다.']);
+    }
+
     private function summary(Order $o, string $type): array
     {
         // 공급처는 자사 품목 합계만 의미가 있으므로 로드된 items 기준 집계

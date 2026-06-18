@@ -173,6 +173,18 @@ class OrderController extends Controller
         ]);
     }
 
+    /** 거래명세서 — 본사/공급처별로 묶어 출력 */
+    public function statement(Order $order)
+    {
+        abort_unless($order->store_id === Auth::user()->store_id, 403);
+        abort_if($order->isSample(), 404, '샘플 주문은 거래명세서를 제공하지 않습니다.');
+        $order->load(['items', 'store']);
+
+        $groups = $order->items->groupBy(fn ($it) => $it->supply_type === 'supplier' ? 'supplier:'.$it->supplier_id : 'hq');
+
+        return view('portal.store.orders.statement', compact('order', 'groups'));
+    }
+
     /* ----------------- helpers ----------------- */
 
     private function productList()

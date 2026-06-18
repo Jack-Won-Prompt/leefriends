@@ -83,8 +83,22 @@
         {{-- 품목 선택 (대분류 탭) --}}
         <div class="lg:col-span-2">
             <div class="rounded-2xl bg-white shadow-sm border border-neutral-100 overflow-hidden">
-                {{-- 탭 바 --}}
-                <div class="flex gap-1 px-3 pt-3 border-b border-neutral-100 overflow-x-auto">
+                {{-- 검색 필터 --}}
+                <div class="p-3 border-b border-neutral-100">
+                    <div class="relative">
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 pointer-events-none">🔍</span>
+                        <input type="text" x-model="search" placeholder="품목명 · 코드 · 규격으로 검색"
+                               class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm pl-9 pr-9 py-2.5">
+                        <button type="button" x-show="search" @click="search = ''" x-cloak
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600" title="검색 지우기">✕</button>
+                    </div>
+                    <p x-show="search.trim()" x-cloak class="mt-2 text-xs text-neutral-500">
+                        검색 결과 <b class="text-mango-600" x-text="searchCount()"></b>건
+                    </p>
+                </div>
+
+                {{-- 탭 바 (검색 중에는 숨김) --}}
+                <div x-show="!search.trim()" class="flex gap-1 px-3 pt-3 border-b border-neutral-100 overflow-x-auto">
                     @foreach ($categories as $cat)
                         <button type="button" @click="activeTab = '{{ $cat }}'"
                                 class="px-4 py-2.5 text-sm font-bold rounded-t-lg whitespace-nowrap transition"
@@ -97,10 +111,12 @@
 
                 {{-- 탭별 품목 --}}
                 @foreach ($products as $category => $items)
-                    <div x-show="activeTab === '{{ $category }}'" class="divide-y divide-neutral-100">
+                    <div x-show="search.trim() ? true : activeTab === '{{ $category }}'" class="divide-y divide-neutral-100">
                         @foreach ($items as $p)
                             @php $defaultUnit = $p->units->firstWhere('is_default', true) ?? $p->units->first(); @endphp
-                            <div class="flex items-center gap-3 px-5 py-4" :class="cart[{{ $p->id }}] ? 'bg-mango-50/50' : ''">
+                            <div class="flex items-center gap-3 px-5 py-4"
+                                 x-show="!search.trim() || matchesSearch({{ $p->id }})" x-cloak
+                                 :class="cart[{{ $p->id }}] ? 'bg-mango-50/50' : ''">
                                 <div class="flex-1 min-w-0">
                                     <div class="flex items-center gap-2 flex-wrap">
                                         <span class="font-bold text-neutral-900">{{ $p->name }}</span>
@@ -150,6 +166,11 @@
                         @endforeach
                     </div>
                 @endforeach
+
+                {{-- 검색 결과 없음 --}}
+                <div x-show="searchCount() === 0" x-cloak class="px-5 py-12 text-center text-neutral-400 text-sm">
+                    «<span x-text="search"></span>» 검색 결과가 없습니다.
+                </div>
             </div>
         </div>
 
@@ -266,12 +287,26 @@
             editMode: editMode,
             pastOrders: pastOrders,
             selectedPast: '',
+            search: '',
             pastMsg: '',
             activeTab: Object.keys(catalog).length ? catalog[Object.keys(catalog)[0]].category : '',
             qty: {},        // 작업 중 수량 (적용 전)
             unitId: {},     // 작업 중 단위 (적용 전)
             cart: {},       // 적용된 구매 리스트: pid -> { qty, unitId }
             itemCount: 0, totalQty: 0, totalAmount: 0,
+            matchesSearch(pid) {
+                const q = (this.search || '').trim().toLowerCase();
+                if (!q) return true;
+                const p = this.catalog[pid];
+                if (!p) return false;
+                return (p.name || '').toLowerCase().includes(q)
+                    || (p.code || '').toLowerCase().includes(q)
+                    || (p.spec || '').toLowerCase().includes(q);
+            },
+            searchCount() {
+                if (!(this.search || '').trim()) return -1;
+                return Object.keys(this.catalog).filter(pid => this.matchesSearch(pid)).length;
+            },
             init() {
                 // 각 품목의 기본 수량 1 / 기본 단위
                 Object.values(this.catalog).forEach(p => {

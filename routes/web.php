@@ -100,6 +100,7 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::get('sample-orders', [Portal\Store\OrderController::class, 'sampleIndex'])->name('sample_orders.index');
             Route::get('sample-orders/create', [Portal\Store\OrderController::class, 'sampleCreate'])->name('sample_orders.create');
             Route::get('orders/{order}', [Portal\Store\OrderController::class, 'show'])->name('orders.show');
+            Route::get('orders/{order}/statement', [Portal\Store\OrderController::class, 'statement'])->name('orders.statement');
             Route::get('orders/{order}/edit', [Portal\Store\OrderController::class, 'edit'])->name('orders.edit');
             Route::put('orders/{order}', [Portal\Store\OrderController::class, 'update'])->name('orders.update');
             Route::delete('orders/{order}', [Portal\Store\OrderController::class, 'destroy'])->name('orders.destroy');
@@ -140,7 +141,11 @@ Route::prefix('portal')->name('portal.')->group(function () {
             // 공급처 등록 물품 승인/반려
             Route::patch('products/{product}/approve', [Portal\Hq\ProductController::class, 'approve'])->name('products.approve');
             Route::patch('products/{product}/reject', [Portal\Hq\ProductController::class, 'reject'])->name('products.reject');
-            Route::resource('materials', Portal\Hq\MaterialController::class)->except(['show', 'create', 'edit']);
+            // 품목 카테고리(대분류) 관리
+            Route::get('categories', [Portal\Hq\CategoryController::class, 'index'])->name('categories.index');
+            Route::post('categories', [Portal\Hq\CategoryController::class, 'store'])->name('categories.store');
+            Route::patch('categories/{category}', [Portal\Hq\CategoryController::class, 'update'])->name('categories.update');
+            Route::delete('categories/{category}', [Portal\Hq\CategoryController::class, 'destroy'])->name('categories.destroy');
             Route::post('suppliers/invite', [Portal\Hq\SupplierController::class, 'invite'])->name('suppliers.invite');
             Route::post('suppliers/{supplier}/reinvite', [Portal\Hq\SupplierController::class, 'reinvite'])->name('suppliers.reinvite');
             Route::resource('suppliers', Portal\Hq\SupplierController::class)->except(['show', 'create', 'edit']);

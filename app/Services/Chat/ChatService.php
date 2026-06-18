@@ -56,9 +56,32 @@ class ChatService
             report($e);
         }
 
+        $this->notifyRecipients($conversation, $sender, $preview);
         $this->pushFcm($conversation, $sender, $preview);
 
         return $message;
+    }
+
+    /** 수신자에게 웹 토스트 알림 (벨 카운트는 증가시키지 않음 — 채팅 자체 미읽음으로 관리) */
+    private function notifyRecipients(Conversation $conversation, User $sender, string $preview): void
+    {
+        $recipients = $sender->role === 'hq'
+            ? $this->partyUsers($conversation)
+            : User::where('role', 'hq')->get();
+
+        foreach ($recipients as $u) {
+            try {
+                broadcast(new \App\Events\PortalToast(
+                    $u->id,
+                    '💬 '.$sender->name,
+                    $preview,
+                    'chat',
+                    ['conversation_id' => $conversation->id],
+                ));
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
     }
 
     /** 수신자에게 채팅 FCM (인앱 알림 센터에는 적재하지 않음 — 채팅 자체 미읽음으로 관리) */

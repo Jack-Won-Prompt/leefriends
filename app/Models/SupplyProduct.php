@@ -43,9 +43,10 @@ class SupplyProduct extends Model
     protected static function booted(): void
     {
         static::creating(function (self $product) {
-            // 대분류명으로부터 대분류코드 자동 설정
+            // 대분류명으로부터 대분류코드 자동 설정 (DB 카테고리 우선, 없으면 상수 폴백)
             if (empty($product->category_code)) {
-                $product->category_code = self::CATEGORY_CODES[$product->category] ?? null;
+                $product->category_code = ProductCategory::codeFor($product->category)
+                    ?? (self::CATEGORY_CODES[$product->category] ?? null);
             }
             // 대분류별 연속 품목코드 자동 채번 (예: MAC001, COO002, MAT010)
             if (empty($product->code)) {
@@ -113,10 +114,14 @@ class SupplyProduct extends Model
         return self::APPROVAL_LABELS[$this->approval_status] ?? $this->approval_status;
     }
 
-    /** 대분류 정의 순서(마카롱→쿠키→재료) → 정렬순서로 정렬 */
+    /** 대분류 정렬순서(기준정보 카테고리 순서) → 품목 정렬 */
     public function scopeCatalogOrder($q)
     {
-        $list = "'" . implode("','", array_values(self::CATEGORY_CODES)) . "'";
+        $codes = ProductCategory::ordered()->pluck('code')->filter()->values()->all();
+        if (empty($codes)) {
+            $codes = array_values(self::CATEGORY_CODES);
+        }
+        $list = "'" . implode("','", $codes) . "'";
 
         return $q->orderByRaw("FIELD(category_code, $list)")->orderBy('sort_order')->orderBy('id');
     }

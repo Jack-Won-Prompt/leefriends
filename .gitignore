@@ -24,3 +24,6 @@ yarn-error.log
 
 # 테스트 아티팩트
 /.playwright-mcp
+
+# 런타임 업로드(제품 이미지 등)
+/public/uploads

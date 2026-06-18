@@ -49,8 +49,8 @@
         </div>
     </div>
 @else
-    {{-- 매장/공급처: 본사와의 단일 대화 --}}
-    <div class="rounded-2xl bg-white shadow-sm border border-neutral-100 overflow-hidden max-w-3xl">
+    {{-- 매장/공급처: 본사와의 단일 대화 (전체 폭) --}}
+    <div class="rounded-2xl bg-white shadow-sm border border-neutral-100 overflow-hidden">
         @include('portal.chat._thread')
     </div>
 @endif
