@@ -27,6 +27,7 @@ class DashboardController extends Controller
         $confirmedSalesOrders = SalesOrder::forSeller($type, $sid)->where('status', 'confirmed')->count();
         $shipmentsToConfirm = Shipment::forSeller($type, $sid)->where('status', 'created')->count();
         $inTransit = Shipment::forSeller($type, $sid)->where('status', 'confirmed')->count();
+        $pendingChanges = \App\Models\OrderChange::forSeller($type, $sid)->pending()->count();
 
         // 오늘 받은 발주 + 최근 발주 (본사: 전체 / 공급처: 자사 품목 포함)
         if ($type === 'supplier') {
@@ -58,6 +59,7 @@ class DashboardController extends Controller
                 'confirmed_sales_orders' => $confirmedSalesOrders, // 출고 대기
                 'shipments_to_confirm' => $shipmentsToConfirm,   // 송장 입력 대기
                 'in_transit' => $inTransit,                       // 배송중
+                'pending_changes' => $pendingChanges,             // 미반영 주문변경
                 'today_orders' => $todayOrders,
                 'recent_orders' => $recent,
             ],

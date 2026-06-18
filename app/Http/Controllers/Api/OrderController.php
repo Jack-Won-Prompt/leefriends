@@ -25,15 +25,18 @@ class OrderController extends Controller
     public function index(Request $request): JsonResponse
     {
         $storeId = $this->storeId($request);
+        $type = $request->query('type', 'all'); // all | normal | sample
 
-        $orders = Order::where('store_id', $storeId)
-            ->withCount('items')
-            ->latest()
-            ->paginate(20);
+        $query = Order::where('store_id', $storeId)->withCount('items')->latest();
+        if (in_array($type, ['normal', 'sample'], true)) {
+            $query->where('order_type', $type);
+        }
+        $orders = $query->paginate(20);
 
         return response()->json([
             'data' => $orders->getCollection()->map(fn (Order $o) => $this->summary($o))->values(),
             'meta' => [
+                'type' => $type,
                 'current_page' => $orders->currentPage(),
                 'last_page' => $orders->lastPage(),
                 'total' => $orders->total(),
@@ -62,11 +65,13 @@ class OrderController extends Controller
 
         $data = $request->validate([
             'note' => ['nullable', 'string', 'max:1000'],
+            'order_type' => ['nullable', 'in:normal,sample'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer'],
             'items.*.unit_id' => ['nullable', 'integer'],
             'items.*.qty' => ['required', 'integer', 'min:1', 'max:9999'],
         ]);
+        $type = ($data['order_type'] ?? 'normal') === 'sample' ? 'sample' : 'normal';
 
         $lines = $this->validLines($data['items']);
         if ($lines->isEmpty()) {
@@ -75,15 +80,16 @@ class OrderController extends Controller
 
         $user = $request->user();
 
-        $order = DB::transaction(function () use ($user, $storeId, $lines, $data) {
+        $order = DB::transaction(function () use ($user, $storeId, $lines, $data, $type) {
             $order = Order::create([
-                'order_no' => $this->generateOrderNo(),
+                'order_no' => $this->generateOrderNo($type),
                 'store_id' => $storeId,
                 'user_id' => $user->id,
                 'status' => 'pending',
+                'order_type' => $type,
                 'note' => $data['note'] ?? null,
             ]);
-            $this->buildItems($order, $lines);
+            $this->buildItems($order, $lines, $type === 'sample');
             (new SalesOrderGenerator())->generate($order);
 
             return $order;
@@ -203,7 +209,7 @@ class OrderController extends Controller
             ->values();
     }
 
-    private function buildItems(Order $order, $lines): void
+    private function buildItems(Order $order, $lines, bool $isSample = false): void
     {
         $ids = $lines->pluck('product_id')->all();
         $products = SupplyProduct::active()->whereIn('id', $ids)
@@ -223,8 +229,9 @@ class OrderController extends Controller
                 ?? $p->units->firstWhere('is_default', true)
                 ?? $p->units->first();
 
-            $storePrice = $unit->store_price ?? $p->store_price;
-            $supplyPrice = $p->supply_type === 'supplier' ? ($unit->supply_price ?? $p->supply_price) : 0;
+            // 샘플 주문은 단가·금액 0 처리
+            $storePrice = $isSample ? 0 : ($unit->store_price ?? $p->store_price);
+            $supplyPrice = $isSample ? 0 : ($p->supply_type === 'supplier' ? ($unit->supply_price ?? $p->supply_price) : 0);
             $storeLine = $storePrice * $qty;
             $supplyLine = $supplyPrice * $qty;
 
@@ -252,12 +259,13 @@ class OrderController extends Controller
         $order->update(['store_amount' => $storeTotal, 'supply_amount' => $supplyTotal]);
     }
 
-    private function generateOrderNo(): string
+    private function generateOrderNo(string $type = 'normal'): string
     {
         $date = now()->format('Ymd');
+        $prefix = $type === 'sample' ? 'SP' : 'PO';
         $seq = Order::whereDate('created_at', today())->count() + 1;
 
-        return sprintf('PO-%s-%03d', $date, $seq);
+        return sprintf('%s-%s-%03d', $prefix, $date, $seq);
     }
 
     private function summary(Order $o): array
@@ -265,6 +273,8 @@ class OrderController extends Controller
         return [
             'id' => $o->id,
             'order_no' => $o->order_no,
+            'order_type' => $o->order_type ?? 'normal',
+            'is_sample' => ($o->order_type ?? 'normal') === 'sample',
             'status' => $o->status,
             'status_label' => Order::STATUSES[$o->status] ?? $o->status,
             'item_count' => $o->items_count ?? $o->items()->count(),

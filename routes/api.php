@@ -83,9 +83,16 @@ Route::prefix('v1')->group(function () {
         // 본사/공급처 (판매자) — 받은 발주/판매주문 처리 + 출고
         Route::prefix('seller')->name('api.seller.')->group(function () {
             Route::get('dashboard', [Seller\DashboardController::class, 'index'])->name('dashboard');
+            Route::get('sales', [Seller\SalesController::class, 'index'])->name('sales');
 
             Route::get('orders', [Seller\OrderController::class, 'index'])->name('orders.index');
             Route::get('orders/{order}', [Seller\OrderController::class, 'show'])->name('orders.show');
+            Route::patch('orders/{order}/items/{item}', [Seller\OrderController::class, 'updateItem'])->name('orders.items.update');
+
+            // 매장 주문 변경 확인(반영)
+            Route::get('order-changes', [Seller\OrderChangeController::class, 'index'])->name('order_changes.index');
+            Route::post('order-changes/ack-all', [Seller\OrderChangeController::class, 'ackAll'])->name('order_changes.ack_all');
+            Route::post('order-changes/{change}/ack', [Seller\OrderChangeController::class, 'ack'])->name('order_changes.ack');
 
             Route::get('sales-orders', [Seller\SalesOrderController::class, 'index'])->name('sales_orders.index');
             Route::get('sales-orders/{salesOrder}', [Seller\SalesOrderController::class, 'show'])->name('sales_orders.show');
