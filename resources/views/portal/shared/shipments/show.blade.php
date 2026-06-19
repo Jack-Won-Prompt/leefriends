@@ -4,7 +4,8 @@
 @section('content')
 <div class="flex items-center justify-between mb-5">
     <a href="{{ route($routePrefix . '.shipments.index') }}" class="inline-flex items-center gap-1.5 text-sm font-bold text-neutral-500 hover:text-mango-600">← 출고 목록</a>
-    <a href="{{ route($routePrefix . '.shipments.statement', $shipment) }}" target="_blank"
+    <a href="{{ route($routePrefix . '.shipments.statement', $shipment) }}" target="statement-popup"
+       onclick="window.open(this.href, 'statement-popup', 'width=920,height=840,scrollbars=yes,resizable=yes'); return false;"
        class="rounded-xl bg-neutral-900 hover:bg-mango-600 text-white font-bold px-5 py-2.5 transition">🧾 거래명세서</a>
 </div>
 

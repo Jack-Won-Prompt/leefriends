@@ -27,8 +27,8 @@
     </div>
 </div>
 
-{{-- 매장별 공급액 --}}
-<div class="rounded-2xl bg-white shadow-sm border border-neutral-100 overflow-hidden">
+{{-- 매장별 공급액 (x-data: 행 클릭 $dispatch 스코프) --}}
+<div x-data class="rounded-2xl bg-white shadow-sm border border-neutral-100 overflow-hidden">
     <div class="px-6 py-4 border-b border-neutral-100 font-extrabold text-neutral-900">매장별 공급액 (직배송)</div>
     @if ($byStore->isEmpty())
         <p class="px-6 py-16 text-center text-neutral-400">집계할 공급 내역이 없습니다.</p>

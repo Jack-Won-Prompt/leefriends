@@ -43,10 +43,12 @@
 
             <div class="grid grid-cols-2 gap-4 mb-6">
                 <div class="rounded-xl border border-neutral-200 overflow-hidden">
-                    <div class="bg-neutral-100 px-4 py-2 text-xs font-bold text-neutral-500">공급자</div>
+                    <div class="bg-neutral-100 px-4 py-2 text-xs font-bold text-neutral-500">공급자 (본사)</div>
                     <table class="w-full text-sm">
-                        <tr class="border-b border-neutral-100"><td class="px-4 py-2 text-neutral-400 w-20">상호</td><td class="px-4 py-2 font-bold">{{ $shipment->seller_name }}</td></tr>
-                        <tr><td class="px-4 py-2 text-neutral-400">구분</td><td class="px-4 py-2">{{ $shipment->seller_type === 'supplier' ? '공급처 직배송' : '본사 직공급' }}</td></tr>
+                        <tr class="border-b border-neutral-100"><td class="px-4 py-2 text-neutral-400 w-20">상호</td><td class="px-4 py-2 font-bold">주식회사 오다네트웍스</td></tr>
+                        <tr class="border-b border-neutral-100"><td class="px-4 py-2 text-neutral-400">대표자</td><td class="px-4 py-2">이윤석</td></tr>
+                        <tr class="border-b border-neutral-100"><td class="px-4 py-2 text-neutral-400">등록번호</td><td class="px-4 py-2">827-81-03115</td></tr>
+                        <tr><td class="px-4 py-2 text-neutral-400">출고 주체</td><td class="px-4 py-2">{{ $shipment->seller_name }} ({{ $shipment->seller_type === 'supplier' ? '공급처 직배송' : '본사 직공급' }})</td></tr>
                     </table>
                 </div>
                 <div class="rounded-xl border border-neutral-200 overflow-hidden">

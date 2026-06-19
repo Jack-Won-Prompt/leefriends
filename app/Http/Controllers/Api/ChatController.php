@@ -108,11 +108,22 @@ class ChatController extends Controller
         $user = $request->user();
         abort_unless($conversation->accessibleBy($user), 403);
 
-        $data = $request->validate([
-            'body' => ['required', 'string', 'max:2000'],
+        $request->validate([
+            'body' => ['nullable', 'string', 'max:2000'],
+            'attachment' => ['nullable', 'file', 'max:10240', // 10MB
+                'mimes:jpg,jpeg,png,gif,webp,heic,heif,pdf,doc,docx,xls,xlsx,ppt,pptx,txt,csv,zip'],
         ]);
 
-        $message = $chat->send($conversation, $user, $data['body']);
+        if (! $request->filled('body') && ! $request->hasFile('attachment')) {
+            return response()->json(['message' => '메시지 또는 파일을 입력하세요.'], 422);
+        }
+
+        $message = $chat->send(
+            $conversation,
+            $user,
+            $request->input('body'),
+            $request->file('attachment'),
+        );
 
         return response()->json(['data' => $message->toBroadcast()], 201);
     }
