@@ -52,6 +52,9 @@ Route::prefix('v1')->group(function () {
         Route::put('orders/{order}', [OrderController::class, 'update'])->name('api.orders.update');
         Route::delete('orders/{order}', [OrderController::class, 'destroy'])->name('api.orders.destroy');
 
+        // 매장 홈 대시보드
+        Route::get('store/dashboard', [\App\Http\Controllers\Api\StoreDashboardController::class, 'index'])->name('api.store.dashboard');
+
         // 매입 내역
         Route::get('purchases', [PurchaseController::class, 'index'])->name('api.purchases.index');
 
