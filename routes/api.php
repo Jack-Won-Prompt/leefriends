@@ -85,6 +85,44 @@ Route::prefix('v1')->group(function () {
             Route::get('dashboard', [Seller\DashboardController::class, 'index'])->name('dashboard');
             Route::get('sales', [Seller\SalesController::class, 'index'])->name('sales');
 
+            // 상품 관리 (본사 CRUD/승인, 공급처 등록)
+            Route::get('products', [Seller\ProductController::class, 'index'])->name('products.index');
+            Route::post('products', [Seller\ProductController::class, 'store'])->name('products.store');
+            Route::put('products/{product}', [Seller\ProductController::class, 'update'])->name('products.update');
+            Route::delete('products/{product}', [Seller\ProductController::class, 'destroy'])->name('products.destroy');
+            Route::patch('products/{product}/approve', [Seller\ProductController::class, 'approve'])->name('products.approve');
+            Route::patch('products/{product}/reject', [Seller\ProductController::class, 'reject'])->name('products.reject');
+
+            // 카테고리 관리 (본사)
+            Route::get('categories', [Seller\CategoryController::class, 'index'])->name('categories.index');
+            Route::post('categories', [Seller\CategoryController::class, 'store'])->name('categories.store');
+            Route::put('categories/{category}', [Seller\CategoryController::class, 'update'])->name('categories.update');
+            Route::delete('categories/{category}', [Seller\CategoryController::class, 'destroy'])->name('categories.destroy');
+
+            // 공급처 관리 (본사)
+            Route::get('suppliers', [Seller\SupplierController::class, 'index'])->name('suppliers.index');
+            Route::post('suppliers/invite', [Seller\SupplierController::class, 'invite'])->name('suppliers.invite');
+            Route::put('suppliers/{supplier}', [Seller\SupplierController::class, 'update'])->name('suppliers.update');
+            Route::delete('suppliers/{supplier}', [Seller\SupplierController::class, 'destroy'])->name('suppliers.destroy');
+            Route::post('suppliers/{supplier}/reinvite', [Seller\SupplierController::class, 'reinvite'])->name('suppliers.reinvite');
+
+            // 매장 관리 (본사)
+            Route::get('stores', [Seller\StoreManageController::class, 'index'])->name('stores.index');
+            Route::post('stores/invite', [Seller\StoreManageController::class, 'invite'])->name('stores.invite');
+            Route::put('stores/{store}', [Seller\StoreManageController::class, 'update'])->name('stores.update');
+            Route::post('stores/{store}/reinvite', [Seller\StoreManageController::class, 'reinvite'])->name('stores.reinvite');
+
+            // 공지 관리 (본사)
+            Route::get('notices', [Seller\NoticeController::class, 'index'])->name('notices.index');
+            Route::post('notices', [Seller\NoticeController::class, 'store'])->name('notices.store');
+            Route::delete('notices/{notice}', [Seller\NoticeController::class, 'destroy'])->name('notices.destroy');
+
+            // 가맹문의 (본사)
+            Route::get('inquiries', [Seller\InquiryController::class, 'index'])->name('inquiries.index');
+            Route::get('inquiries/{inquiry}', [Seller\InquiryController::class, 'show'])->name('inquiries.show');
+            Route::patch('inquiries/{inquiry}', [Seller\InquiryController::class, 'update'])->name('inquiries.update');
+            Route::delete('inquiries/{inquiry}', [Seller\InquiryController::class, 'destroy'])->name('inquiries.destroy');
+
             Route::get('orders', [Seller\OrderController::class, 'index'])->name('orders.index');
             Route::get('orders/{order}', [Seller\OrderController::class, 'show'])->name('orders.show');
             Route::patch('orders/{order}/items/{item}', [Seller\OrderController::class, 'updateItem'])->name('orders.items.update');
