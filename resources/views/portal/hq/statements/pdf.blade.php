@@ -17,6 +17,8 @@
     .party .head { background: #f3f4f6; font-weight: bold; color: #6b7280; font-size: 11px; padding: 6px 10px; }
     .party .lbl { color: #9ca3af; width: 64px; }
     .items { margin-top: 18px; border: 1px solid #e5e7eb; }
+    thead { display: table-header-group; } /* 페이지마다 컬럼 헤더 반복 */
+    tr { page-break-inside: avoid; }
     .items th { background: #f3f4f6; color: #6b7280; font-weight: bold; padding: 8px 10px; text-align: left; font-size: 11px; border-bottom: 1px solid #e5e7eb; }
     .items td { padding: 8px 10px; border-bottom: 1px solid #f1f1f1; }
     .r { text-align: right; }
@@ -79,13 +81,12 @@
                     <td class="r">{{ number_format($l['amount']) }}원</td>
                 </tr>
             @endforeach
-        </tbody>
-        <tfoot>
+            {{-- 합계는 본문 마지막 행으로 두어 마지막 페이지에 한 번만 출력 (tfoot은 페이지마다 반복되므로 사용 안 함) --}}
             <tr class="tfoot">
                 <td colspan="5" class="r">합계 (총 {{ number_format(collect($lines)->sum('qty')) }}개)</td>
                 <td class="r total">{{ number_format($total) }}원</td>
             </tr>
-        </tfoot>
+        </tbody>
     </table>
 
     <div class="note">본 명세서는 매장 구매가(부가세 포함) 기준으로 발행되었습니다. · LEEFRIENDS 발주포털</div>
