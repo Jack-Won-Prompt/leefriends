@@ -158,10 +158,13 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::get('invoices', [Portal\Hq\InvoiceController::class, 'index'])->name('invoices.index');
             Route::get('invoices/{invoice}', [Portal\Hq\InvoiceController::class, 'show'])->name('invoices.show');
 
-            // 거래명세서 (매장·품목 선택 → PDF 미리보기/이메일 전송)
+            // 거래명세서 (매장·품목 선택 → PDF 미리보기/이메일 전송 + 발송 이력)
+            Route::get('statements', [Portal\Hq\StatementController::class, 'index'])->name('statements.index');
             Route::get('statements/create', [Portal\Hq\StatementController::class, 'create'])->name('statements.create');
             Route::post('statements/preview', [Portal\Hq\StatementController::class, 'preview'])->name('statements.preview');
             Route::post('statements/send', [Portal\Hq\StatementController::class, 'send'])->name('statements.send');
+            Route::get('statements/{statement}/pdf', [Portal\Hq\StatementController::class, 'pdf'])->name('statements.pdf');
+            Route::post('statements/{statement}/resend', [Portal\Hq\StatementController::class, 'resend'])->name('statements.resend');
 
             // 공지사항 발송 (매장/공급처 대상)
             Route::get('notices', [Portal\Hq\NoticeController::class, 'index'])->name('notices.index');
