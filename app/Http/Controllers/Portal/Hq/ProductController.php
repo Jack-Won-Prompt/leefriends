@@ -7,6 +7,7 @@ use App\Models\Supplier;
 use App\Models\SupplyProduct;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * 품목 관리 — 매장 판매 완제품(기본정보 + 판매단가)을 관리한다.
@@ -146,24 +147,28 @@ class ProductController extends Controller
         return back()->with('success', '완제품이 삭제되었습니다.');
     }
 
-    /** 업로드 이미지를 public/uploads/products 에 저장하고 상대경로 반환 */
+    /** 업로드 이미지를 storage/app/public/products 에 저장하고 상대경로(storage/...) 반환 */
     private function storeImage(Request $request, SupplyProduct $product): string
     {
         $file = $request->file('image_file');
-        $dir = public_path('uploads/products');
-        if (! is_dir($dir)) {
-            @mkdir($dir, 0775, true);
-        }
-        $name = $product->code . '_' . substr(md5(uniqid('', true)), 0, 8) . '.' . strtolower($file->getClientOriginalExtension() ?: 'jpg');
-        $file->move($dir, $name);
+        $ext = strtolower($file->getClientOriginalExtension() ?: 'jpg');
+        $name = $product->code . '_' . substr(md5(uniqid('', true)), 0, 8) . '.' . $ext;
 
-        return 'uploads/products/' . $name;
+        // public 디스크(storage/app/public)는 PHP가 항상 쓰기 가능 → /storage 심볼릭으로 서빙
+        $file->storeAs('products', $name, 'public');
+
+        return 'storage/products/' . $name;
     }
 
-    /** 업로드 폴더에 저장된 이미지 파일 삭제 (외부/기본 이미지는 무시) */
+    /** 업로드된 이미지 파일 삭제 (외부/기본 이미지는 무시) */
     private function deleteImage(?string $path): void
     {
-        if ($path && str_starts_with($path, 'uploads/products/')) {
+        if (! $path) {
+            return;
+        }
+        if (str_starts_with($path, 'storage/products/')) {
+            Storage::disk('public')->delete(substr($path, strlen('storage/'))); // products/xxx
+        } elseif (str_starts_with($path, 'uploads/products/')) { // 레거시(public/uploads) 호환
             $full = public_path($path);
             if (is_file($full)) {
                 @unlink($full);

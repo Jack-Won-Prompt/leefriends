@@ -153,6 +153,8 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::get('stores', [Portal\Hq\StoreController::class, 'index'])->name('stores.index');
             Route::post('stores/invite', [Portal\Hq\StoreController::class, 'invite'])->name('stores.invite');
             Route::post('stores/{store}/reinvite', [Portal\Hq\StoreController::class, 'reinvite'])->name('stores.reinvite');
+            Route::patch('stores/{store}', [Portal\Hq\StoreController::class, 'update'])->name('stores.update');
+            Route::delete('stores/{store}', [Portal\Hq\StoreController::class, 'destroy'])->name('stores.destroy');
             Route::get('invoices', [Portal\Hq\InvoiceController::class, 'index'])->name('invoices.index');
             Route::get('invoices/{invoice}', [Portal\Hq\InvoiceController::class, 'show'])->name('invoices.show');
 

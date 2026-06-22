@@ -2,7 +2,12 @@
 @section('title', '매장 관리')
 
 @section('content')
-<div x-data="{ inviteOpen: {{ $errors->has('email') && old('_invite') ? 'true' : 'false' }} }">
+<div x-data="{
+        inviteOpen: {{ $errors->has('email') && old('_invite') ? 'true' : 'false' }},
+        editOpen: false,
+        editForm: { id: null, name: '', region: '', phone: '', email: '', postcode: '', address: '', address_detail: '', is_active: true },
+        openEdit(s) { this.editForm = Object.assign({ postcode:'', address:'', address_detail:'' }, s); this.editOpen = true; },
+     }">
 
 <x-wms.page-head title="매장 관리" subtitle="가맹 매장을 이메일로 초대하고 계정 상태를 관리합니다" icon="🏪">
     <x-slot:actions>
@@ -25,6 +30,7 @@
                     <th class="text-left font-semibold px-6 py-3">연락처</th>
                     <th class="text-left font-semibold px-6 py-3 hidden lg:table-cell">이메일</th>
                     <th class="text-center font-semibold px-6 py-3">계정상태</th>
+                    <th class="text-center font-semibold px-6 py-3 w-20">관리</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-neutral-100">
@@ -56,6 +62,16 @@
                                 </div>
                             @endif
                         </td>
+                        <td class="px-6 py-3.5 text-center whitespace-nowrap">
+                            <button type="button"
+                                    @click="openEdit({ id: {{ $st->id }}, name: {{ Illuminate\Support\Js::from($st->name) }}, region: {{ Illuminate\Support\Js::from($st->region) }}, phone: {{ Illuminate\Support\Js::from($st->phone) }}, email: {{ Illuminate\Support\Js::from($st->email) }}, postcode: {{ Illuminate\Support\Js::from($st->postcode) }}, address: {{ Illuminate\Support\Js::from($st->address) }}, address_detail: {{ Illuminate\Support\Js::from($st->address_detail) }}, is_active: {{ $st->is_active ? 'true' : 'false' }} })"
+                                    class="text-xs font-bold text-mango-600 hover:text-mango-700 mr-3">수정</button>
+                            <form method="POST" action="{{ route('portal.hq.stores.destroy', $st) }}" class="inline"
+                                  onsubmit="return confirm('매장 «{{ $st->name }}»을(를) 삭제할까요? 계정·채팅·재고도 함께 삭제되며 되돌릴 수 없습니다.')">
+                                @csrf @method('DELETE')
+                                <button class="text-xs font-bold text-rose-500 hover:text-rose-600">삭제</button>
+                            </form>
+                        </td>
                     </tr>
                 @endforeach
             </tbody>
@@ -64,6 +80,67 @@
 </x-wms.panel>
 
 <div class="mt-5">{{ $stores->links() }}</div>
+
+{{-- ===== 매장 정보 수정 모달 ===== --}}
+<div x-show="editOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" x-transition.opacity>
+    <div class="absolute inset-0 bg-black/50" @click="editOpen=false"></div>
+    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between px-6 py-4 border-b border-neutral-100">
+            <h2 class="text-lg font-extrabold text-neutral-900">🏪 매장 정보 수정</h2>
+            <button type="button" @click="editOpen=false" class="w-8 h-8 grid place-items-center rounded-lg hover:bg-neutral-100 text-neutral-500">✕</button>
+        </div>
+        <form method="POST" :action="'{{ url('portal/hq/stores') }}/' + editForm.id" class="p-6 space-y-4">
+            @csrf @method('PATCH')
+            <div>
+                <label class="block text-sm font-bold text-neutral-700 mb-1.5">매장명 <span class="text-rose-500">*</span></label>
+                <input type="text" name="name" x-model="editForm.name" required maxlength="100"
+                       class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-sm font-bold text-neutral-700 mb-1.5">지역</label>
+                    <input type="text" name="region" x-model="editForm.region" maxlength="50"
+                           class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-neutral-700 mb-1.5">연락처</label>
+                    <input type="text" name="phone" x-model="editForm.phone" maxlength="30"
+                           class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-neutral-700 mb-1.5">이메일 <span class="text-neutral-400 font-normal">(초대·알림용)</span></label>
+                <input type="email" name="email" x-model="editForm.email" maxlength="100"
+                       class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+            </div>
+            <div class="grid grid-cols-3 gap-3">
+                <div>
+                    <label class="block text-sm font-bold text-neutral-700 mb-1.5">우편번호</label>
+                    <input type="text" name="postcode" x-model="editForm.postcode" maxlength="20"
+                           class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+                </div>
+                <div class="col-span-2">
+                    <label class="block text-sm font-bold text-neutral-700 mb-1.5">주소 (배송지)</label>
+                    <input type="text" name="address" x-model="editForm.address" maxlength="255"
+                           class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-bold text-neutral-700 mb-1.5">상세주소</label>
+                <input type="text" name="address_detail" x-model="editForm.address_detail" maxlength="255"
+                       class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+            </div>
+            <label class="flex items-center gap-2">
+                <input type="checkbox" name="is_active" value="1" x-model="editForm.is_active" class="rounded text-mango-500 focus:ring-mango-400">
+                <span class="text-sm font-semibold text-neutral-700">활성 매장</span>
+            </label>
+            <div class="flex gap-2 pt-1">
+                <button type="submit" class="flex-1 rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2.5 text-sm transition">저장</button>
+                <button type="button" @click="editOpen=false" class="rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-600 font-bold px-4 py-2.5 text-sm">취소</button>
+            </div>
+        </form>
+    </div>
+</div>
 
 {{-- ===== 매장 이메일 초대 모달 ===== --}}
 <div x-show="inviteOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4" x-transition.opacity>

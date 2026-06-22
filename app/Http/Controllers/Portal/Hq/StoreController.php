@@ -4,9 +4,12 @@ namespace App\Http\Controllers\Portal\Hq;
 
 use App\Http\Controllers\Controller;
 use App\Mail\PortalInvitation;
+use App\Models\Conversation;
+use App\Models\Order;
 use App\Models\Store;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -64,6 +67,48 @@ class StoreController extends Controller
         $this->issueInvite($store, $store->email, $store->name);
 
         return back()->with('success', "{$store->name}({$store->email})에게 초대 메일을 재발송했습니다.");
+    }
+
+    /** 매장 삭제 (발주 이력이 있으면 차단 — 데이터 보존) */
+    public function destroy(Store $store)
+    {
+        $orderCount = Order::where('store_id', $store->id)->count();
+        if ($orderCount > 0) {
+            return back()->withErrors(['store' => "«{$store->name}»은(는) 발주 이력 {$orderCount}건이 있어 삭제할 수 없습니다. 대신 비활성화하세요."]);
+        }
+
+        DB::transaction(function () use ($store) {
+            // 매장 채팅방 + 메시지(FK cascade) 정리
+            Conversation::where('party_type', 'store')->where('party_id', $store->id)->delete();
+            // 매장 계정 정리
+            User::where('store_id', $store->id)->delete();
+            // 재고/이동 정리
+            DB::table('store_inventories')->where('store_id', $store->id)->delete();
+            DB::table('inventory_movements')->where('store_id', $store->id)->delete();
+            $store->delete();
+        });
+
+        return redirect()->route('portal.hq.stores.index')->with('success', "매장 «{$store->name}»을(를) 삭제했습니다.");
+    }
+
+    /** 매장 기본정보 수정 (이름·연락처·이메일·주소 등) */
+    public function update(Request $request, Store $store)
+    {
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:100'],
+            'region' => ['nullable', 'string', 'max:50'],
+            'phone' => ['nullable', 'string', 'max:30'],
+            'email' => ['nullable', 'email', 'max:100'],
+            'postcode' => ['nullable', 'string', 'max:20'],
+            'address' => ['nullable', 'string', 'max:255'],
+            'address_detail' => ['nullable', 'string', 'max:255'],
+            'is_active' => ['nullable', 'boolean'],
+        ]);
+        $data['is_active'] = $request->boolean('is_active');
+
+        $store->update($data);
+
+        return back()->with('success', "«{$store->name}» 정보를 수정했습니다.");
     }
 
     /** 초대 토큰 발급(계정 생성/갱신) + 메일 발송 */
