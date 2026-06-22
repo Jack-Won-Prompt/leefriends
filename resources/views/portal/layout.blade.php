@@ -35,6 +35,7 @@
             ]],
             ['정산 · 현황', '📈', [
                 ['portal.hq.sales', '매출 현황', []],
+                ['portal.hq.statements.create', '거래명세서', []],
                 ['portal.hq.invoices.index', '세금계산서(수취)', []],
             ]],
             ['기준정보', '🗂️', [
