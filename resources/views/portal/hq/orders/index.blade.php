@@ -21,6 +21,13 @@
             @endforeach
         </select>
     </x-wms.field>
+    <x-wms.field label="세금계산서">
+        <select name="tax" class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+            <option value="all" @selected($tax === 'all')>전체</option>
+            <option value="issued" @selected($tax === 'issued')>발행완료</option>
+            <option value="pending" @selected($tax === 'pending')>미발행</option>
+        </select>
+    </x-wms.field>
 </x-wms.filter>
 
 <x-wms.toolbar :count="$orders->total()">
@@ -41,6 +48,7 @@
                         <th class="text-right font-semibold px-6 py-3">출고가</th>
                         <th class="text-right font-semibold px-6 py-3 hidden lg:table-cell">공급가(원가)</th>
                         <th class="text-left font-semibold px-6 py-3">상태</th>
+                        <th class="text-left font-semibold px-6 py-3">세금계산서</th>
                         <th class="text-left font-semibold px-6 py-3 hidden md:table-cell">접수일</th>
                     </tr>
                 </thead>
@@ -53,6 +61,13 @@
                             <td class="px-6 py-3.5 text-right font-semibold">{{ number_format($o->store_amount) }}원</td>
                             <td class="px-6 py-3.5 text-right hidden lg:table-cell text-neutral-500">{{ number_format($o->supply_amount) }}원</td>
                             <td class="px-6 py-3.5">@include('portal.partials.order-status', ['status' => $o->status, 'label' => $o->status_label])</td>
+                            <td class="px-6 py-3.5">
+                                @if ($o->tax_invoice_id)
+                                    <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">발행완료</span>
+                                @else
+                                    <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-neutral-100 text-neutral-400">미발행</span>
+                                @endif
+                            </td>
                             <td class="px-6 py-3.5 hidden md:table-cell text-neutral-400">{{ $o->created_at->format('Y.m.d H:i') }}</td>
                         </tr>
                     @endforeach

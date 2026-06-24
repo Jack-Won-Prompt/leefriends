@@ -14,6 +14,7 @@ class OrderController extends Controller
     {
         $status = $request->query('status', 'all');
         $store = $request->query('store', 'all');
+        $tax = $request->query('tax', 'all');
 
         $query = Order::with('store')->withCount('items')->latest();
         if (array_key_exists($status, Order::STATUSES)) {
@@ -21,6 +22,11 @@ class OrderController extends Controller
         }
         if ($store !== 'all') {
             $query->where('store_id', $store);
+        }
+        if ($tax === 'issued') {
+            $query->whereNotNull('tax_invoice_id');
+        } elseif ($tax === 'pending') {
+            $query->whereNull('tax_invoice_id');
         }
         $orders = $query->paginate(15)->withQueryString();
 
@@ -30,6 +36,7 @@ class OrderController extends Controller
             'statuses' => Order::STATUSES,
             'stores' => Store::orderBy('name')->get(),
             'store' => $store,
+            'tax' => $tax,
         ]);
     }
 
