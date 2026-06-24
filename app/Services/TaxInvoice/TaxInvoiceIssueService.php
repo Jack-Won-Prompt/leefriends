@@ -24,8 +24,8 @@ class TaxInvoiceIssueService
     {
     }
 
-    /** 본사 → 매장 (발주 1건) */
-    public function hqToStore(Order $order, ?string $overrideEmail = null): TaxInvoice
+    /** 본사 → 매장 (발주 1건). 과세·면세 혼합 시 2장 발행 → Collection 반환. */
+    public function hqToStore(Order $order, ?string $overrideEmail = null): Collection
     {
         $order->loadMissing('store');
         abort_unless($order->store, 404, '매장 정보가 없습니다.');
@@ -35,8 +35,9 @@ class TaxInvoiceIssueService
 
     /**
      * 본사 → 매장 (여러 발주를 한 매장 기준으로 합산, 발주별 분리 라인).
+     * 과세 품목 → 세금계산서, 면세 품목 → 계산서로 자동 분리 발행.
      */
-    public function hqToStoreOrders(Store $store, Collection $orders, ?string $overrideEmail = null): TaxInvoice
+    public function hqToStoreOrders(Store $store, Collection $orders, ?string $overrideEmail = null): Collection
     {
         if (! $store->biz_no) {
             throw new \RuntimeException("«{$store->name}» 매장 사업자등록번호가 없습니다. 매장 관리에서 등록하세요.");
@@ -70,7 +71,7 @@ class TaxInvoiceIssueService
             'email' => $overrideEmail ?: ($store->email ?: ''),
         ];
 
-        return $this->createAndIssue('hq_to_store', $lines, $invoicer, $invoicee, [
+        return $this->issueSplit('hq_to_store', $lines, $invoicer, $invoicee, [
             'store_id' => $store->id,
             'order_id' => $orders->count() === 1 ? $orders->first()->id : null,
             'supplier_id' => null,
@@ -78,8 +79,8 @@ class TaxInvoiceIssueService
         ]);
     }
 
-    /** 공급처 → 본사 (특정 공급처의 주문 품목들) */
-    public function supplierToHq(Supplier $supplier, Collection $orderItems, ?Order $order = null, ?string $overrideEmail = null): TaxInvoice
+    /** 공급처 → 본사 (특정 공급처의 주문 품목들). 과세·면세 혼합 시 2장 발행 → Collection 반환. */
+    public function supplierToHq(Supplier $supplier, Collection $orderItems, ?Order $order = null, ?string $overrideEmail = null): Collection
     {
         $lines = $this->buildLines($orderItems, 'supply');
         $invoicer = [
@@ -94,7 +95,7 @@ class TaxInvoiceIssueService
         ];
         $invoicee = $this->hqParty($overrideEmail);
 
-        return $this->createAndIssue('supplier_to_hq', $lines, $invoicer, $invoicee, [
+        return $this->issueSplit('supplier_to_hq', $lines, $invoicer, $invoicee, [
             'supplier_id' => $supplier->id, 'order_id' => optional($order)->id, 'store_id' => optional($order)->store_id,
         ]);
     }
@@ -110,6 +111,7 @@ class TaxInvoiceIssueService
             $taxType = $taxTypes[$it->supply_product_id] ?? 'inc';
             [$supply, $tax] = SupplyProduct::taxBreakdown($taxType, $amount);
             $lines[] = [
+                'item_id' => $it->id,
                 'name' => $it->product_name,
                 'spec' => $it->unit,
                 'qty' => (int) $it->qty,
@@ -123,16 +125,56 @@ class TaxInvoiceIssueService
         return $lines;
     }
 
-    private function createAndIssue(string $direction, array $lines, array $invoicer, array $invoicee, array $refs): TaxInvoice
+    /**
+     * 과세(inc/exc)·면세(exempt) 품목을 분리해 각각 세금계산서·계산서로 발행.
+     * 둘 다 있으면 2장, 한 종류만 있으면 1장. 발행된 문서들을 Collection 으로 반환.
+     */
+    private function issueSplit(string $direction, array $lines, array $invoicer, array $invoicee, array $refs): Collection
     {
-        abort_if(empty($lines), 422, '세금계산서 품목이 없습니다.');
+        abort_if(empty($lines), 422, '발행할 품목이 없습니다.');
 
+        $groups = [
+            // 과세: 부가세 포함/별도 모두 → 세금계산서
+            '과세' => array_values(array_filter($lines, fn ($l) => $l['tax_type'] !== 'exempt')),
+            // 면세 → 계산서
+            '면세' => array_values(array_filter($lines, fn ($l) => $l['tax_type'] === 'exempt')),
+        ];
+
+        $issued = collect();
+        $idx = 0;
+        foreach ($groups as $taxType => $glines) {
+            if (empty($glines)) {
+                continue;
+            }
+            $invoice = $this->createAndIssueOne($direction, $taxType, $glines, $invoicer, $invoicee, $refs, ++$idx);
+            $issued->push($invoice);
+
+            // 공급처→본사: 해당 그룹 품목을 발행 처리(미청구 필터용)
+            if ($direction === 'supplier_to_hq') {
+                $itemIds = array_filter(array_column($glines, 'item_id'));
+                if ($itemIds) {
+                    OrderItem::whereIn('id', $itemIds)->update(['tax_invoice_id' => $invoice->id]);
+                }
+            }
+        }
+
+        // 본사→매장: 포함된 발주들을 발행 처리(재발행 방지). 대표 문서 = 과세(없으면 면세)
+        if ($direction === 'hq_to_store' && ! empty($refs['order_ids'])) {
+            Order::whereIn('id', $refs['order_ids'])->update(['tax_invoice_id' => $issued->first()->id]);
+        }
+
+        return $issued;
+    }
+
+    /** 단일 문서(세금계산서 또는 계산서) 발행 + 로컬 기록 */
+    private function createAndIssueOne(string $direction, string $taxType, array $lines, array $invoicer, array $invoicee, array $refs, int $seq): TaxInvoice
+    {
         $supplyTotal = array_sum(array_column($lines, 'supply'));
         $taxTotal = array_sum(array_column($lines, 'tax'));
         $total = $supplyTotal + $taxTotal;
-        $allExempt = collect($lines)->every(fn ($l) => $l['tax_type'] === 'exempt');
+        $docLabel = $taxType === '면세' ? '계산서(면세)' : '세금계산서(과세)';
 
-        $invoiceNo = $this->invoiceNo();
+        $invoiceNo = $this->invoiceNo($seq);
         $mgtKey = $invoiceNo; // 팝빌 문서관리번호 = 계산서번호(영숫자, 유니크)
 
         // ── 팝빌 Taxinvoice 구성 ──
@@ -142,7 +184,7 @@ class TaxInvoiceIssueService
         $inv->chargeDirection = '정과금';
         $inv->issueType = '정발행';
         $inv->purposeType = '영수';
-        $inv->taxType = $allExempt ? '면세' : '과세';
+        $inv->taxType = $taxType; // 과세 / 면세
 
         $inv->invoicerCorpNum = $apiCorp;
         $inv->invoicerMgtKey = $mgtKey;
@@ -199,7 +241,7 @@ class TaxInvoiceIssueService
             // 무시
         }
 
-        $invoice = TaxInvoice::create([
+        return TaxInvoice::create([
             'invoice_no' => $invoiceNo,
             'direction' => $direction,
             'supplier_id' => $refs['supplier_id'] ?? null,
@@ -220,14 +262,8 @@ class TaxInvoiceIssueService
             'nts_confirm_num' => $ntsConfirmNum,
             'popbill_mgt_key' => $mgtKey,
             'issue_date' => now()->toDateString(),
+            'note' => $docLabel,
         ]);
-
-        // 본사→매장: 포함된 발주들을 발행 처리(재발행 방지)
-        if ($direction === 'hq_to_store' && ! empty($refs['order_ids'])) {
-            Order::whereIn('id', $refs['order_ids'])->update(['tax_invoice_id' => $invoice->id]);
-        }
-
-        return $invoice;
     }
 
     /** 본사(오다네트웍스) 발행/수신 당사자 정보 */
@@ -270,9 +306,9 @@ class TaxInvoiceIssueService
         return trim($base.' '.($detail ?? ''));
     }
 
-    /** 팝빌 문서번호(영구 유일)·계산서번호. 밀리초까지 포함해 재사용 충돌 방지. */
-    private function invoiceNo(): string
+    /** 팝빌 문서번호(영구 유일)·계산서번호. 밀리초+분리순번 포함해 재사용/동시발행 충돌 방지. */
+    private function invoiceNo(int $seq = 1): string
     {
-        return 'TI'.now()->format('YmdHisv'); // 예: TI20260624140846123
+        return 'TI'.now()->format('YmdHisv').$seq; // 예: TI202606241408461231
     }
 }

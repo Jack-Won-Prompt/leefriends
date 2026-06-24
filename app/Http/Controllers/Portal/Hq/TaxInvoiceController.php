@@ -81,13 +81,13 @@ class TaxInvoiceController extends Controller
         }
 
         try {
-            $invoice = $service->hqToStoreOrders($store, $orders);
+            $invoices = $service->hqToStoreOrders($store, $orders);
         } catch (\Throwable $e) {
             return back()->withErrors(['order_ids' => '세금계산서 발행 실패: '.$e->getMessage()])->withInput();
         }
 
         return redirect()->route('portal.hq.tax_invoices.index')
-            ->with('success', "세금계산서를 발행했습니다. (계산서번호 {$invoice->invoice_no}, 발주 {$orders->count()}건, 합계 ".number_format($invoice->total_amount).'원)');
+            ->with('success', $this->resultMessage($invoices, $orders->count()));
     }
 
     /** 발주 상세에서 단건 발행 (본사 → 매장) */
@@ -98,11 +98,21 @@ class TaxInvoiceController extends Controller
         }
 
         try {
-            $invoice = $service->hqToStore($order);
+            $invoices = $service->hqToStore($order);
         } catch (\Throwable $e) {
             return back()->withErrors(['tax' => '세금계산서 발행 실패: '.$e->getMessage()]);
         }
 
-        return back()->with('success', "세금계산서를 발행했습니다. (계산서번호 {$invoice->invoice_no}, 합계 ".number_format($invoice->total_amount).'원)');
+        return back()->with('success', $this->resultMessage($invoices, 1));
+    }
+
+    /** 발행 결과 메시지 (과세·면세 분리 시 2건 안내) */
+    private function resultMessage(\Illuminate\Support\Collection $invoices, int $orderCount): string
+    {
+        $nos = $invoices->pluck('invoice_no')->implode(', ');
+        $total = $invoices->sum('total_amount');
+        $kind = $invoices->count() > 1 ? '세금계산서·계산서 2건' : ($invoices->first()->note ?? '세금계산서');
+
+        return "{$kind}을(를) 발행했습니다. (번호 {$nos}, 발주 {$orderCount}건, 합계 ".number_format($total).'원)';
     }
 }

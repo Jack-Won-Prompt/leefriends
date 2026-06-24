@@ -17,6 +17,7 @@
                 <thead class="bg-neutral-50 text-neutral-500">
                     <tr>
                         <th class="text-left font-semibold px-6 py-3">계산서번호</th>
+                        <th class="text-left font-semibold px-6 py-3">구분</th>
                         <th class="text-left font-semibold px-6 py-3">공급받는자(매장)</th>
                         <th class="text-right font-semibold px-6 py-3">공급가액</th>
                         <th class="text-right font-semibold px-6 py-3">부가세</th>
@@ -30,6 +31,12 @@
                     @foreach ($invoices as $inv)
                         <tr class="hover:bg-mango-50/40 transition">
                             <td class="px-6 py-3.5 font-bold text-neutral-900">{{ $inv->invoice_no }}</td>
+                            <td class="px-6 py-3.5">
+                                @php($isExempt = str_contains($inv->note ?? '', '면세'))
+                                <span class="text-xs font-bold px-2 py-1 rounded-full {{ $isExempt ? 'bg-sky-100 text-sky-700' : 'bg-mango-100 text-mango-700' }}">
+                                    {{ $isExempt ? '계산서(면세)' : '세금계산서' }}
+                                </span>
+                            </td>
                             <td class="px-6 py-3.5">
                                 {{ $inv->invoicee_corp_name ?? optional($inv->store)->name ?? '-' }}
                                 <span class="block text-xs text-neutral-400">{{ $inv->invoicee_email }}</span>

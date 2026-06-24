@@ -73,19 +73,19 @@ class InvoiceController extends Controller
         $supplier = Supplier::findOrFail($sid);
 
         try {
-            $invoice = DB::transaction(function () use ($supplier, $items, $service) {
-                // 제품별 부가세구분 반영 + 팝빌 즉시발행 (공급처 → 본사)
-                $invoice = $service->supplierToHq($supplier, $items);
-                OrderItem::whereIn('id', $items->pluck('id'))->update(['tax_invoice_id' => $invoice->id]);
-
-                return $invoice;
-            });
+            // 제품별 부가세구분 반영 + 팝빌 즉시발행 (공급처 → 본사).
+            // 과세→세금계산서 / 면세→계산서 자동 분리, 품목 발행처리는 서비스에서 수행.
+            $invoices = $service->supplierToHq($supplier, $items);
         } catch (\Throwable $e) {
             return back()->withErrors(['items' => '세금계산서 발행 실패: '.$e->getMessage()])->withInput();
         }
 
-        return redirect()->route('portal.supplier.invoices.show', $invoice)
-            ->with('success', '세금계산서가 발행되었습니다. (본사 청구)');
+        $msg = $invoices->count() > 1
+            ? '세금계산서·계산서 2건이 발행되었습니다. (과세/면세 분리, 본사 청구)'
+            : '세금계산서가 발행되었습니다. (본사 청구)';
+
+        return redirect()->route('portal.supplier.invoices.show', $invoices->first())
+            ->with('success', $msg);
     }
 
     public function show(TaxInvoice $invoice)
