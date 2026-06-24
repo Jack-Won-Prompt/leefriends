@@ -3,6 +3,7 @@
 namespace App\Services\TaxInvoice;
 
 use App\Models\Order;
+use App\Models\Store;
 use App\Models\Supplier;
 use App\Models\SupplyProduct;
 use App\Models\TaxInvoice;
@@ -23,17 +24,39 @@ class TaxInvoiceIssueService
     {
     }
 
-    /** 본사 → 매장 */
+    /** 본사 → 매장 (발주 1건) */
     public function hqToStore(Order $order, ?string $overrideEmail = null): TaxInvoice
     {
-        $order->loadMissing(['items', 'store']);
-        $store = $order->store;
-        abort_unless($store, 404, '매장 정보가 없습니다.');
+        $order->loadMissing('store');
+        abort_unless($order->store, 404, '매장 정보가 없습니다.');
+
+        return $this->hqToStoreOrders($order->store, collect([$order]), $overrideEmail);
+    }
+
+    /**
+     * 본사 → 매장 (여러 발주를 한 매장 기준으로 합산, 발주별 분리 라인).
+     */
+    public function hqToStoreOrders(Store $store, Collection $orders, ?string $overrideEmail = null): TaxInvoice
+    {
         if (! $store->biz_no) {
             throw new \RuntimeException("«{$store->name}» 매장 사업자등록번호가 없습니다. 매장 관리에서 등록하세요.");
         }
+        // 모든 발주가 같은 매장인지 검증
+        foreach ($orders as $o) {
+            if ((int) $o->store_id !== (int) $store->id) {
+                throw new \RuntimeException('서로 다른 매장의 발주는 한 장으로 발행할 수 없습니다.');
+            }
+        }
 
-        $lines = $this->buildLines($order->items, 'store');
+        // 발주별 분리: 각 발주의 품목을 발주번호와 함께 라인으로 (발주일 순)
+        $lines = [];
+        foreach ($orders->sortBy('created_at') as $o) {
+            foreach ($this->buildLines($o->items, 'store') as $line) {
+                $line['order_no'] = $o->order_no;
+                $lines[] = $line;
+            }
+        }
+
         $invoicer = $this->hqParty();
         $invoicee = [
             'corp_num' => $this->digits($store->biz_no),
@@ -48,7 +71,10 @@ class TaxInvoiceIssueService
         ];
 
         return $this->createAndIssue('hq_to_store', $lines, $invoicer, $invoicee, [
-            'store_id' => $store->id, 'order_id' => $order->id, 'supplier_id' => null,
+            'store_id' => $store->id,
+            'order_id' => $orders->count() === 1 ? $orders->first()->id : null,
+            'supplier_id' => null,
+            'order_ids' => $orders->pluck('id')->all(),
         ]);
     }
 
@@ -173,7 +199,7 @@ class TaxInvoiceIssueService
             // 무시
         }
 
-        return TaxInvoice::create([
+        $invoice = TaxInvoice::create([
             'invoice_no' => $invoiceNo,
             'direction' => $direction,
             'supplier_id' => $refs['supplier_id'] ?? null,
@@ -195,6 +221,13 @@ class TaxInvoiceIssueService
             'popbill_mgt_key' => $mgtKey,
             'issue_date' => now()->toDateString(),
         ]);
+
+        // 본사→매장: 포함된 발주들을 발행 처리(재발행 방지)
+        if ($direction === 'hq_to_store' && ! empty($refs['order_ids'])) {
+            Order::whereIn('id', $refs['order_ids'])->update(['tax_invoice_id' => $invoice->id]);
+        }
+
+        return $invoice;
     }
 
     /** 본사(오다네트웍스) 발행/수신 당사자 정보 */
@@ -237,11 +270,9 @@ class TaxInvoiceIssueService
         return trim($base.' '.($detail ?? ''));
     }
 
+    /** 팝빌 문서번호(영구 유일)·계산서번호. 밀리초까지 포함해 재사용 충돌 방지. */
     private function invoiceNo(): string
     {
-        $date = now()->format('Ymd');
-        $seq = TaxInvoice::whereDate('created_at', today())->count() + 1;
-
-        return sprintf('TI%s%03d', $date, $seq);
+        return 'TI'.now()->format('YmdHisv'); // 예: TI20260624140846123
     }
 }

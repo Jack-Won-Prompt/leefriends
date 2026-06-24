@@ -163,6 +163,8 @@ Route::prefix('portal')->name('portal.')->group(function () {
 
             // 세금계산서 발행 (본사 → 매장)
             Route::get('tax-invoices', [Portal\Hq\TaxInvoiceController::class, 'index'])->name('tax_invoices.index');
+            Route::get('tax-invoices/create', [Portal\Hq\TaxInvoiceController::class, 'create'])->name('tax_invoices.create');
+            Route::post('tax-invoices', [Portal\Hq\TaxInvoiceController::class, 'store'])->name('tax_invoices.store');
             Route::post('orders/{order}/tax-invoice', [Portal\Hq\TaxInvoiceController::class, 'issueForOrder'])->name('tax_invoices.issue');
 
             // 거래명세서 (매장·품목 선택 → PDF 미리보기/이메일 전송 + 발송 이력)

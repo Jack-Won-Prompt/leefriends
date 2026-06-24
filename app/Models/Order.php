@@ -8,7 +8,7 @@ class Order extends Model
 {
     protected $fillable = [
         'order_no', 'store_id', 'user_id', 'status', 'order_type',
-        'store_amount', 'supply_amount', 'note',
+        'store_amount', 'supply_amount', 'note', 'tax_invoice_id',
     ];
 
     protected $casts = [
@@ -47,6 +47,12 @@ class Order extends Model
     public function salesOrders()
     {
         return $this->hasMany(SalesOrder::class);
+    }
+
+    /** 본사→매장 세금계산서 (발행된 경우) */
+    public function taxInvoice()
+    {
+        return $this->belongsTo(TaxInvoice::class, 'tax_invoice_id');
     }
 
     public function getStatusLabelAttribute(): string

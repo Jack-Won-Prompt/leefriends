@@ -30,7 +30,7 @@
         <div class="flex justify-between py-2 border-b border-white/10"><span class="text-white/70">공급가(원가) 합계</span><span class="font-bold">{{ number_format($order->supply_amount) }}원</span></div>
         <div class="flex justify-between py-3 mt-1"><span class="text-mango-300 font-bold">본사 마진</span><span class="text-mango-300 font-black text-lg">{{ number_format($order->store_amount - $order->supply_amount) }}원</span></div>
 
-        @php($taxInvoice = \App\Models\TaxInvoice::where('direction', 'hq_to_store')->where('order_id', $order->id)->where('status', 'issued')->latest()->first())
+        @php($taxInvoice = $order->taxInvoice)
         <div class="mt-5 pt-4 border-t border-white/10">
             @if ($taxInvoice)
                 <div class="rounded-xl bg-emerald-500/15 border border-emerald-400/30 px-4 py-3 text-sm">
