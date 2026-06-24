@@ -88,6 +88,19 @@ class InvoiceController extends Controller
             ->with('success', $msg);
     }
 
+    public function cancel(Request $request, TaxInvoice $invoice, TaxInvoiceIssueService $service)
+    {
+        abort_unless($invoice->supplier_id === Auth::user()->supplier_id, 403);
+
+        try {
+            $service->cancel($invoice, $request->input('memo'));
+        } catch (\Throwable $e) {
+            return back()->withErrors(['cancel' => $e->getMessage()]);
+        }
+
+        return back()->with('success', "세금계산서를 발행취소했습니다. (계산서번호 {$invoice->invoice_no})");
+    }
+
     public function show(TaxInvoice $invoice)
     {
         abort_unless($invoice->supplier_id === Auth::user()->supplier_id, 403);

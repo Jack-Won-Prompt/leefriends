@@ -45,11 +45,22 @@
                             <td class="px-6 py-3.5 text-right text-neutral-500">{{ number_format($inv->vat) }}원</td>
                             <td class="px-6 py-3.5 text-right font-black text-mango-700">{{ number_format($inv->total_amount) }}원</td>
                             <td class="px-6 py-3.5 text-neutral-400">{{ $inv->issue_date?->format('Y.m.d') }}</td>
-                            <td class="px-6 py-3.5"><span class="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">{{ $inv->status_label }}</span></td>
+                            <td class="px-6 py-3.5">
+                                <span class="text-xs font-bold px-2.5 py-1 rounded-full {{ $inv->status === 'canceled' ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700' }}">{{ $inv->status_label }}</span>
+                            </td>
                             <td class="px-6 py-3.5 text-right">
-                                @if ($inv->order_id)
-                                    <a href="{{ route('portal.hq.orders.show', $inv->order_id) }}" class="text-xs font-bold text-mango-600 hover:text-mango-700">발주보기 →</a>
-                                @endif
+                                <div class="flex items-center justify-end gap-3">
+                                    @if ($inv->order_id)
+                                        <a href="{{ route('portal.hq.orders.show', $inv->order_id) }}" class="text-xs font-bold text-mango-600 hover:text-mango-700">발주보기 →</a>
+                                    @endif
+                                    @if ($inv->status === 'issued')
+                                        <form method="POST" action="{{ route('portal.hq.tax_invoices.cancel', $inv) }}"
+                                              onsubmit="return confirm('이 세금계산서를 발행취소합니다. 진행하시겠습니까?\n(국세청 전송 완료 후에는 취소되지 않을 수 있습니다.)')">
+                                            @csrf
+                                            <button type="submit" class="text-xs font-bold text-rose-600 hover:text-rose-700">발행취소</button>
+                                        </form>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                     @endforeach

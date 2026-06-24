@@ -37,6 +37,13 @@
                     <p class="font-bold text-emerald-300">✓ 세금계산서 발행 완료</p>
                     <p class="text-white/70 mt-1">계산서번호 {{ $taxInvoice->invoice_no }} · 합계 {{ number_format($taxInvoice->total_amount) }}원</p>
                     <p class="text-white/50 text-xs mt-0.5">{{ $taxInvoice->invoicee_corp_name }} ({{ $taxInvoice->invoicee_email }})</p>
+                    @if ($taxInvoice->status === 'issued')
+                        <form method="POST" action="{{ route('portal.hq.tax_invoices.cancel', $taxInvoice) }}" class="mt-3"
+                              onsubmit="return confirm('이 세금계산서를 발행취소합니다. 진행하시겠습니까?\n(국세청 전송 완료 후에는 취소되지 않을 수 있습니다.)')">
+                            @csrf
+                            <button type="submit" class="text-xs font-bold text-rose-300 hover:text-rose-200 underline">발행취소</button>
+                        </form>
+                    @endif
                 </div>
             @else
                 <form method="POST" action="{{ route('portal.hq.tax_invoices.issue', $order) }}"

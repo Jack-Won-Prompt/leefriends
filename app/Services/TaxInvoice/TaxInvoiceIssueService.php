@@ -3,6 +3,7 @@
 namespace App\Services\TaxInvoice;
 
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Store;
 use App\Models\Supplier;
 use App\Models\SupplyProduct;
@@ -98,6 +99,37 @@ class TaxInvoiceIssueService
         return $this->issueSplit('supplier_to_hq', $lines, $invoicer, $invoicee, [
             'supplier_id' => $supplier->id, 'order_id' => optional($order)->id, 'store_id' => optional($order)->store_id,
         ]);
+    }
+
+    /**
+     * 발행취소. 팝빌 CancelIssue 후 상태=취소, 연결된 발주/품목을 해제(재발행 가능).
+     * ※ 국세청 전송 완료 후에는 취소 불가(수정세금계산서 발행 대상) — 팝빌 오류를 그대로 전달.
+     */
+    public function cancel(TaxInvoice $invoice, ?string $memo = null): TaxInvoice
+    {
+        if ($invoice->status === 'canceled') {
+            throw new \RuntimeException('이미 취소된 세금계산서입니다.');
+        }
+        if (! $invoice->popbill_mgt_key) {
+            throw new \RuntimeException('팝빌 문서번호가 없어 취소할 수 없습니다.');
+        }
+
+        $apiCorp = $this->apiCorpNum($invoice->invoicer_corp_num);
+        $result = $this->popbill->cancelIssue($apiCorp, $invoice->popbill_mgt_key, $memo ?: '발행취소', $this->userId());
+        if (($result->code ?? 0) != 1) {
+            throw new \RuntimeException('팝빌 발행취소 실패: '.($result->message ?? '알 수 없는 오류'));
+        }
+
+        $invoice->update(['status' => 'canceled']);
+
+        // 재발행 가능하도록 연결 해제
+        if ($invoice->direction === 'hq_to_store') {
+            Order::where('tax_invoice_id', $invoice->id)->update(['tax_invoice_id' => null]);
+        } elseif ($invoice->direction === 'supplier_to_hq') {
+            OrderItem::where('tax_invoice_id', $invoice->id)->update(['tax_invoice_id' => null]);
+        }
+
+        return $invoice;
     }
 
     /** 주문 품목 → 세금계산서 라인 (mode: store=매장구매가 / supply=공급가) */

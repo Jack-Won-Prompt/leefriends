@@ -106,6 +106,20 @@ class TaxInvoiceController extends Controller
         return back()->with('success', $this->resultMessage($invoices, 1));
     }
 
+    /** 발행취소 (본사 → 매장) */
+    public function cancel(Request $request, TaxInvoice $invoice, TaxInvoiceIssueService $service)
+    {
+        abort_unless($invoice->direction === 'hq_to_store', 403);
+
+        try {
+            $service->cancel($invoice, $request->input('memo'));
+        } catch (\Throwable $e) {
+            return back()->withErrors(['cancel' => $e->getMessage()]);
+        }
+
+        return back()->with('success', "세금계산서를 발행취소했습니다. (계산서번호 {$invoice->invoice_no})");
+    }
+
     /** 발행 결과 메시지 (과세·면세 분리 시 2건 안내) */
     private function resultMessage(\Illuminate\Support\Collection $invoices, int $orderCount): string
     {
