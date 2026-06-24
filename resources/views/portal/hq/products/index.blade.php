@@ -24,7 +24,7 @@
 
 <x-wms.page-head title="품목 관리" subtitle="매장이 발주하는 품목(마카롱·쿠키·재료)과 단가를 관리합니다" icon="🍧">
     <x-slot:actions>
-        <button type="button" @click="openCreate('{{ route('portal.hq.products.store') }}', { is_active: true, category: '{{ $finishedCategories[0] }}', unit: '개', spec: '', store_price: 0, supply_type: 'hq', supplier_id: '', supply_price: 0, sort_order: 0, image: null })"
+        <button type="button" @click="openCreate('{{ route('portal.hq.products.store') }}', { is_active: true, category: '{{ $finishedCategories[0] }}', unit: '개', spec: '', store_price: 0, tax_type: 'inc', supply_type: 'hq', supplier_id: '', supply_price: 0, sort_order: 0, image: null })"
                 class="inline-flex items-center gap-1 rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm transition">+ 새 품목 추가</button>
     </x-slot:actions>
 </x-wms.page-head>
@@ -142,7 +142,7 @@
                                     <button type="button"
                                             @click="openEdit('{{ route('portal.hq.products.update', $p) }}', {{ Illuminate\Support\Js::from([
                                                 'name' => $p->name, 'code' => $p->code, 'category' => $p->category, 'spec' => $p->spec, 'unit' => $p->unit,
-                                                'store_price' => $p->store_price, 'sort_order' => $p->sort_order, 'is_active' => (bool) $p->is_active,
+                                                'store_price' => $p->store_price, 'tax_type' => $p->tax_type ?: 'inc', 'sort_order' => $p->sort_order, 'is_active' => (bool) $p->is_active,
                                                 'supply_type' => $p->supply_type, 'supplier_id' => $p->supplier_id, 'supply_price' => $p->supply_price,
                                                 'image' => $p->image ? asset($p->image) : null,
                                             ]) }})"
@@ -204,6 +204,14 @@
                 <div>
                     <label class="block text-sm font-bold text-neutral-700 mb-1.5">판매가 (원) <span class="text-neutral-400 font-normal">매장 판매가</span></label>
                     <input type="number" name="store_price" x-model="form.store_price" required min="0" class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-neutral-700 mb-1.5">부가세 구분 <span class="text-neutral-400 font-normal">세금계산서</span></label>
+                    <select name="tax_type" x-model="form.tax_type" class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400">
+                        <option value="inc">과세 (부가세 포함)</option>
+                        <option value="exc">과세 (부가세 별도)</option>
+                        <option value="exempt">면세</option>
+                    </select>
                 </div>
                 <div>
                     <label class="block text-sm font-bold text-neutral-700 mb-1.5">정렬 순서</label>

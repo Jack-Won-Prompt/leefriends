@@ -9,6 +9,7 @@ class Store extends Model
     protected $fillable = [
         'name', 'region', 'address', 'postcode', 'address_detail',
         'corp_postcode', 'corp_address', 'corp_address_detail',
+        'biz_no', 'ceo', 'biz_type', 'biz_class',
         'phone', 'email', 'hours', 'lat', 'lng', 'image', 'is_active',
     ];
 

@@ -5,8 +5,8 @@
 <div x-data="{
         inviteOpen: {{ $errors->has('email') && old('_invite') ? 'true' : 'false' }},
         editOpen: false,
-        editForm: { id: null, name: '', region: '', phone: '', email: '', postcode: '', address: '', address_detail: '', is_active: true },
-        openEdit(s) { this.editForm = Object.assign({ postcode:'', address:'', address_detail:'' }, s); this.editOpen = true; },
+        editForm: { id: null, name: '', region: '', phone: '', email: '', postcode: '', address: '', address_detail: '', biz_no: '', ceo: '', biz_type: '', biz_class: '', is_active: true },
+        openEdit(s) { this.editForm = Object.assign({ postcode:'', address:'', address_detail:'', biz_no:'', ceo:'', biz_type:'', biz_class:'' }, s); this.editOpen = true; },
      }">
 
 <x-wms.page-head title="매장 관리" subtitle="가맹 매장을 이메일로 초대하고 계정 상태를 관리합니다" icon="🏪">
@@ -64,7 +64,7 @@
                         </td>
                         <td class="px-6 py-3.5 text-center whitespace-nowrap">
                             <button type="button"
-                                    @click="openEdit({ id: {{ $st->id }}, name: {{ Illuminate\Support\Js::from($st->name) }}, region: {{ Illuminate\Support\Js::from($st->region) }}, phone: {{ Illuminate\Support\Js::from($st->phone) }}, email: {{ Illuminate\Support\Js::from($st->email) }}, postcode: {{ Illuminate\Support\Js::from($st->postcode) }}, address: {{ Illuminate\Support\Js::from($st->address) }}, address_detail: {{ Illuminate\Support\Js::from($st->address_detail) }}, is_active: {{ $st->is_active ? 'true' : 'false' }} })"
+                                    @click="openEdit({ id: {{ $st->id }}, name: {{ Illuminate\Support\Js::from($st->name) }}, region: {{ Illuminate\Support\Js::from($st->region) }}, phone: {{ Illuminate\Support\Js::from($st->phone) }}, email: {{ Illuminate\Support\Js::from($st->email) }}, postcode: {{ Illuminate\Support\Js::from($st->postcode) }}, address: {{ Illuminate\Support\Js::from($st->address) }}, address_detail: {{ Illuminate\Support\Js::from($st->address_detail) }}, biz_no: {{ Illuminate\Support\Js::from($st->biz_no) }}, ceo: {{ Illuminate\Support\Js::from($st->ceo) }}, biz_type: {{ Illuminate\Support\Js::from($st->biz_type) }}, biz_class: {{ Illuminate\Support\Js::from($st->biz_class) }}, is_active: {{ $st->is_active ? 'true' : 'false' }} })"
                                     class="text-xs font-bold text-mango-600 hover:text-mango-700 mr-3">수정</button>
                             <form method="POST" action="{{ route('portal.hq.stores.destroy', $st) }}" class="inline"
                                   onsubmit="return confirm('매장 «{{ $st->name }}»을(를) 삭제할까요? 계정·채팅·재고도 함께 삭제되며 되돌릴 수 없습니다.')">
@@ -129,6 +129,31 @@
                 <label class="block text-sm font-bold text-neutral-700 mb-1.5">상세주소</label>
                 <input type="text" name="address_detail" x-model="editForm.address_detail" maxlength="255"
                        class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+            </div>
+            <div class="rounded-xl bg-amber-50 border border-amber-100 p-3 space-y-3">
+                <p class="text-xs font-bold text-amber-700">📄 사업자정보 <span class="font-normal text-amber-500">(세금계산서 발행용)</span></p>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-neutral-600 mb-1">사업자등록번호</label>
+                        <input type="text" name="biz_no" x-model="editForm.biz_no" maxlength="20" placeholder="000-00-00000"
+                               class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-neutral-600 mb-1">대표자</label>
+                        <input type="text" name="ceo" x-model="editForm.ceo" maxlength="50"
+                               class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-neutral-600 mb-1">업태</label>
+                        <input type="text" name="biz_type" x-model="editForm.biz_type" maxlength="100"
+                               class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-neutral-600 mb-1">종목</label>
+                        <input type="text" name="biz_class" x-model="editForm.biz_class" maxlength="100"
+                               class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+                    </div>
+                </div>
             </div>
             <label class="flex items-center gap-2">
                 <input type="checkbox" name="is_active" value="1" x-model="editForm.is_active" class="rounded text-mango-500 focus:ring-mango-400">

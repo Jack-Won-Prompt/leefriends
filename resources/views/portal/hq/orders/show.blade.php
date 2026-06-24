@@ -29,6 +29,29 @@
         <div class="flex justify-between py-2 border-b border-white/10"><span class="text-white/70">매장 출고가 합계</span><span class="font-bold">{{ number_format($order->store_amount) }}원</span></div>
         <div class="flex justify-between py-2 border-b border-white/10"><span class="text-white/70">공급가(원가) 합계</span><span class="font-bold">{{ number_format($order->supply_amount) }}원</span></div>
         <div class="flex justify-between py-3 mt-1"><span class="text-mango-300 font-bold">본사 마진</span><span class="text-mango-300 font-black text-lg">{{ number_format($order->store_amount - $order->supply_amount) }}원</span></div>
+
+        @php($taxInvoice = \App\Models\TaxInvoice::where('direction', 'hq_to_store')->where('order_id', $order->id)->where('status', 'issued')->latest()->first())
+        <div class="mt-5 pt-4 border-t border-white/10">
+            @if ($taxInvoice)
+                <div class="rounded-xl bg-emerald-500/15 border border-emerald-400/30 px-4 py-3 text-sm">
+                    <p class="font-bold text-emerald-300">✓ 세금계산서 발행 완료</p>
+                    <p class="text-white/70 mt-1">계산서번호 {{ $taxInvoice->invoice_no }} · 합계 {{ number_format($taxInvoice->total_amount) }}원</p>
+                    <p class="text-white/50 text-xs mt-0.5">{{ $taxInvoice->invoicee_corp_name }} ({{ $taxInvoice->invoicee_email }})</p>
+                </div>
+            @else
+                <form method="POST" action="{{ route('portal.hq.tax_invoices.issue', $order) }}"
+                      onsubmit="return confirm('본사 → 매장 세금계산서를 발행합니다.\n수신: {{ $order->store->name }} ({{ $order->store->email }})\n진행하시겠습니까?')">
+                    @csrf
+                    <button type="submit"
+                            class="w-full rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-3 text-sm transition">
+                        🧾 세금계산서 발행 (본사 → 매장)
+                    </button>
+                    @unless ($order->store?->biz_no)
+                        <p class="text-amber-300/80 text-xs mt-2">⚠ 매장 사업자등록번호가 없습니다. 매장 관리에서 먼저 등록하세요.</p>
+                    @endunless
+                </form>
+            @endif
+        </div>
     </div>
 </div>
 

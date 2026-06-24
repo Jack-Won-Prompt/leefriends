@@ -102,6 +102,10 @@ class StoreController extends Controller
             'postcode' => ['nullable', 'string', 'max:20'],
             'address' => ['nullable', 'string', 'max:255'],
             'address_detail' => ['nullable', 'string', 'max:255'],
+            'biz_no' => ['nullable', 'string', 'max:20'],
+            'ceo' => ['nullable', 'string', 'max:50'],
+            'biz_type' => ['nullable', 'string', 'max:100'],
+            'biz_class' => ['nullable', 'string', 'max:100'],
             'is_active' => ['nullable', 'boolean'],
         ]);
         $data['is_active'] = $request->boolean('is_active');

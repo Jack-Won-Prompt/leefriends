@@ -8,9 +8,31 @@ class SupplyProduct extends Model
 {
     protected $fillable = [
         'code', 'barcode', 'name', 'category', 'category_code', 'unit', 'spec', 'supply_type', 'supplier_id',
-        'supply_price', 'store_price', 'image', 'sort_order', 'is_active',
+        'supply_price', 'store_price', 'tax_type', 'image', 'sort_order', 'is_active',
         'approval_status', 'registered_by', 'approval_note',
     ];
+
+    /** 부가세 구분: inc(과세·부가세포함) / exc(과세·부가세별도) / exempt(면세) */
+    public const TAX_TYPES = [
+        'inc' => '과세 (부가세 포함)',
+        'exc' => '과세 (부가세 별도)',
+        'exempt' => '면세',
+    ];
+
+    /** 금액(라인합계)에서 tax_type 에 따라 공급가액/세액 산출 → [supply, tax] */
+    public static function taxBreakdown(string $taxType, int $amount): array
+    {
+        return match ($taxType) {
+            'exc' => [$amount, (int) round($amount * 0.1)],          // 별도: 금액=공급가, 세액 추가
+            'exempt' => [$amount, 0],                                 // 면세
+            default => [$s = (int) round($amount / 1.1), $amount - $s], // 포함: 금액=합계
+        };
+    }
+
+    public function getTaxTypeLabelAttribute(): string
+    {
+        return self::TAX_TYPES[$this->tax_type] ?? $this->tax_type;
+    }
 
     protected $casts = [
         'is_active' => 'boolean',

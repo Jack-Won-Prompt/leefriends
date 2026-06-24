@@ -184,6 +184,7 @@ class ProductController extends Controller
             'spec' => ['nullable', 'string', 'max:50'],
             'unit' => ['required', 'string', 'max:30'],
             'store_price' => ['required', 'integer', 'min:0'],
+            'tax_type' => ['nullable', 'in:inc,exc,exempt'],
             'supply_type' => ['required', 'in:hq,supplier'],
             'supplier_id' => ['nullable', 'required_if:supply_type,supplier', 'exists:suppliers,id'],
             'supply_price' => ['nullable', 'integer', 'min:0'],
@@ -208,6 +209,7 @@ class ProductController extends Controller
         }
 
         $data['sort_order'] = (int) ($data['sort_order'] ?? 0);
+        $data['tax_type'] = $data['tax_type'] ?? 'inc';
         $data['is_active'] = $request->boolean('is_active');
 
         return $data;

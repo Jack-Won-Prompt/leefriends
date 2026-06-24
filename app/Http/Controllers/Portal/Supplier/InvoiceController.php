@@ -4,8 +4,9 @@ namespace App\Http\Controllers\Portal\Supplier;
 
 use App\Http\Controllers\Controller;
 use App\Models\OrderItem;
+use App\Models\Supplier;
 use App\Models\TaxInvoice;
-use App\Services\TaxInvoice\TaxInvoiceIssuer;
+use App\Services\TaxInvoice\TaxInvoiceIssueService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -45,14 +46,14 @@ class InvoiceController extends Controller
         return view('portal.supplier.invoices.create', compact('items'));
     }
 
-    public function store(Request $request, TaxInvoiceIssuer $issuer)
+    public function store(Request $request, TaxInvoiceIssueService $service)
     {
         $sid = Auth::user()->supplier_id;
 
         $data = $request->validate([
             'items' => ['required', 'array', 'min:1'],
             'items.*' => ['integer'],
-            'issue_date' => ['required', 'date'],
+            'issue_date' => ['nullable', 'date'],
             'note' => ['nullable', 'string', 'max:500'],
         ], [
             'items.required' => '청구할 배송완료 품목을 선택해 주세요.',
@@ -69,28 +70,19 @@ class InvoiceController extends Controller
             return back()->withErrors(['items' => '청구 가능한 품목이 없습니다.'])->withInput();
         }
 
-        $invoice = DB::transaction(function () use ($sid, $items, $data, $issuer) {
-            $supply = (int) $items->sum('supply_line_amount'); // 공급가액 (본사가 정한 공급가 기준)
-            $vat = (int) round($supply * 0.1);                 // 부가세 10%
+        $supplier = Supplier::findOrFail($sid);
 
-            $invoice = TaxInvoice::create([
-                'invoice_no' => $this->generateInvoiceNo(),
-                'supplier_id' => $sid,
-                'supply_amount' => $supply,
-                'vat' => $vat,
-                'total_amount' => $supply + $vat,
-                'status' => 'pending',
-                'issue_date' => $data['issue_date'],
-                'note' => $data['note'] ?? null,
-            ]);
+        try {
+            $invoice = DB::transaction(function () use ($supplier, $items, $service) {
+                // 제품별 부가세구분 반영 + 팝빌 즉시발행 (공급처 → 본사)
+                $invoice = $service->supplierToHq($supplier, $items);
+                OrderItem::whereIn('id', $items->pluck('id'))->update(['tax_invoice_id' => $invoice->id]);
 
-            // 발행 처리 (internal → 추후 popbill 드라이버로 교체)
-            $issuer->issue($invoice);
-
-            OrderItem::whereIn('id', $items->pluck('id'))->update(['tax_invoice_id' => $invoice->id]);
-
-            return $invoice;
-        });
+                return $invoice;
+            });
+        } catch (\Throwable $e) {
+            return back()->withErrors(['items' => '세금계산서 발행 실패: '.$e->getMessage()])->withInput();
+        }
 
         return redirect()->route('portal.supplier.invoices.show', $invoice)
             ->with('success', '세금계산서가 발행되었습니다. (본사 청구)');

@@ -161,6 +161,10 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::get('invoices', [Portal\Hq\InvoiceController::class, 'index'])->name('invoices.index');
             Route::get('invoices/{invoice}', [Portal\Hq\InvoiceController::class, 'show'])->name('invoices.show');
 
+            // 세금계산서 발행 (본사 → 매장)
+            Route::get('tax-invoices', [Portal\Hq\TaxInvoiceController::class, 'index'])->name('tax_invoices.index');
+            Route::post('orders/{order}/tax-invoice', [Portal\Hq\TaxInvoiceController::class, 'issueForOrder'])->name('tax_invoices.issue');
+
             // 거래명세서 (매장·품목 선택 → PDF 미리보기/이메일 전송 + 발송 이력)
             Route::get('statements', [Portal\Hq\StatementController::class, 'index'])->name('statements.index');
             Route::get('statements/create', [Portal\Hq\StatementController::class, 'create'])->name('statements.create');

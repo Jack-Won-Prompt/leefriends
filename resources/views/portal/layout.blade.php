@@ -38,6 +38,7 @@
                 ['portal.hq.sales', '매출 현황', []],
                 ['portal.hq.statements.create', '거래명세서 작성', []],
                 ['portal.hq.statements.index', '거래명세서 이력', []],
+                ['portal.hq.tax_invoices.index', '세금계산서(발행)', []],
                 ['portal.hq.invoices.index', '세금계산서(수취)', []],
             ]],
             ['기준정보', '🗂️', [
