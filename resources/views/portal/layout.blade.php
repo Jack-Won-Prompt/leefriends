@@ -28,6 +28,7 @@
             ['주문 · 판매', '📦', [
                 ['portal.hq.orders.index', '발주(구매주문)', ['portal.hq.orders.show']],
                 ['portal.hq.sales_orders.index', '판매주문', ['portal.hq.sales_orders.show']],
+                ['portal.hq.supplier_orders.index', '공급사 발주 현황', []],
                 ['portal.order_changes.index', '매장 주문 변경', []],
             ]],
             ['출고 · 배송', '🚚', [
