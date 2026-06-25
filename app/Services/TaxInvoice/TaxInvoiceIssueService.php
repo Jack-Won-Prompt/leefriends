@@ -7,6 +7,7 @@ use App\Models\OrderItem;
 use App\Models\Statement;
 use App\Models\Store;
 use App\Models\Supplier;
+use App\Models\SupplierStatement;
 use App\Models\SupplyProduct;
 use App\Models\TaxInvoice;
 use App\Services\Popbill\PopbillTaxinvoiceService;
@@ -145,7 +146,40 @@ class TaxInvoiceIssueService
     public function supplierToHq(Supplier $supplier, Collection $orderItems, ?Order $order = null, ?string $overrideEmail = null): Collection
     {
         $lines = $this->buildLines($orderItems, 'supply');
-        $invoicer = [
+
+        return $this->issueSplit('supplier_to_hq', $lines, $this->supplierParty($supplier), $this->hqParty($overrideEmail), [
+            'supplier_id' => $supplier->id, 'order_id' => optional($order)->id, 'store_id' => optional($order)->store_id,
+        ]);
+    }
+
+    /**
+     * 공급처 → 본사 (거래명세서 기반, 자유 작성). 거래명세서 품목 스냅샷으로 발행.
+     * 과세 품목 → 세금계산서, 면세 품목 → 계산서 자동 분리.
+     */
+    public function supplierToHqFromStatement(SupplierStatement $statement): Collection
+    {
+        $supplier = $statement->supplier;
+        abort_unless($supplier, 404, '거래명세서의 공급처 정보가 없습니다.');
+
+        $lines = collect($statement->items ?? [])->map(fn ($l) => [
+            'item_id' => null,
+            'name' => $l['name'] ?? '-',
+            'spec' => $l['unit'] ?? '',
+            'qty' => (int) ($l['qty'] ?? 0),
+            'unit_price' => (int) ($l['unit_price'] ?? 0),
+            'tax_type' => $l['tax_type'] ?? 'inc',
+            'supply' => (int) ($l['supply'] ?? 0),
+            'tax' => (int) ($l['tax'] ?? 0),
+        ])->all();
+
+        return $this->issueSplit('supplier_to_hq', $lines, $this->supplierParty($supplier), $this->hqParty(), [
+            'supplier_id' => $supplier->id,
+        ]);
+    }
+
+    private function supplierParty(Supplier $supplier): array
+    {
+        return [
             'corp_num' => $this->digits($supplier->biz_no),
             'corp_name' => $supplier->name,
             'ceo' => $supplier->ceo ?: $supplier->name,
@@ -155,11 +189,6 @@ class TaxInvoiceIssueService
             'tel' => $supplier->phone ?: '',
             'email' => $supplier->email ?: '',
         ];
-        $invoicee = $this->hqParty($overrideEmail);
-
-        return $this->issueSplit('supplier_to_hq', $lines, $invoicer, $invoicee, [
-            'supplier_id' => $supplier->id, 'order_id' => optional($order)->id, 'store_id' => optional($order)->store_id,
-        ]);
     }
 
     /**

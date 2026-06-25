@@ -64,7 +64,9 @@
                         <tr>
                             <td class="px-4 py-2.5">
                                 <span class="font-semibold text-neutral-800">{{ $l['name'] ?? '-' }}</span>
-                                <span class="text-xs text-neutral-400 ml-1">· {{ $l['store_name'] ?? '' }} ({{ $l['order_no'] ?? '' }})</span>
+                                @if (! empty($l['order_no']))
+                                    <span class="text-xs text-neutral-400 ml-1">· {{ $l['store_name'] ?? '' }} ({{ $l['order_no'] }})</span>
+                                @endif
                             </td>
                             <td class="px-4 py-2.5 text-right">{{ number_format($l['unit_price'] ?? 0) }}원</td>
                             <td class="px-4 py-2.5 text-right">{{ number_format($l['qty'] ?? 0) }}{{ $l['unit'] ?? '' }}</td>

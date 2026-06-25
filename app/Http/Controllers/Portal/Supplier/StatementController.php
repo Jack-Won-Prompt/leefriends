@@ -31,16 +31,9 @@ class StatementController extends Controller
     {
         $sid = Auth::user()->supplier_id;
 
-        // 배송완료 + 미청구(tax_invoice 없음) + 다른 명세서에 미포함
-        $items = OrderItem::forSupplier($sid)
-            ->where('fulfillment_status', 'delivered')
-            ->whereNull('tax_invoice_id')
-            ->whereNull('supplier_statement_id')
-            ->with('order.store')
-            ->orderBy('order_id')
-            ->get();
-
-        return view('portal.supplier.statements.create', compact('items'));
+        return view('portal.supplier.statements.create', [
+            'catalog' => $this->catalog($sid),
+        ]);
     }
 
     public function store(Request $request)
@@ -49,39 +42,42 @@ class StatementController extends Controller
 
         $data = $request->validate([
             'items' => ['required', 'array', 'min:1'],
-            'items.*' => ['integer'],
-        ], ['items.required' => '거래명세서에 담을 배송완료 품목을 선택해 주세요.']);
-
-        $items = OrderItem::forSupplier($sid)
-            ->where('fulfillment_status', 'delivered')
-            ->whereNull('tax_invoice_id')
-            ->whereNull('supplier_statement_id')
-            ->whereIn('id', $data['items'])
-            ->with('order.store')
-            ->get();
-
-        if ($items->isEmpty()) {
-            return back()->withErrors(['items' => '담을 수 있는 품목이 없습니다.'])->withInput();
-        }
+            'items.*.product_id' => ['required', 'integer'],
+            'items.*.qty' => ['required', 'integer', 'min:1', 'max:99999'],
+        ], ['items.required' => '품목을 1개 이상 선택해 주세요.']);
 
         $supplier = Supplier::findOrFail($sid);
-        $taxTypes = SupplyProduct::whereIn('id', $items->pluck('supply_product_id'))->pluck('tax_type', 'id');
+
+        // 내 공급품목만 (소유 검증)
+        $products = SupplyProduct::with('units')
+            ->where('supplier_id', $sid)
+            ->whereIn('id', collect($data['items'])->pluck('product_id'))
+            ->get()->keyBy('id');
 
         $lines = [];
         $supplyTotal = 0;
         $vatTotal = 0;
-        foreach ($items as $it) {
-            $amount = (int) $it->supply_line_amount;
-            $taxType = $taxTypes[$it->supply_product_id] ?? 'inc';
+        foreach ($data['items'] as $it) {
+            $p = $products[$it['product_id']] ?? null;
+            if (! $p) {
+                continue;
+            }
+            $u = $p->units->firstWhere('is_default', true) ?? $p->units->first();
+            $price = (int) ($u->supply_price ?? $p->supply_price);
+            $qty = (int) $it['qty'];
+            $amount = $price * $qty;
+            $taxType = $p->tax_type ?? 'inc';
             [$supply, $tax] = SupplyProduct::taxBreakdown($taxType, $amount);
             $lines[] = [
-                'item_id' => $it->id,
-                'order_no' => $it->order->order_no ?? '',
-                'store_name' => $it->order->store->name ?? '',
-                'name' => $it->product_name,
-                'unit' => $it->unit,
-                'qty' => (int) $it->qty,
-                'unit_price' => (int) $it->supply_unit_price,
+                'item_id' => null,
+                'product_id' => $p->id,
+                'code' => $p->code,
+                'order_no' => '',
+                'store_name' => '',
+                'name' => $p->name,
+                'unit' => $u->name ?? $p->unit,
+                'qty' => $qty,
+                'unit_price' => $price,
                 'amount' => $amount,
                 'tax_type' => $taxType,
                 'supply' => $supply,
@@ -91,26 +87,43 @@ class StatementController extends Controller
             $vatTotal += $tax;
         }
 
-        $statement = DB::transaction(function () use ($supplier, $items, $lines, $supplyTotal, $vatTotal) {
-            $statement = SupplierStatement::create([
-                'supplier_id' => $supplier->id,
-                'supplier_name' => $supplier->name,
-                'statement_no' => $this->statementNo(),
-                'item_count' => count($lines),
-                'supply_total' => $supplyTotal,
-                'vat' => $vatTotal,
-                'total' => $supplyTotal + $vatTotal,
-                'items' => $lines,
-                'created_by' => Auth::id(),
-            ]);
-            // 품목을 이 명세서에 귀속(중복 포함 방지)
-            OrderItem::whereIn('id', $items->pluck('id'))->update(['supplier_statement_id' => $statement->id]);
+        if (empty($lines)) {
+            return back()->withErrors(['items' => '유효한 품목이 없습니다. (내 공급품목만 담을 수 있습니다)'])->withInput();
+        }
 
-            return $statement;
-        });
+        $statement = SupplierStatement::create([
+            'supplier_id' => $supplier->id,
+            'supplier_name' => $supplier->name,
+            'statement_no' => $this->statementNo(),
+            'item_count' => count($lines),
+            'supply_total' => $supplyTotal,
+            'vat' => $vatTotal,
+            'total' => $supplyTotal + $vatTotal,
+            'items' => $lines,
+            'created_by' => Auth::id(),
+        ]);
 
         return redirect()->route('portal.supplier.statements.show', $statement)
             ->with('success', '거래명세서를 작성했습니다. 이력에서 세금계산서를 발행할 수 있습니다.');
+    }
+
+    /** 내 공급품목 카탈로그 (공급가 기준) */
+    private function catalog(int $sid)
+    {
+        return SupplyProduct::where('supplier_id', $sid)
+            ->where('is_active', true)
+            ->with('units')->catalogOrder()->get()->map(function ($p) {
+                $u = $p->units->firstWhere('is_default', true) ?? $p->units->first();
+
+                return [
+                    'id' => $p->id,
+                    'code' => $p->code,
+                    'name' => $p->name,
+                    'category' => $p->category,
+                    'unit' => $u->name ?? $p->unit,
+                    'price' => (int) ($u->supply_price ?? $p->supply_price),
+                ];
+            })->values();
     }
 
     public function show(SupplierStatement $statement)
@@ -130,14 +143,8 @@ class StatementController extends Controller
             return back()->withErrors(['tax' => '이미 이 거래명세서로 세금계산서가 발행되었습니다.']);
         }
 
-        // 귀속 품목 중 아직 미청구만
-        $items = $statement->orderItems()->whereNull('tax_invoice_id')->get();
-        if ($items->isEmpty()) {
-            return back()->withErrors(['tax' => '발행 가능한 품목이 없습니다.']);
-        }
-
         try {
-            $invoices = $service->supplierToHq($statement->supplier, $items);
+            $invoices = $service->supplierToHqFromStatement($statement);
             $statement->update(['tax_invoice_id' => $invoices->first()->id]);
         } catch (\Throwable $e) {
             return back()->withErrors(['tax' => '세금계산서 발행 실패: '.$e->getMessage()]);
