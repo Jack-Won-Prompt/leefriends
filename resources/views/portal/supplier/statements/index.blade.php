@@ -31,6 +31,7 @@
                         <th class="text-right font-semibold px-4 py-3">품목</th>
                         <th class="text-right font-semibold px-4 py-3">공급가액</th>
                         <th class="text-right font-semibold px-6 py-3">합계</th>
+                        <th class="text-left font-semibold px-4 py-3">본사 전송</th>
                         <th class="text-left font-semibold px-4 py-3">세금계산서</th>
                         <th class="text-right font-semibold px-6 py-3 w-28">관리</th>
                     </tr>
@@ -46,13 +47,18 @@
                             <td class="px-4 py-3.5 font-bold text-mango-700">
                                 <button type="button" @click="open = {{ $s->id }}" class="hover:underline">{{ $s->statement_no }}</button>
                             </td>
-                            <td class="px-4 py-3.5 text-neutral-500">
-                                {{ $s->created_at->format('Y.m.d H:i') }}
-                                @if ($s->emailed_at)<span class="ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-100 text-sky-600">본사전송{{ $s->email_count > 1 ? ' '.$s->email_count : '' }}</span>@endif
-                            </td>
+                            <td class="px-4 py-3.5 text-neutral-500">{{ $s->created_at->format('Y.m.d H:i') }}</td>
                             <td class="px-4 py-3.5 text-right text-neutral-500">{{ number_format($s->item_count) }}건</td>
                             <td class="px-4 py-3.5 text-right">{{ number_format($s->supply_total) }}원</td>
                             <td class="px-6 py-3.5 text-right font-black text-mango-700">{{ number_format($s->total) }}원</td>
+                            <td class="px-4 py-3.5">
+                                @if ($s->emailed_at)
+                                    <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-sky-100 text-sky-700">전송됨{{ $s->email_count > 1 ? ' '.$s->email_count : '' }}</span>
+                                    <span class="block text-[11px] text-neutral-400 mt-0.5">{{ $s->emailed_at->format('Y.m.d H:i') }}</span>
+                                @else
+                                    <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-neutral-100 text-neutral-400">미전송</span>
+                                @endif
+                            </td>
                             <td class="px-4 py-3.5">
                                 @if ($s->tax_invoice_id)
                                     <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">발행완료</span>
