@@ -29,3 +29,6 @@ yarn-error.log
 
 # 런타임 업로드(제품 이미지 등)
 /public/uploads
+
+# 모바일 앱 빌드(APK) — FTP로 직접 업로드, git 미추적
+/public/*.apk
