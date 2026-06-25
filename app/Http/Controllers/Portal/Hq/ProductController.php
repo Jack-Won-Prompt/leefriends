@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Portal\Hq;
 
 use App\Http\Controllers\Controller;
+use App\Models\ProductCategory;
 use App\Models\Supplier;
 use App\Models\SupplyProduct;
 use Illuminate\Http\Request;
@@ -47,7 +48,13 @@ class ProductController extends Controller
         $categories = SupplyProduct::query()->select('category')->distinct()->orderBy('category')->pluck('category');
         $suppliers = Supplier::where('is_active', true)->orderBy('name')->get(['id', 'name']);
 
-        return view('portal.hq.products.index', compact('products', 'categories', 'filters', 'suppliers'));
+        // 품목 추가/수정 폼의 대분류 선택지 = 기준정보(카테고리 관리). 비어 있으면 상수 폴백.
+        $formCategories = ProductCategory::ordered()->pluck('name');
+        if ($formCategories->isEmpty()) {
+            $formCategories = collect(self::CATEGORIES);
+        }
+
+        return view('portal.hq.products.index', compact('products', 'categories', 'filters', 'suppliers', 'formCategories'));
     }
 
     /** 발주 카탈로그 대분류 */
@@ -56,8 +63,8 @@ class ProductController extends Controller
     public function store(Request $request)
     {
         $data = $this->validateData($request);
-        // 대분류코드 자동 설정 (코드 채번은 모델 creating 이벤트가 처리)
-        $data['category_code'] = SupplyProduct::CATEGORY_CODES[$data['category']] ?? null;
+        // 대분류코드 자동 설정 (기준정보 우선, 상수 폴백; 코드 채번은 모델 creating 이벤트가 처리)
+        $data['category_code'] = ProductCategory::codeFor($data['category']) ?? SupplyProduct::CATEGORY_CODES[$data['category']] ?? null;
 
         DB::transaction(function () use ($request, $data) {
             $product = SupplyProduct::create($data); // code 자동 채번
@@ -78,7 +85,7 @@ class ProductController extends Controller
     public function update(Request $request, SupplyProduct $product)
     {
         $data = $this->validateData($request);
-        $data['category_code'] = SupplyProduct::CATEGORY_CODES[$data['category']] ?? $product->category_code;
+        $data['category_code'] = ProductCategory::codeFor($data['category']) ?? SupplyProduct::CATEGORY_CODES[$data['category']] ?? $product->category_code;
 
         DB::transaction(function () use ($request, $product, $data) {
             $product->update($data);

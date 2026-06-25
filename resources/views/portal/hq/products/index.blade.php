@@ -1,7 +1,7 @@
 @extends('portal.layout')
 @section('title', '품목 관리')
 
-@php $finishedCategories = \App\Http\Controllers\Portal\Hq\ProductController::CATEGORIES; @endphp
+@php $finishedCategories = ($formCategories ?? collect(\App\Http\Controllers\Portal\Hq\ProductController::CATEGORIES))->values(); @endphp
 
 @section('content')
 @php
