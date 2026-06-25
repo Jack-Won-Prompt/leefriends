@@ -19,7 +19,7 @@
             <table class="w-full text-sm">
                 <thead class="bg-neutral-50 text-neutral-500">
                     <tr>
-                        <th class="text-left font-semibold px-6 py-3">발송일시</th>
+                        <th class="text-left font-semibold px-6 py-3">거래명세서 매장 전송</th>
                         <th class="text-left font-semibold px-6 py-3">매장</th>
                         <th class="text-left font-semibold px-6 py-3 hidden md:table-cell">수신 이메일</th>
                         <th class="text-right font-semibold px-6 py-3">품목</th>
@@ -32,9 +32,9 @@
                 <tbody class="divide-y divide-neutral-100">
                     @foreach ($statements as $s)
                         <tr class="hover:bg-mango-50/40 transition">
-                            <td class="px-6 py-3.5 text-neutral-600 whitespace-nowrap">
-                                {{ $s->sent_at->format('Y.m.d H:i') }}
-                                @if ($s->resend_count > 0)<span class="ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-100 text-sky-600">재전송 {{ $s->resend_count }}</span>@endif
+                            <td class="px-6 py-3.5 whitespace-nowrap">
+                                <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-sky-100 text-sky-700">전송됨@if ($s->resend_count > 0) (재전송 {{ $s->resend_count }})@endif</span>
+                                <span class="block text-[11px] text-neutral-400 mt-0.5">{{ $s->sent_at->format('Y.m.d H:i') }}</span>
                             </td>
                             <td class="px-6 py-3.5 font-bold text-mango-700">
                                 <button type="button" @click="open = {{ $s->id }}" class="hover:underline">{{ $s->store_name }}</button>
