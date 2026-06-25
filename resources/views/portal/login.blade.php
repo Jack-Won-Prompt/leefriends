@@ -46,11 +46,6 @@
                 </label>
                 <button class="w-full rounded-xl bg-gradient-to-r from-mango-500 to-mango-600 text-white font-bold py-3.5 hover:brightness-105 active:scale-[0.99] transition">로그인</button>
             </form>
-
-            <div class="mt-6 pt-5 border-t border-neutral-100 text-xs text-neutral-400 space-y-1">
-                <p class="font-bold text-neutral-500">데모 계정 (비번 공통: 1234)</p>
-                <p>본사: hq@leefriends.kr · 매장: store@leefriends.kr · 공급처: supplier@leefriends.kr</p>
-            </div>
         </div>
 
         <p class="text-center text-neutral-500 text-sm mt-6">
