@@ -12,6 +12,7 @@ class SupplierStatement extends Model
     protected $fillable = [
         'supplier_id', 'supplier_name', 'statement_no', 'item_count',
         'supply_total', 'vat', 'total', 'items', 'tax_invoice_id', 'created_by',
+        'emailed_at', 'email_count',
     ];
 
     protected $casts = [
@@ -20,6 +21,8 @@ class SupplierStatement extends Model
         'supply_total' => 'integer',
         'vat' => 'integer',
         'total' => 'integer',
+        'emailed_at' => 'datetime',
+        'email_count' => 'integer',
     ];
 
     public function supplier()

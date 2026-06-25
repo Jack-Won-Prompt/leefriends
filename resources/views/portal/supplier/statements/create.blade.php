@@ -81,9 +81,11 @@
                         <span class="text-2xl font-black text-mango-700"><span x-text="total().toLocaleString()"></span>원</span>
                     </div>
                     <p class="text-[11px] text-neutral-400 mb-4">* 부가세는 제품별 부가세구분(포함/별도/면세)에 따라 발행 시 계산됩니다.</p>
+                    <button type="submit" name="send" value="1" :disabled="lines.length === 0"
+                            class="w-full rounded-xl bg-gradient-to-r from-mango-500 to-mango-600 text-white font-black py-3 text-sm shadow disabled:opacity-40">📧 작성·저장 + 본사 전송</button>
                     <button type="submit" :disabled="lines.length === 0"
-                            class="w-full rounded-xl bg-gradient-to-r from-mango-500 to-mango-600 text-white font-black py-3 text-sm shadow disabled:opacity-40">거래명세서 작성·저장</button>
-                    <p class="text-[11px] text-neutral-400 mt-2 text-center">저장 후 이력에서 <b>세금계산서 발행</b>(본사 청구)을 진행합니다.</p>
+                            class="w-full mt-2 rounded-xl border border-neutral-200 hover:bg-neutral-50 text-neutral-700 font-bold py-2.5 text-sm disabled:opacity-40">저장만 (전송 안 함)</button>
+                    <p class="text-[11px] text-neutral-400 mt-2 text-center">저장 후 이력에서 <b>세금계산서 발행</b>(본사 청구)·재전송을 할 수 있습니다.</p>
                 </div>
             </div>
         </div>

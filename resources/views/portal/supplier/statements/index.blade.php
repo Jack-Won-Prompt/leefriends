@@ -46,7 +46,10 @@
                             <td class="px-4 py-3.5 font-bold text-mango-700">
                                 <button type="button" @click="open = {{ $s->id }}" class="hover:underline">{{ $s->statement_no }}</button>
                             </td>
-                            <td class="px-4 py-3.5 text-neutral-500">{{ $s->created_at->format('Y.m.d H:i') }}</td>
+                            <td class="px-4 py-3.5 text-neutral-500">
+                                {{ $s->created_at->format('Y.m.d H:i') }}
+                                @if ($s->emailed_at)<span class="ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-100 text-sky-600">본사전송{{ $s->email_count > 1 ? ' '.$s->email_count : '' }}</span>@endif
+                            </td>
                             <td class="px-4 py-3.5 text-right text-neutral-500">{{ number_format($s->item_count) }}건</td>
                             <td class="px-4 py-3.5 text-right">{{ number_format($s->supply_total) }}원</td>
                             <td class="px-6 py-3.5 text-right font-black text-mango-700">{{ number_format($s->total) }}원</td>
@@ -97,6 +100,12 @@
 @foreach ($statements as $s)
     <x-detail-modal :id="$s->id">
         <x-slot:actions>
+            <a href="{{ route('portal.supplier.statements.pdf', $s) }}" target="_blank" class="rounded-xl bg-white/90 hover:bg-white text-neutral-700 font-bold px-4 py-2 text-sm shadow">PDF</a>
+            <form method="POST" action="{{ route('portal.supplier.statements.email', $s) }}"
+                  onsubmit="return confirm('이 거래명세서 PDF를 본사로 이메일 전송합니다.\n진행하시겠습니까?')">
+                @csrf
+                <button type="submit" class="rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-bold px-4 py-2 text-sm shadow">📧 {{ $s->emailed_at ? '본사 재전송' : '본사 전송' }}</button>
+            </form>
             @unless ($s->tax_invoice_id)
                 <form method="POST" action="{{ route('portal.supplier.statements.issue', $s) }}"
                       onsubmit="return confirm('이 거래명세서로 세금계산서를 발행합니다. (본사 청구)\n진행하시겠습니까?')">

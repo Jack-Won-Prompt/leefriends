@@ -227,6 +227,8 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::post('statements', [Portal\Supplier\StatementController::class, 'store'])->name('statements.store');
             Route::post('statements/issue-selected', [Portal\Supplier\StatementController::class, 'issueBulk'])->name('statements.issue_bulk');
             Route::post('statements/{statement}/issue', [Portal\Supplier\StatementController::class, 'issue'])->name('statements.issue');
+            Route::post('statements/{statement}/email', [Portal\Supplier\StatementController::class, 'email'])->name('statements.email');
+            Route::get('statements/{statement}/pdf', [Portal\Supplier\StatementController::class, 'pdf'])->name('statements.pdf');
             Route::delete('statements/{statement}', [Portal\Supplier\StatementController::class, 'destroy'])->name('statements.destroy');
         });
     });

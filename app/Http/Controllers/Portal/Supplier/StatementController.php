@@ -3,14 +3,17 @@
 namespace App\Http\Controllers\Portal\Supplier;
 
 use App\Http\Controllers\Controller;
+use App\Mail\SupplierStatementMail;
 use App\Models\OrderItem;
 use App\Models\Supplier;
 use App\Models\SupplierStatement;
 use App\Models\SupplyProduct;
 use App\Services\TaxInvoice\TaxInvoiceIssueService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 
 /**
  * 공급처 거래명세서: 배송완료 품목 선택 → 작성·저장 → 이력에서 선택 발행(세금계산서).
@@ -103,6 +106,16 @@ class StatementController extends Controller
             'created_by' => Auth::id(),
         ]);
 
+        // 작성과 동시에 본사로 이메일 전송
+        if ($request->boolean('send')) {
+            $to = $this->mailToHq($statement);
+            $msg = $to
+                ? "거래명세서를 작성하고 본사({$to})로 전송했습니다."
+                : '거래명세서를 작성했습니다. (본사 수신 이메일 미설정으로 전송은 보류)';
+
+            return redirect()->route('portal.supplier.statements.index')->with('success', $msg);
+        }
+
         return redirect()->route('portal.supplier.statements.index')
             ->with('success', '거래명세서를 작성했습니다. 이력에서 세금계산서를 발행할 수 있습니다.');
     }
@@ -182,6 +195,47 @@ class StatementController extends Controller
             : "세금계산서를 발행했습니다. (거래명세서 {$statements->count()}건 합산)";
 
         return redirect()->route('portal.supplier.statements.index')->with('success', $msg);
+    }
+
+    /** 거래명세서 PDF를 본사 이메일로 전송 */
+    public function email(SupplierStatement $statement)
+    {
+        abort_unless($statement->supplier_id === Auth::user()->supplier_id, 403);
+
+        $to = $this->mailToHq($statement);
+        if (! $to) {
+            return back()->withErrors(['email' => '본사 수신 이메일이 설정되어 있지 않습니다.']);
+        }
+
+        return back()->with('success', "거래명세서를 본사({$to})로 전송했습니다.");
+    }
+
+    /** 거래명세서 PDF를 본사로 전송하고 전송이력을 기록. 수신주소 반환(미설정 시 null). */
+    private function mailToHq(SupplierStatement $statement): ?string
+    {
+        $to = config('popbill.hq.email') ?: config('mail.from.address');
+        if (! $to) {
+            return null;
+        }
+
+        $statement->loadMissing('supplier');
+        $pdf = Pdf::loadView('portal.supplier.statements.pdf', ['statement' => $statement])->setPaper('a4');
+        $fileName = '거래명세서_'.$statement->statement_no.'.pdf';
+
+        Mail::to($to)->send(new SupplierStatementMail($statement, $pdf->output(), $fileName));
+        $statement->update(['emailed_at' => now(), 'email_count' => $statement->email_count + 1]);
+
+        return $to;
+    }
+
+    /** 거래명세서 PDF 다운로드/미리보기 */
+    public function pdf(SupplierStatement $statement)
+    {
+        abort_unless($statement->supplier_id === Auth::user()->supplier_id, 403);
+        $statement->loadMissing('supplier');
+
+        return Pdf::loadView('portal.supplier.statements.pdf', ['statement' => $statement])
+            ->setPaper('a4')->stream('거래명세서_'.$statement->statement_no.'.pdf');
     }
 
     /** 미발행 거래명세서 삭제 (귀속 품목 해제) */
