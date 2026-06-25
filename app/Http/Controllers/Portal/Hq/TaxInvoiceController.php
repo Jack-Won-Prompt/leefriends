@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Portal\Hq;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\Statement;
 use App\Models\Store;
 use App\Models\TaxInvoice;
 use App\Services\TaxInvoice\TaxInvoiceIssueService;
@@ -99,6 +100,22 @@ class TaxInvoiceController extends Controller
 
         try {
             $invoices = $service->hqToStore($order);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['tax' => '세금계산서 발행 실패: '.$e->getMessage()]);
+        }
+
+        return back()->with('success', $this->resultMessage($invoices, 1));
+    }
+
+    /** 거래명세서 1건 → 세금계산서 발행 (본사 → 매장) */
+    public function issueForStatement(Request $request, Statement $statement, TaxInvoiceIssueService $service)
+    {
+        if ($statement->tax_invoice_id) {
+            return back()->withErrors(['tax' => '이미 이 거래명세서로 세금계산서가 발행되었습니다.']);
+        }
+
+        try {
+            $invoices = $service->hqToStoreFromStatement($statement);
         } catch (\Throwable $e) {
             return back()->withErrors(['tax' => '세금계산서 발행 실패: '.$e->getMessage()]);
         }

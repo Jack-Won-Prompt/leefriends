@@ -4,6 +4,7 @@ namespace App\Services\TaxInvoice;
 
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\Statement;
 use App\Models\Store;
 use App\Models\Supplier;
 use App\Models\SupplyProduct;
@@ -78,6 +79,66 @@ class TaxInvoiceIssueService
             'supplier_id' => null,
             'order_ids' => $orders->pluck('id')->all(),
         ]);
+    }
+
+    /**
+     * 본사 → 매장 (거래명세서 기반). 거래명세서 품목 스냅샷으로 발행.
+     * 과세 품목 → 세금계산서, 면세 품목 → 계산서 자동 분리.
+     */
+    public function hqToStoreFromStatement(Statement $statement): Collection
+    {
+        $store = $statement->store;
+        abort_unless($store, 404, '거래명세서의 매장 정보가 없습니다.');
+        if (! $store->biz_no) {
+            throw new \RuntimeException("«{$store->name}» 매장 사업자등록번호가 없습니다. 매장 관리에서 등록하세요.");
+        }
+
+        $lines = $this->buildLinesFromStatement($statement->items ?? []);
+        $invoicer = $this->hqParty();
+        $invoicee = [
+            'corp_num' => $this->digits($store->biz_no),
+            'corp_name' => $store->name,
+            'ceo' => $store->ceo ?: $store->name,
+            'addr' => $this->storeAddr($store),
+            'biz_type' => $store->biz_type ?: '',
+            'biz_class' => $store->biz_class ?: '',
+            'contact' => $store->name,
+            'tel' => $store->phone ?: '',
+            'email' => $store->email ?: '',
+        ];
+
+        return $this->issueSplit('hq_to_store', $lines, $invoicer, $invoicee, [
+            'store_id' => $store->id,
+            'order_id' => null,
+            'supplier_id' => null,
+            'statement_id' => $statement->id,
+        ]);
+    }
+
+    /** 거래명세서 품목(code/name/unit/qty/price/amount) → 세금계산서 라인. 부가세구분은 code로 조회. */
+    private function buildLinesFromStatement(array $items): array
+    {
+        $codes = array_filter(array_column($items, 'code'));
+        $taxTypes = SupplyProduct::whereIn('code', $codes)->pluck('tax_type', 'code');
+
+        $lines = [];
+        foreach ($items as $it) {
+            $amount = (int) ($it['amount'] ?? 0);
+            $taxType = $taxTypes[$it['code'] ?? ''] ?? 'inc';
+            [$supply, $tax] = SupplyProduct::taxBreakdown($taxType, $amount);
+            $lines[] = [
+                'item_id' => null,
+                'name' => $it['name'] ?? '-',
+                'spec' => $it['unit'] ?? '',
+                'qty' => (int) ($it['qty'] ?? 0),
+                'unit_price' => (int) ($it['price'] ?? 0),
+                'tax_type' => $taxType,
+                'supply' => $supply,
+                'tax' => $tax,
+            ];
+        }
+
+        return $lines;
     }
 
     /** 공급처 → 본사 (특정 공급처의 주문 품목들). 과세·면세 혼합 시 2장 발행 → Collection 반환. */
@@ -193,6 +254,10 @@ class TaxInvoiceIssueService
         // 본사→매장: 포함된 발주들을 발행 처리(재발행 방지). 대표 문서 = 과세(없으면 면세)
         if ($direction === 'hq_to_store' && ! empty($refs['order_ids'])) {
             Order::whereIn('id', $refs['order_ids'])->update(['tax_invoice_id' => $issued->first()->id]);
+        }
+        // 거래명세서 기반 발행: 거래명세서를 발행 처리
+        if ($direction === 'hq_to_store' && ! empty($refs['statement_id'])) {
+            Statement::where('id', $refs['statement_id'])->update(['tax_invoice_id' => $issued->first()->id]);
         }
 
         return $issued;

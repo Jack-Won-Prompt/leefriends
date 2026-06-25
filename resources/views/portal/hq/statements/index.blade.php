@@ -24,6 +24,7 @@
                         <th class="text-right font-semibold px-6 py-3">품목</th>
                         <th class="text-right font-semibold px-6 py-3">합계</th>
                         <th class="text-left font-semibold px-6 py-3 hidden lg:table-cell">발송자</th>
+                        <th class="text-left font-semibold px-6 py-3">세금계산서</th>
                         <th class="text-right font-semibold px-6 py-3 w-40">관리</th>
                     </tr>
                 </thead>
@@ -39,6 +40,20 @@
                             <td class="px-6 py-3.5 text-right text-neutral-500">{{ number_format($s->item_count) }}건</td>
                             <td class="px-6 py-3.5 text-right font-black text-mango-700">{{ number_format($s->total) }}원</td>
                             <td class="px-6 py-3.5 hidden lg:table-cell text-neutral-500">{{ optional($s->sender)->name ?? '본사' }}</td>
+                            <td class="px-6 py-3.5 whitespace-nowrap">
+                                @if ($s->tax_invoice_id)
+                                    <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">발행완료</span>
+                                    <span class="block text-[11px] text-neutral-400 mt-0.5">{{ optional($s->taxInvoice)->invoice_no }}</span>
+                                @elseif (! optional($s->store)->biz_no)
+                                    <span class="text-[11px] text-amber-600" title="매장 사업자등록번호 필요">사업자정보 없음</span>
+                                @else
+                                    <form method="POST" action="{{ route('portal.hq.tax_invoices.issue_statement', $s) }}"
+                                          onsubmit="return confirm('이 거래명세서로 세금계산서를 발행합니다.\n수신: {{ $s->store_name }} ({{ $s->email }})\n진행하시겠습니까?')">
+                                        @csrf
+                                        <button type="submit" class="text-xs font-bold text-mango-600 hover:text-mango-700">🧾 발행</button>
+                                    </form>
+                                @endif
+                            </td>
                             <td class="px-6 py-3.5 text-right whitespace-nowrap">
                                 <a href="{{ route('portal.hq.statements.pdf', $s) }}" target="_blank"
                                    class="text-xs font-bold text-neutral-700 hover:text-mango-600 mr-3">PDF</a>

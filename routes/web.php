@@ -171,6 +171,7 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::post('tax-invoices', [Portal\Hq\TaxInvoiceController::class, 'store'])->name('tax_invoices.store');
             Route::post('tax-invoices/{invoice}/cancel', [Portal\Hq\TaxInvoiceController::class, 'cancel'])->name('tax_invoices.cancel');
             Route::post('orders/{order}/tax-invoice', [Portal\Hq\TaxInvoiceController::class, 'issueForOrder'])->name('tax_invoices.issue');
+            Route::post('statements/{statement}/tax-invoice', [Portal\Hq\TaxInvoiceController::class, 'issueForStatement'])->name('tax_invoices.issue_statement');
 
             // 거래명세서 (매장·품목 선택 → PDF 미리보기/이메일 전송 + 발송 이력)
             Route::get('statements', [Portal\Hq\StatementController::class, 'index'])->name('statements.index');

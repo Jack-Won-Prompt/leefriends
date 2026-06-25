@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 class Statement extends Model
 {
     protected $fillable = [
-        'store_id', 'store_name', 'email', 'item_count', 'total', 'items', 'sent_by', 'sent_at', 'resend_count',
+        'store_id', 'store_name', 'email', 'item_count', 'total', 'items', 'sent_by', 'sent_at', 'resend_count', 'tax_invoice_id',
     ];
 
     protected $casts = [
@@ -29,6 +29,11 @@ class Statement extends Model
     public function sender()
     {
         return $this->belongsTo(User::class, 'sent_by');
+    }
+
+    public function taxInvoice()
+    {
+        return $this->belongsTo(TaxInvoice::class, 'tax_invoice_id');
     }
 
     /** PDF/메일 렌더용 매장 객체 (삭제된 매장이면 스냅샷으로 대체) */
