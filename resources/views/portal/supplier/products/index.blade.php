@@ -1,7 +1,7 @@
 @extends('portal.layout')
 @section('title', '물품 관리')
 
-@php $cats = \App\Http\Controllers\Portal\Supplier\ProductController::CATEGORIES; @endphp
+@php $cats = $formCategories ?? \App\Http\Controllers\Portal\Supplier\ProductController::CATEGORIES; @endphp
 
 @section('content')
 @php

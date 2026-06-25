@@ -3,10 +3,12 @@
 namespace App\Http\Controllers\Portal\Supplier;
 
 use App\Http\Controllers\Controller;
+use App\Models\ProductCategory;
 use App\Models\SupplyProduct;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 /**
  * 공급처 물품(재료) 등록/관리.
@@ -39,8 +41,17 @@ class ProductController extends Controller
         }
 
         $products = $query->paginate(30)->withQueryString();
+        $formCategories = $this->categories();
 
-        return view('portal.supplier.products.index', compact('products', 'filters'));
+        return view('portal.supplier.products.index', compact('products', 'filters', 'formCategories'));
+    }
+
+    /** 물품 등록 폼 대분류 선택지 = 기준정보(카테고리 관리). 비어 있으면 상수 폴백. */
+    private function categories(): array
+    {
+        $cats = ProductCategory::ordered()->pluck('name')->all();
+
+        return $cats ?: self::CATEGORIES;
     }
 
     public function store(Request $request)
@@ -52,7 +63,7 @@ class ProductController extends Controller
             $product = SupplyProduct::create([
                 'name' => $data['name'],
                 'category' => $data['category'],
-                'category_code' => SupplyProduct::CATEGORY_CODES[$data['category']] ?? null,
+                'category_code' => ProductCategory::codeFor($data['category']) ?? SupplyProduct::CATEGORY_CODES[$data['category']] ?? null,
                 'spec' => $data['spec'] ?? null,
                 'unit' => $data['unit'],
                 'supply_type' => 'supplier',
@@ -84,7 +95,7 @@ class ProductController extends Controller
             $product->update([
                 'name' => $data['name'],
                 'category' => $data['category'],
-                'category_code' => SupplyProduct::CATEGORY_CODES[$data['category']] ?? $product->category_code,
+                'category_code' => ProductCategory::codeFor($data['category']) ?? SupplyProduct::CATEGORY_CODES[$data['category']] ?? $product->category_code,
                 'spec' => $data['spec'] ?? null,
                 'unit' => $data['unit'],
                 'supply_price' => $data['supply_price'],
@@ -129,7 +140,7 @@ class ProductController extends Controller
     {
         return $request->validate([
             'name' => ['required', 'string', 'max:100'],
-            'category' => ['required', 'string', 'in:' . implode(',', self::CATEGORIES)],
+            'category' => ['required', 'string', Rule::in($this->categories())],
             'spec' => ['nullable', 'string', 'max:50'],
             'unit' => ['required', 'string', 'max:30'],
             'supply_price' => ['required', 'integer', 'min:0'],
