@@ -55,6 +55,11 @@ Route::prefix('v1')->group(function () {
         // 매장 홈 대시보드
         Route::get('store/dashboard', [\App\Http\Controllers\Api\StoreDashboardController::class, 'index'])->name('api.store.dashboard');
 
+        // 매장 전자문서 (조회): 세금계산서 + 발주 거래명세서
+        Route::get('store/tax-invoices', [\App\Http\Controllers\Api\StoreTaxInvoiceController::class, 'index'])->name('api.store.tax_invoices.index');
+        Route::get('store/tax-invoices/{invoice}', [\App\Http\Controllers\Api\StoreTaxInvoiceController::class, 'show'])->name('api.store.tax_invoices.show');
+        Route::get('orders/{order}/statement', [OrderController::class, 'statement'])->name('api.orders.statement');
+
         // 매입 내역
         Route::get('purchases', [PurchaseController::class, 'index'])->name('api.purchases.index');
 
@@ -144,6 +149,26 @@ Route::prefix('v1')->group(function () {
             Route::post('shipments', [Seller\ShipmentController::class, 'store'])->name('shipments.store');
             Route::get('shipments/{shipment}', [Seller\ShipmentController::class, 'show'])->name('shipments.show');
             Route::patch('shipments/{shipment}/confirm', [Seller\ShipmentController::class, 'confirm'])->name('shipments.confirm');
+
+            // 전자세금계산서 — 발행 대상 조회 / 발행 / 취소 / 이력
+            Route::get('tax-invoices', [Seller\TaxInvoiceController::class, 'index'])->name('tax_invoices.index');
+            Route::get('tax-invoices/stores', [Seller\TaxInvoiceController::class, 'stores'])->name('tax_invoices.stores');
+            Route::get('tax-invoices/issuable', [Seller\TaxInvoiceController::class, 'issuable'])->name('tax_invoices.issuable');
+            Route::post('tax-invoices/issue', [Seller\TaxInvoiceController::class, 'issue'])->name('tax_invoices.issue');
+            Route::get('tax-invoices/{invoice}', [Seller\TaxInvoiceController::class, 'show'])->name('tax_invoices.show');
+            Route::post('tax-invoices/{invoice}/cancel', [Seller\TaxInvoiceController::class, 'cancel'])->name('tax_invoices.cancel');
+
+            // 공급사 발주 현황 (본사 전용)
+            Route::get('supplier-orders', [Seller\SupplierOrderController::class, 'index'])->name('supplier_orders.index');
+            Route::get('supplier-orders/{salesOrder}', [Seller\SupplierOrderController::class, 'show'])->name('supplier_orders.show');
+
+            // 거래명세서 — 작성 / 전송 / 발행 / 이력
+            Route::get('statements', [Seller\StatementController::class, 'index'])->name('statements.index');
+            Route::get('statements/catalog', [Seller\StatementController::class, 'catalog'])->name('statements.catalog');
+            Route::post('statements', [Seller\StatementController::class, 'store'])->name('statements.store');
+            Route::get('statements/{id}', [Seller\StatementController::class, 'show'])->name('statements.show');
+            Route::post('statements/{id}/send', [Seller\StatementController::class, 'send'])->name('statements.send');
+            Route::post('statements/{id}/issue', [Seller\StatementController::class, 'issue'])->name('statements.issue');
         });
     });
 });

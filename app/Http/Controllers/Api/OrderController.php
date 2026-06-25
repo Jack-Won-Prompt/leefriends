@@ -56,6 +56,50 @@ class OrderController extends Controller
     }
 
     /**
+     * GET /api/v1/orders/{order}/statement  — 발주 거래명세서 (공급자별 그룹)
+     */
+    public function statement(Request $request, Order $order): JsonResponse
+    {
+        $this->authorizeStore($request, $order);
+        if (($order->order_type ?? 'normal') === 'sample') {
+            return response()->json(['message' => '샘플 주문은 거래명세서를 제공하지 않습니다.'], 404);
+        }
+        $order->load(['items', 'store']);
+
+        $groups = $order->items
+            ->groupBy(fn ($it) => $it->supply_type === 'supplier' ? 'supplier:'.$it->supplier_id : 'hq')
+            ->map(function ($items) {
+                $first = $items->first();
+                $seller = $first->supply_type === 'supplier' ? ($first->supplier_name ?? '공급처') : '본사';
+
+                return [
+                    'seller' => $seller,
+                    'subtotal' => (int) $items->sum('store_line_amount'),
+                    'items' => $items->map(fn ($it) => [
+                        'name' => $it->product_name,
+                        'unit' => $it->unit,
+                        'qty' => (int) $it->qty,
+                        'unit_price' => (int) $it->store_unit_price,
+                        'amount' => (int) $it->store_line_amount,
+                    ])->values(),
+                ];
+            })->values();
+
+        $total = (int) $order->items->sum('store_line_amount');
+
+        return response()->json([
+            'data' => [
+                'order_no' => $order->order_no,
+                'created_at' => $order->created_at?->format('Y-m-d'),
+                'store_name' => $order->store?->name,
+                'store_address' => trim((string) ($order->store?->address ?? '')),
+                'groups' => $groups,
+                'total' => $total,
+            ],
+        ]);
+    }
+
+    /**
      * POST /api/v1/orders  — 발주 접수
      * body: { note?, items: [{ product_id, unit_id?, qty }] }
      */
