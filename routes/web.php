@@ -115,6 +115,10 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::get('inventory', [Portal\Store\InventoryController::class, 'index'])->name('inventory.index');
             Route::get('inventory/movements', [Portal\Store\InventoryController::class, 'movements'])->name('inventory.movements');
             Route::post('inventory/usage', [Portal\Store\InventoryController::class, 'usage'])->name('inventory.usage');
+
+            // 본사가 매장 앞으로 발행한 세금계산서 확인
+            Route::get('tax-invoices', [Portal\Store\TaxInvoiceController::class, 'index'])->name('tax_invoices.index');
+            Route::get('tax-invoices/{invoice}', [Portal\Store\TaxInvoiceController::class, 'show'])->name('tax_invoices.show');
         });
 
         // 본사

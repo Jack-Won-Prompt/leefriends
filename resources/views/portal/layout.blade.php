@@ -69,6 +69,7 @@
             ]],
             ['현황', '📈', [
                 ['portal.store.purchases', '구매 현황', []],
+                ['portal.store.tax_invoices.index', '세금계산서', ['portal.store.tax_invoices.show']],
             ]],
         ],
         'supplier' => [
