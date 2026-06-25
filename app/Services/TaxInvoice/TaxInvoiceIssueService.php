@@ -10,6 +10,8 @@ use App\Models\Supplier;
 use App\Models\SupplierStatement;
 use App\Models\SupplyProduct;
 use App\Models\TaxInvoice;
+use App\Models\User;
+use App\Services\Notification\NotificationService;
 use App\Services\Popbill\PopbillTaxinvoiceService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -23,8 +25,10 @@ use Illuminate\Support\Facades\Auth;
  */
 class TaxInvoiceIssueService
 {
-    public function __construct(private PopbillTaxinvoiceService $popbill)
-    {
+    public function __construct(
+        private PopbillTaxinvoiceService $popbill,
+        private NotificationService $notifications,
+    ) {
     }
 
     /** 본사 → 매장 (발주 1건). 과세·면세 혼합 시 2장 발행 → Collection 반환. */
@@ -229,7 +233,70 @@ class TaxInvoiceIssueService
             OrderItem::where('tax_invoice_id', $invoice->id)->update(['tax_invoice_id' => null]);
         }
 
+        $this->notifyCanceled($invoice);
+
         return $invoice;
+    }
+
+    /** 세금계산서 발행 알림 (웹 토스트 + 모바일 FCM). 실패해도 발행은 막지 않음. */
+    private function notifyIssued(string $direction, array $refs, Collection $issued): void
+    {
+        if ($issued->isEmpty()) {
+            return;
+        }
+        try {
+            $total = (int) $issued->sum('total_amount');
+            $first = $issued->first();
+            $data = ['invoice_id' => $first->id, 'invoice_no' => $first->invoice_no];
+
+            if ($direction === 'hq_to_store' && ! empty($refs['store_id'])) {
+                $this->notifications->notifyStore(
+                    (int) $refs['store_id'],
+                    'tax_invoice_issued',
+                    '🧾 세금계산서가 발행되었습니다',
+                    '본사에서 세금계산서를 발행했습니다 · 합계 '.number_format($total).'원',
+                    $data,
+                );
+            } elseif ($direction === 'supplier_to_hq') {
+                $this->notifications->notifyUsers(
+                    User::where('role', 'hq')->get(),
+                    'tax_invoice_issued',
+                    '🧾 공급처 세금계산서 발행',
+                    ($first->invoicer_corp_name ?: '공급처').' · 합계 '.number_format($total).'원 청구 세금계산서가 발행되었습니다',
+                    $data,
+                );
+            }
+        } catch (\Throwable $e) {
+            report($e);
+        }
+    }
+
+    /** 세금계산서 취소 알림 (상대방에게). */
+    private function notifyCanceled(TaxInvoice $invoice): void
+    {
+        try {
+            $data = ['invoice_id' => $invoice->id, 'invoice_no' => $invoice->invoice_no];
+
+            if ($invoice->direction === 'hq_to_store' && $invoice->store_id) {
+                $this->notifications->notifyStore(
+                    (int) $invoice->store_id,
+                    'tax_invoice_canceled',
+                    '⚠️ 세금계산서 취소',
+                    "세금계산서 {$invoice->invoice_no}이(가) 발행취소되었습니다.",
+                    $data,
+                );
+            } elseif ($invoice->direction === 'supplier_to_hq') {
+                $this->notifications->notifyUsers(
+                    User::where('role', 'hq')->get(),
+                    'tax_invoice_canceled',
+                    '⚠️ 공급처 세금계산서 취소',
+                    ($invoice->invoicer_corp_name ?: '공급처')." 세금계산서 {$invoice->invoice_no}이(가) 취소되었습니다.",
+                    $data,
+                );
+            }
+        } catch (\Throwable $e) {
+            report($e);
+        }
     }
 
     /** 주문 품목 → 세금계산서 라인 (mode: store=매장구매가 / supply=공급가) */
@@ -298,6 +365,8 @@ class TaxInvoiceIssueService
         if ($direction === 'hq_to_store' && ! empty($refs['statement_id'])) {
             Statement::where('id', $refs['statement_id'])->update(['tax_invoice_id' => $issued->first()->id]);
         }
+
+        $this->notifyIssued($direction, $refs, $issued);
 
         return $issued;
     }
