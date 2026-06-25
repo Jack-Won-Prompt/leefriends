@@ -10,7 +10,7 @@ class OrderItem extends Model
         'order_id', 'sales_order_id', 'shipment_id', 'supply_product_id', 'supply_product_unit_id', 'product_name', 'unit',
         'supply_type', 'supplier_id', 'supplier_name', 'qty',
         'store_unit_price', 'supply_unit_price', 'store_line_amount',
-        'supply_line_amount', 'fulfillment_status', 'shipped_at', 'tax_invoice_id',
+        'supply_line_amount', 'fulfillment_status', 'shipped_at', 'tax_invoice_id', 'supplier_statement_id',
     ];
 
     protected $casts = [
