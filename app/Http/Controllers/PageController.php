@@ -23,4 +23,9 @@ class PageController extends Controller
     {
         return view('brand');
     }
+
+    public function privacy()
+    {
+        return view('privacy');
+    }
 }

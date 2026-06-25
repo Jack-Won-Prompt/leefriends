@@ -47,7 +47,7 @@
             </div>
             <div class="flex gap-4">
                 <a href="#" class="hover:text-white transition">이용약관</a>
-                <a href="#" class="font-semibold text-neutral-300 hover:text-white transition">개인정보처리방침</a>
+                <a href="{{ route('privacy') }}" class="font-semibold text-neutral-300 hover:text-white transition">개인정보처리방침</a>
                 <a href="{{ route('admin.login') }}" class="hover:text-white transition">관리자</a>
             </div>
         </div>

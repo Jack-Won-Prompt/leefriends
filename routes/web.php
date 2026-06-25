@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Route;
 */
 Route::get('/', [PageController::class, 'home'])->name('home');
 Route::get('/brand', [PageController::class, 'brand'])->name('brand');
+Route::get('/privacy', [PageController::class, 'privacy'])->name('privacy');
 
 Route::get('/menu', [MenuController::class, 'index'])->name('menu');
 Route::get('/store', [StoreController::class, 'index'])->name('store');
