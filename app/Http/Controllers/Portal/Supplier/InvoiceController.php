@@ -84,8 +84,7 @@ class InvoiceController extends Controller
             ? '세금계산서·계산서 2건이 발행되었습니다. (과세/면세 분리, 본사 청구)'
             : '세금계산서가 발행되었습니다. (본사 청구)';
 
-        return redirect()->route('portal.supplier.invoices.show', $invoices->first())
-            ->with('success', $msg);
+        return redirect()->route('portal.supplier.invoices.index')->with('success', $msg);
     }
 
     public function cancel(Request $request, TaxInvoice $invoice, TaxInvoiceIssueService $service)
@@ -99,14 +98,6 @@ class InvoiceController extends Controller
         }
 
         return back()->with('success', "세금계산서를 발행취소했습니다. (계산서번호 {$invoice->invoice_no})");
-    }
-
-    public function show(TaxInvoice $invoice)
-    {
-        abort_unless($invoice->supplier_id === Auth::user()->supplier_id, 403);
-        $invoice->load(['supplier', 'items.order.store']);
-
-        return view('portal.supplier.invoices.show', compact('invoice'));
     }
 
     private function generateInvoiceNo(): string

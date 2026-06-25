@@ -103,7 +103,7 @@ class StatementController extends Controller
             'created_by' => Auth::id(),
         ]);
 
-        return redirect()->route('portal.supplier.statements.show', $statement)
+        return redirect()->route('portal.supplier.statements.index')
             ->with('success', '거래명세서를 작성했습니다. 이력에서 세금계산서를 발행할 수 있습니다.');
     }
 
@@ -126,14 +126,6 @@ class StatementController extends Controller
             })->values();
     }
 
-    public function show(SupplierStatement $statement)
-    {
-        abort_unless($statement->supplier_id === Auth::user()->supplier_id, 403);
-        $statement->load('taxInvoice');
-
-        return view('portal.supplier.statements.show', compact('statement'));
-    }
-
     /** 거래명세서 → 세금계산서 발행 (공급처 → 본사) */
     public function issue(SupplierStatement $statement, TaxInvoiceIssueService $service)
     {
@@ -154,7 +146,7 @@ class StatementController extends Controller
             ? '세금계산서·계산서 2건이 발행되었습니다. (과세/면세 분리, 본사 청구)'
             : '세금계산서가 발행되었습니다. (본사 청구)';
 
-        return redirect()->route('portal.supplier.statements.show', $statement)->with('success', $msg);
+        return redirect()->route('portal.supplier.statements.index')->with('success', $msg);
     }
 
     /** 거래명세서 여러 건 체크 선택 → 합산하여 세금계산서 발행 (공급처 → 본사) */

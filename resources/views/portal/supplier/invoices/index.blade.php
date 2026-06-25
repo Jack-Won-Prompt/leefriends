@@ -2,6 +2,7 @@
 @section('title', '세금계산서 발행')
 
 @section('content')
+<div x-data="{ open: null }">
 <x-wms.page-head title="세금계산서 발행" subtitle="배송완료 건을 본사에 청구·발행합니다" icon="🧾" />
 <div class="grid md:grid-cols-3 gap-4 mb-6">
     <div class="md:col-span-2 rounded-2xl bg-gradient-to-br from-mango-500 to-mango-600 text-white p-6 flex items-center justify-between">
@@ -40,8 +41,8 @@
             <tbody class="divide-y divide-neutral-100">
                 @foreach ($invoices as $inv)
                     @php($isExempt = str_contains($inv->note ?? '', '면세'))
-                    <tr class="hover:bg-mango-50/40 transition cursor-pointer" onclick="location.href='{{ route('portal.supplier.invoices.show', $inv) }}'">
-                        <td class="px-6 py-3.5 font-bold text-neutral-900">{{ $inv->invoice_no }}</td>
+                    <tr class="hover:bg-mango-50/40 transition cursor-pointer" @click="open = {{ $inv->id }}">
+                        <td class="px-6 py-3.5 font-bold text-mango-700">{{ $inv->invoice_no }}</td>
                         <td class="px-6 py-3.5">
                             <span class="text-xs font-bold px-2 py-1 rounded-full {{ $isExempt ? 'bg-sky-100 text-sky-700' : 'bg-mango-100 text-mango-700' }}">{{ $isExempt ? '계산서(면세)' : '세금계산서' }}</span>
                         </td>
@@ -61,4 +62,22 @@
 </div>
 
 <div class="mt-6">{{ $invoices->links() }}</div>
+
+{{-- 상세 팝업 --}}
+@foreach ($invoices as $inv)
+    <x-detail-modal :id="$inv->id">
+        <x-slot:actions>
+            @if ($inv->status === 'issued')
+                <form method="POST" action="{{ route('portal.supplier.invoices.cancel', $inv) }}"
+                      onsubmit="return confirm('이 세금계산서를 발행취소합니다. 진행하시겠습니까?\n(국세청 전송 완료 후에는 취소되지 않을 수 있습니다.)')">
+                    @csrf
+                    <button type="submit" class="rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold px-4 py-2 text-sm shadow">발행취소</button>
+                </form>
+            @endif
+            <button type="button" onclick="window.print()" class="rounded-xl bg-neutral-900 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm shadow">🖨️ 인쇄</button>
+        </x-slot:actions>
+        @include('portal.partials.tax-invoice-document', ['invoice' => $inv])
+    </x-detail-modal>
+@endforeach
+</div>
 @endsection

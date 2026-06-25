@@ -220,7 +220,6 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::get('invoices/create', [Portal\Supplier\InvoiceController::class, 'create'])->name('invoices.create');
             Route::post('invoices', [Portal\Supplier\InvoiceController::class, 'store'])->name('invoices.store');
             Route::post('invoices/{invoice}/cancel', [Portal\Supplier\InvoiceController::class, 'cancel'])->name('invoices.cancel');
-            Route::get('invoices/{invoice}', [Portal\Supplier\InvoiceController::class, 'show'])->name('invoices.show');
 
             // 거래명세서 (작성→저장→선택 발행)
             Route::get('statements', [Portal\Supplier\StatementController::class, 'index'])->name('statements.index');
@@ -229,7 +228,6 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::post('statements/issue-selected', [Portal\Supplier\StatementController::class, 'issueBulk'])->name('statements.issue_bulk');
             Route::post('statements/{statement}/issue', [Portal\Supplier\StatementController::class, 'issue'])->name('statements.issue');
             Route::delete('statements/{statement}', [Portal\Supplier\StatementController::class, 'destroy'])->name('statements.destroy');
-            Route::get('statements/{statement}', [Portal\Supplier\StatementController::class, 'show'])->name('statements.show');
         });
     });
 });

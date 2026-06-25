@@ -9,6 +9,7 @@
 </x-wms.page-head>
 
 <div x-data="{
+        open: null,
         picked: [],
         totals: {{ \Illuminate\Support\Js::from($statements->where('tax_invoice_id', null)->mapWithKeys(fn ($s) => [$s->id => (int) $s->total])) }},
         get total() { return this.picked.reduce((s, id) => s + (this.totals[id] || 0), 0); },
@@ -42,8 +43,8 @@
                                     <input type="checkbox" value="{{ $s->id }}" x-model.number="picked" class="rounded text-mango-500 focus:ring-mango-400">
                                 @endunless
                             </td>
-                            <td class="px-4 py-3.5 font-bold text-neutral-900">
-                                <a href="{{ route('portal.supplier.statements.show', $s) }}" class="hover:text-mango-600">{{ $s->statement_no }}</a>
+                            <td class="px-4 py-3.5 font-bold text-mango-700">
+                                <button type="button" @click="open = {{ $s->id }}" class="hover:underline">{{ $s->statement_no }}</button>
                             </td>
                             <td class="px-4 py-3.5 text-neutral-500">{{ $s->created_at->format('Y.m.d H:i') }}</td>
                             <td class="px-4 py-3.5 text-right text-neutral-500">{{ number_format($s->item_count) }}건</td>
@@ -58,15 +59,14 @@
                                 @endif
                             </td>
                             <td class="px-6 py-3.5 text-right whitespace-nowrap">
-                                @if ($s->tax_invoice_id)
-                                    <a href="{{ route('portal.supplier.statements.show', $s) }}" class="text-xs font-bold text-neutral-500 hover:text-mango-600">상세</a>
-                                @else
+                                <button type="button" @click="open = {{ $s->id }}" class="text-xs font-bold text-neutral-500 hover:text-mango-600 mr-3">상세</button>
+                                @unless ($s->tax_invoice_id)
                                     <form method="POST" action="{{ route('portal.supplier.statements.destroy', $s) }}" class="inline"
                                           onsubmit="return confirm('이 거래명세서를 삭제할까요?')">
                                         @csrf @method('DELETE')
                                         <button class="text-xs font-bold text-rose-500 hover:text-rose-600">삭제</button>
                                     </form>
-                                @endif
+                                @endunless
                             </td>
                         </tr>
                     @endforeach
@@ -92,6 +92,23 @@
         <button type="submit" class="rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-6 py-3 text-sm transition">🧾 세금계산서 발행</button>
     </form>
 </div>
+
+{{-- 상세 팝업 --}}
+@foreach ($statements as $s)
+    <x-detail-modal :id="$s->id">
+        <x-slot:actions>
+            @unless ($s->tax_invoice_id)
+                <form method="POST" action="{{ route('portal.supplier.statements.issue', $s) }}"
+                      onsubmit="return confirm('이 거래명세서로 세금계산서를 발행합니다. (본사 청구)\n진행하시겠습니까?')">
+                    @csrf
+                    <button type="submit" class="rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm shadow">🧾 세금계산서 발행</button>
+                </form>
+            @endunless
+            <button type="button" onclick="window.print()" class="rounded-xl bg-neutral-900 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm shadow">🖨️ 인쇄</button>
+        </x-slot:actions>
+        @include('portal.partials.supplier-statement-document', ['statement' => $s])
+    </x-detail-modal>
+@endforeach
 </div>
 
 <div class="mt-6">{{ $statements->links() }}</div>

@@ -2,6 +2,7 @@
 @section('title', '거래명세서')
 
 @section('content')
+<div x-data="{ open: null }">
 <x-wms.page-head title="거래명세서" subtitle="작성·발송한 거래명세서 이력입니다. PDF 재보기·재전송할 수 있습니다." icon="🧾">
     <x-slot:actions>
         <a href="{{ route('portal.hq.statements.create') }}" class="inline-flex items-center gap-1 rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm transition">＋ 거래명세서 작성</a>
@@ -35,7 +36,9 @@
                                 {{ $s->sent_at->format('Y.m.d H:i') }}
                                 @if ($s->resend_count > 0)<span class="ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-100 text-sky-600">재전송 {{ $s->resend_count }}</span>@endif
                             </td>
-                            <td class="px-6 py-3.5 font-bold text-neutral-900">{{ $s->store_name }}</td>
+                            <td class="px-6 py-3.5 font-bold text-mango-700">
+                                <button type="button" @click="open = {{ $s->id }}" class="hover:underline">{{ $s->store_name }}</button>
+                            </td>
                             <td class="px-6 py-3.5 hidden md:table-cell text-neutral-500">{{ $s->email ?: '-' }}</td>
                             <td class="px-6 py-3.5 text-right text-neutral-500">{{ number_format($s->item_count) }}건</td>
                             <td class="px-6 py-3.5 text-right font-black text-mango-700">{{ number_format($s->total) }}원</td>
@@ -55,6 +58,7 @@
                                 @endif
                             </td>
                             <td class="px-6 py-3.5 text-right whitespace-nowrap">
+                                <button type="button" @click="open = {{ $s->id }}" class="text-xs font-bold text-neutral-500 hover:text-mango-600 mr-3">상세</button>
                                 <a href="{{ route('portal.hq.statements.pdf', $s) }}" target="_blank"
                                    class="text-xs font-bold text-neutral-700 hover:text-mango-600 mr-3">PDF</a>
                                 <form method="POST" action="{{ route('portal.hq.statements.resend', $s) }}" class="inline"
@@ -74,4 +78,23 @@
 @if ($statements->hasPages())
     <div class="mt-5">{{ $statements->links() }}</div>
 @endif
+
+{{-- 상세 팝업 --}}
+@foreach ($statements as $s)
+    <x-detail-modal :id="$s->id">
+        <x-slot:actions>
+            <a href="{{ route('portal.hq.statements.pdf', $s) }}" target="_blank" class="rounded-xl bg-white/90 hover:bg-white text-neutral-700 font-bold px-4 py-2 text-sm shadow">PDF</a>
+            @if (! $s->tax_invoice_id && optional($s->store)->biz_no)
+                <form method="POST" action="{{ route('portal.hq.tax_invoices.issue_statement', $s) }}"
+                      onsubmit="return confirm('이 거래명세서로 세금계산서를 발행합니다.\n수신: {{ $s->store_name }} ({{ $s->email }})\n진행하시겠습니까?')">
+                    @csrf
+                    <button type="submit" class="rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm shadow">🧾 세금계산서 발행</button>
+                </form>
+            @endif
+            <button type="button" onclick="window.print()" class="rounded-xl bg-neutral-900 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm shadow">🖨️ 인쇄</button>
+        </x-slot:actions>
+        @include('portal.partials.hq-statement-document', ['statement' => $s])
+    </x-detail-modal>
+@endforeach
+</div>
 @endsection

@@ -90,8 +90,8 @@
             ['정산 · 현황', '📈', [
                 ['portal.supplier.sales', '매출 현황', []],
                 ['portal.supplier.statements.create', '거래명세서 작성', []],
-                ['portal.supplier.statements.index', '거래명세서 이력', ['portal.supplier.statements.show']],
-                ['portal.supplier.invoices.index', '세금계산서 발행이력', ['portal.supplier.invoices.create','portal.supplier.invoices.show']],
+                ['portal.supplier.statements.index', '거래명세서 이력', []],
+                ['portal.supplier.invoices.index', '세금계산서 발행이력', ['portal.supplier.invoices.create']],
             ]],
         ],
     ];
