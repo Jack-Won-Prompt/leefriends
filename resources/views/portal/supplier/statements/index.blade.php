@@ -31,7 +31,7 @@
                         <th class="text-right font-semibold px-4 py-3">품목</th>
                         <th class="text-right font-semibold px-4 py-3">공급가액</th>
                         <th class="text-right font-semibold px-6 py-3">합계</th>
-                        <th class="text-left font-semibold px-4 py-3">본사 전송</th>
+                        <th class="text-left font-semibold px-4 py-3">거래명세서 본사 전송</th>
                         <th class="text-left font-semibold px-4 py-3">세금계산서</th>
                         <th class="text-right font-semibold px-6 py-3 w-28">관리</th>
                     </tr>
