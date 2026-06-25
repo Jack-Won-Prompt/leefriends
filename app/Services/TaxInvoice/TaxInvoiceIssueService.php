@@ -158,19 +158,29 @@ class TaxInvoiceIssueService
      */
     public function supplierToHqFromStatement(SupplierStatement $statement): Collection
     {
-        $supplier = $statement->supplier;
-        abort_unless($supplier, 404, '거래명세서의 공급처 정보가 없습니다.');
+        abort_unless($statement->supplier, 404, '거래명세서의 공급처 정보가 없습니다.');
 
-        $lines = collect($statement->items ?? [])->map(fn ($l) => [
-            'item_id' => null,
-            'name' => $l['name'] ?? '-',
-            'spec' => $l['unit'] ?? '',
-            'qty' => (int) ($l['qty'] ?? 0),
-            'unit_price' => (int) ($l['unit_price'] ?? 0),
-            'tax_type' => $l['tax_type'] ?? 'inc',
-            'supply' => (int) ($l['supply'] ?? 0),
-            'tax' => (int) ($l['tax'] ?? 0),
-        ])->all();
+        return $this->supplierToHqFromStatements($statement->supplier, collect([$statement]));
+    }
+
+    /** 공급처 → 본사 (여러 거래명세서 합산). 과세·면세 자동 분리. */
+    public function supplierToHqFromStatements(Supplier $supplier, Collection $statements): Collection
+    {
+        $lines = [];
+        foreach ($statements as $st) {
+            foreach ($st->items ?? [] as $l) {
+                $lines[] = [
+                    'item_id' => null,
+                    'name' => $l['name'] ?? '-',
+                    'spec' => $l['unit'] ?? '',
+                    'qty' => (int) ($l['qty'] ?? 0),
+                    'unit_price' => (int) ($l['unit_price'] ?? 0),
+                    'tax_type' => $l['tax_type'] ?? 'inc',
+                    'supply' => (int) ($l['supply'] ?? 0),
+                    'tax' => (int) ($l['tax'] ?? 0),
+                ];
+            }
+        }
 
         return $this->issueSplit('supplier_to_hq', $lines, $this->supplierParty($supplier), $this->hqParty(), [
             'supplier_id' => $supplier->id,

@@ -157,6 +157,41 @@ class StatementController extends Controller
         return redirect()->route('portal.supplier.statements.show', $statement)->with('success', $msg);
     }
 
+    /** 거래명세서 여러 건 체크 선택 → 합산하여 세금계산서 발행 (공급처 → 본사) */
+    public function issueBulk(Request $request, TaxInvoiceIssueService $service)
+    {
+        $sid = Auth::user()->supplier_id;
+
+        $data = $request->validate([
+            'statement_ids' => ['required', 'array', 'min:1'],
+            'statement_ids.*' => ['integer'],
+        ], ['statement_ids.required' => '발행할 거래명세서를 선택해 주세요.']);
+
+        $statements = SupplierStatement::where('supplier_id', $sid)
+            ->whereNull('tax_invoice_id')
+            ->whereIn('id', $data['statement_ids'])
+            ->get();
+
+        if ($statements->isEmpty()) {
+            return back()->withErrors(['tax' => '발행 가능한(미발행) 거래명세서가 없습니다.']);
+        }
+
+        $supplier = Supplier::findOrFail($sid);
+
+        try {
+            $invoices = $service->supplierToHqFromStatements($supplier, $statements);
+            SupplierStatement::whereIn('id', $statements->pluck('id'))->update(['tax_invoice_id' => $invoices->first()->id]);
+        } catch (\Throwable $e) {
+            return back()->withErrors(['tax' => '세금계산서 발행 실패: '.$e->getMessage()]);
+        }
+
+        $msg = $invoices->count() > 1
+            ? "세금계산서·계산서 2건을 발행했습니다. (거래명세서 {$statements->count()}건 합산, 과세/면세 분리)"
+            : "세금계산서를 발행했습니다. (거래명세서 {$statements->count()}건 합산)";
+
+        return redirect()->route('portal.supplier.statements.index')->with('success', $msg);
+    }
+
     /** 미발행 거래명세서 삭제 (귀속 품목 해제) */
     public function destroy(SupplierStatement $statement)
     {

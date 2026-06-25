@@ -226,6 +226,7 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::get('statements', [Portal\Supplier\StatementController::class, 'index'])->name('statements.index');
             Route::get('statements/create', [Portal\Supplier\StatementController::class, 'create'])->name('statements.create');
             Route::post('statements', [Portal\Supplier\StatementController::class, 'store'])->name('statements.store');
+            Route::post('statements/issue-selected', [Portal\Supplier\StatementController::class, 'issueBulk'])->name('statements.issue_bulk');
             Route::post('statements/{statement}/issue', [Portal\Supplier\StatementController::class, 'issue'])->name('statements.issue');
             Route::delete('statements/{statement}', [Portal\Supplier\StatementController::class, 'destroy'])->name('statements.destroy');
             Route::get('statements/{statement}', [Portal\Supplier\StatementController::class, 'show'])->name('statements.show');
