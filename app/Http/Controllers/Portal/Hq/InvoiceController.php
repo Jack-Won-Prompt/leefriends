@@ -22,11 +22,4 @@ class InvoiceController extends Controller
 
         return view('portal.hq.invoices.index', compact('invoices', 'totals'));
     }
-
-    public function show(TaxInvoice $invoice)
-    {
-        $invoice->load(['supplier', 'items.order.store']);
-
-        return view('portal.hq.invoices.show', compact('invoice'));
-    }
 }

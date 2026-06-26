@@ -164,7 +164,6 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::patch('stores/{store}', [Portal\Hq\StoreController::class, 'update'])->name('stores.update');
             Route::delete('stores/{store}', [Portal\Hq\StoreController::class, 'destroy'])->name('stores.destroy');
             Route::get('invoices', [Portal\Hq\InvoiceController::class, 'index'])->name('invoices.index');
-            Route::get('invoices/{invoice}', [Portal\Hq\InvoiceController::class, 'show'])->name('invoices.show');
 
             // 세금계산서 발행 (본사 → 매장)
             Route::get('tax-invoices', [Portal\Hq\TaxInvoiceController::class, 'index'])->name('tax_invoices.index');

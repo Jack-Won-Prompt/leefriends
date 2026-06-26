@@ -2,6 +2,7 @@
 @section('title', '세금계산서 (수취)')
 
 @section('content')
+<div x-data="{ open: null }">
 <x-wms.page-head title="세금계산서 (수취)" subtitle="공급처가 발행한 세금계산서" icon="🧮" />
 <div class="grid grid-cols-2 gap-4 mb-6">
     <div class="rounded-2xl bg-white p-5 shadow-sm border border-neutral-100">
@@ -34,14 +35,14 @@
                 </thead>
                 <tbody class="divide-y divide-neutral-100">
                     @foreach ($invoices as $inv)
-                        <tr class="hover:bg-mango-50/40 transition cursor-pointer" onclick="location.href='{{ route('portal.hq.invoices.show', $inv) }}'">
-                            <td class="px-6 py-3.5 font-bold text-neutral-900">{{ $inv->invoice_no }}</td>
-                            <td class="px-6 py-3.5">{{ $inv->supplier->name ?? '-' }}</td>
+                        <tr class="hover:bg-mango-50/40 transition cursor-pointer" @click="open = {{ $inv->id }}">
+                            <td class="px-6 py-3.5 font-bold text-mango-700">{{ $inv->invoice_no }}</td>
+                            <td class="px-6 py-3.5">{{ $inv->invoicer_corp_name ?? optional($inv->supplier)->name ?? '-' }}</td>
                             <td class="px-6 py-3.5 text-right">{{ number_format($inv->supply_amount) }}원</td>
                             <td class="px-6 py-3.5 text-right text-neutral-500">{{ number_format($inv->vat) }}원</td>
                             <td class="px-6 py-3.5 text-right font-black text-mango-700">{{ number_format($inv->total_amount) }}원</td>
                             <td class="px-6 py-3.5 text-neutral-400">{{ $inv->issue_date?->format('Y.m.d') }}</td>
-                            <td class="px-6 py-3.5"><span class="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">{{ $inv->status_label }}</span></td>
+                            <td class="px-6 py-3.5"><span class="text-xs font-bold px-2.5 py-1 rounded-full {{ $inv->status === 'canceled' ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700' }}">{{ $inv->status_label }}</span></td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -51,4 +52,15 @@
 </div>
 
 <div class="mt-6">{{ $invoices->links() }}</div>
+
+{{-- 상세 팝업 --}}
+@foreach ($invoices as $inv)
+    <x-detail-modal :id="$inv->id">
+        <x-slot:actions>
+            <button type="button" onclick="window.print()" class="rounded-xl bg-neutral-900 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm shadow">🖨️ 인쇄</button>
+        </x-slot:actions>
+        @include('portal.partials.tax-invoice-document', ['invoice' => $inv])
+    </x-detail-modal>
+@endforeach
+</div>
 @endsection
