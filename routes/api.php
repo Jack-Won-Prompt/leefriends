@@ -144,6 +144,7 @@ Route::prefix('v1')->group(function () {
             Route::get('sales-orders/{salesOrder}', [Seller\SalesOrderController::class, 'show'])->name('sales_orders.show');
             Route::patch('sales-orders/{salesOrder}/confirm', [Seller\SalesOrderController::class, 'confirm'])->name('sales_orders.confirm');
 
+            Route::get('couriers', [Seller\ShipmentController::class, 'couriers'])->name('couriers.index');
             Route::get('shipments', [Seller\ShipmentController::class, 'index'])->name('shipments.index');
             Route::get('shipments/candidates', [Seller\ShipmentController::class, 'candidates'])->name('shipments.candidates');
             Route::post('shipments', [Seller\ShipmentController::class, 'store'])->name('shipments.store');

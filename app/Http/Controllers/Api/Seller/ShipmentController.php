@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Seller;
 
 use App\Http\Controllers\Controller;
+use App\Models\Courier;
 use App\Models\OrderChange;
 use App\Models\OrderItem;
 use App\Models\Shipment;
@@ -132,14 +133,19 @@ class ShipmentController extends Controller
 
         $data = $request->validate([
             'carrier' => ['required', 'string', 'max:50'],
-            'tracking_no' => ['required', 'string', 'max:50'],
+            'tracking_no' => ['nullable', 'string', 'max:50'],
         ], [
-            'carrier.required' => '택배사를 입력해 주세요.',
-            'tracking_no.required' => '송장번호를 입력해 주세요.',
+            'carrier.required' => '택배사를 선택해 주세요.',
         ]);
 
+        // 직접 배송이면 송장번호 불필요, 그 외에는 필수
+        $isDirect = Courier::where('name', $data['carrier'])->where('is_direct', true)->exists();
+        if (! $isDirect && empty($data['tracking_no'])) {
+            return response()->json(['message' => '송장번호를 입력해 주세요.', 'errors' => ['tracking_no' => ['송장번호를 입력해 주세요.']]], 422);
+        }
+
         try {
-            $service->confirm($shipment, $data['carrier'], $data['tracking_no']);
+            $service->confirm($shipment, $data['carrier'], $data['tracking_no'] ?? '');
         } catch (\Throwable $e) {
             return response()->json(['message' => $e->getMessage() ?: '출고 확정에 실패했습니다.'], 400);
         }
@@ -147,6 +153,18 @@ class ShipmentController extends Controller
         return response()->json([
             'message' => '출고가 확정되었습니다. 매장에 배송시작 알림을 전송했습니다.',
             'data' => $this->detail($shipment->fresh(['store', 'items'])),
+        ]);
+    }
+
+    /** 택배사 목록 (출고 확정 드롭다운용, 직접 배송 포함) */
+    public function couriers(): JsonResponse
+    {
+        return response()->json([
+            'data' => Courier::active()->ordered()->get(['id', 'name', 'is_direct'])->map(fn ($c) => [
+                'id' => $c->id,
+                'name' => $c->name,
+                'is_direct' => (bool) $c->is_direct,
+            ]),
         ]);
     }
 
