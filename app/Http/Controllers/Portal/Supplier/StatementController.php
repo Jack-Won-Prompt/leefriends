@@ -228,6 +228,15 @@ class StatementController extends Controller
         return $to;
     }
 
+    /** 거래명세서 인쇄 전용 페이지 (?print=1 자동 인쇄) */
+    public function print(SupplierStatement $statement)
+    {
+        abort_unless($statement->supplier_id === Auth::user()->supplier_id, 403);
+        $statement->loadMissing(['supplier', 'taxInvoice']);
+
+        return view('portal.print.supplier-statement', compact('statement'));
+    }
+
     /** 거래명세서 PDF 다운로드/미리보기 */
     public function pdf(SupplierStatement $statement)
     {

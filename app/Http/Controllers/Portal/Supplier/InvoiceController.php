@@ -100,6 +100,14 @@ class InvoiceController extends Controller
         return back()->with('success', "세금계산서를 발행취소했습니다. (계산서번호 {$invoice->invoice_no})");
     }
 
+    /** 세금계산서 인쇄 전용 페이지 (?print=1 자동 인쇄) */
+    public function print(TaxInvoice $invoice)
+    {
+        abort_unless($invoice->supplier_id === Auth::user()->supplier_id, 403);
+
+        return view('portal.print.tax-invoice', compact('invoice'));
+    }
+
     private function generateInvoiceNo(): string
     {
         $date = now()->format('Ymd');

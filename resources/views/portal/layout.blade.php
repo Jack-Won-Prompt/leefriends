@@ -327,6 +327,21 @@
 })();
 </script>
 @endif
+<script>
+    // 모달 등에서 새 탭 없이 페이지 내 숨김 iframe으로 인쇄 (url 은 ?print=1 자동인쇄 페이지)
+    window.printFrame = function (url) {
+        document.querySelectorAll('iframe.__print-frame').forEach(el => el.remove());
+        const f = document.createElement('iframe');
+        f.className = '__print-frame';
+        f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
+        f.src = url;
+        f.onload = () => {
+            try { f.contentWindow.addEventListener('afterprint', () => setTimeout(() => f.remove(), 300)); } catch (e) {}
+            setTimeout(() => { if (document.body.contains(f)) f.remove(); }, 120000);
+        };
+        document.body.appendChild(f);
+    };
+</script>
 @stack('scripts')
 </body>
 </html>

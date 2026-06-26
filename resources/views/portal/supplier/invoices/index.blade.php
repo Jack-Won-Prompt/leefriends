@@ -74,7 +74,7 @@
                     <button type="submit" class="rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold px-4 py-2 text-sm shadow">발행취소</button>
                 </form>
             @endif
-            <button type="button" onclick="window.print()" class="rounded-xl bg-neutral-900 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm shadow">🖨️ 인쇄</button>
+            <button type="button" onclick="printFrame('{{ route('portal.supplier.invoices.print', ['invoice' => $inv, 'print' => 1]) }}')" class="rounded-xl bg-neutral-900 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm shadow">🖨️ 인쇄</button>
         </x-slot:actions>
         @include('portal.partials.tax-invoice-document', ['invoice' => $inv])
     </x-detail-modal>

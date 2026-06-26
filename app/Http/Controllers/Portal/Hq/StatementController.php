@@ -25,6 +25,14 @@ class StatementController extends Controller
         ]);
     }
 
+    /** 거래명세서 인쇄 전용 페이지 (?print=1 자동 인쇄) */
+    public function print(Statement $statement)
+    {
+        $statement->loadMissing(['store', 'taxInvoice']);
+
+        return view('portal.print.hq-statement', compact('statement'));
+    }
+
     public function create()
     {
         return view('portal.hq.statements.create', [

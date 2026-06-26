@@ -172,6 +172,7 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::get('tax-invoices/create', [Portal\Hq\TaxInvoiceController::class, 'create'])->name('tax_invoices.create');
             Route::post('tax-invoices', [Portal\Hq\TaxInvoiceController::class, 'store'])->name('tax_invoices.store');
             Route::post('tax-invoices/{invoice}/cancel', [Portal\Hq\TaxInvoiceController::class, 'cancel'])->name('tax_invoices.cancel');
+            Route::get('tax-invoices/{invoice}/print', [Portal\Hq\TaxInvoiceController::class, 'printInvoice'])->name('tax_invoices.print');
             Route::post('orders/{order}/tax-invoice', [Portal\Hq\TaxInvoiceController::class, 'issueForOrder'])->name('tax_invoices.issue');
             Route::post('statements/{statement}/tax-invoice', [Portal\Hq\TaxInvoiceController::class, 'issueForStatement'])->name('tax_invoices.issue_statement');
 
@@ -181,6 +182,7 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::post('statements/preview', [Portal\Hq\StatementController::class, 'preview'])->name('statements.preview');
             Route::post('statements/send', [Portal\Hq\StatementController::class, 'send'])->name('statements.send');
             Route::get('statements/{statement}/pdf', [Portal\Hq\StatementController::class, 'pdf'])->name('statements.pdf');
+            Route::get('statements/{statement}/print', [Portal\Hq\StatementController::class, 'print'])->name('statements.print');
             Route::post('statements/{statement}/resend', [Portal\Hq\StatementController::class, 'resend'])->name('statements.resend');
 
             // 공지사항 발송 (매장/공급처 대상)
@@ -222,6 +224,7 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::get('invoices/create', [Portal\Supplier\InvoiceController::class, 'create'])->name('invoices.create');
             Route::post('invoices', [Portal\Supplier\InvoiceController::class, 'store'])->name('invoices.store');
             Route::post('invoices/{invoice}/cancel', [Portal\Supplier\InvoiceController::class, 'cancel'])->name('invoices.cancel');
+            Route::get('invoices/{invoice}/print', [Portal\Supplier\InvoiceController::class, 'print'])->name('invoices.print');
 
             // 거래명세서 (작성→저장→선택 발행)
             Route::get('statements', [Portal\Supplier\StatementController::class, 'index'])->name('statements.index');
@@ -231,6 +234,7 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::post('statements/{statement}/issue', [Portal\Supplier\StatementController::class, 'issue'])->name('statements.issue');
             Route::post('statements/{statement}/email', [Portal\Supplier\StatementController::class, 'email'])->name('statements.email');
             Route::get('statements/{statement}/pdf', [Portal\Supplier\StatementController::class, 'pdf'])->name('statements.pdf');
+            Route::get('statements/{statement}/print', [Portal\Supplier\StatementController::class, 'print'])->name('statements.print');
             Route::delete('statements/{statement}', [Portal\Supplier\StatementController::class, 'destroy'])->name('statements.destroy');
         });
     });

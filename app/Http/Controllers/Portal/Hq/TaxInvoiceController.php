@@ -113,6 +113,12 @@ class TaxInvoiceController extends Controller
         return back()->with('success', $this->resultMessage($invoices, 1));
     }
 
+    /** 세금계산서 인쇄 전용 페이지 (?print=1 자동 인쇄) */
+    public function printInvoice(TaxInvoice $invoice)
+    {
+        return view('portal.print.tax-invoice', compact('invoice'));
+    }
+
     /** 거래명세서 1건 → 세금계산서 발행 (본사 → 매장) */
     public function issueForStatement(Request $request, Statement $statement, TaxInvoiceIssueService $service)
     {

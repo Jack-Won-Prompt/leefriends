@@ -91,7 +91,7 @@
                     <button type="submit" class="rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm shadow">🧾 세금계산서 발행</button>
                 </form>
             @endif
-            <button type="button" onclick="window.print()" class="rounded-xl bg-neutral-900 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm shadow">🖨️ 인쇄</button>
+            <button type="button" onclick="printFrame('{{ route('portal.hq.statements.print', ['statement' => $s, 'print' => 1]) }}')" class="rounded-xl bg-neutral-900 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm shadow">🖨️ 인쇄</button>
         </x-slot:actions>
         @include('portal.partials.hq-statement-document', ['statement' => $s])
     </x-detail-modal>
