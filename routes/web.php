@@ -213,6 +213,8 @@ Route::prefix('portal')->name('portal.')->group(function () {
         Route::middleware('role:supplier')->prefix('supplier')->name('supplier.')->group(function () {
             Route::get('orders', [Portal\Supplier\OrderController::class, 'index'])->name('orders.index');
             Route::get('orders/{order}', [Portal\Supplier\OrderController::class, 'show'])->name('orders.show');
+            // 자사 공급 품목 배송상태 변경
+            Route::patch('fulfillment/{item}', [Portal\Supplier\OrderController::class, 'updateItem'])->name('fulfillment.update');
 
             // 물품(재료) 등록/관리 — 본사 승인 후 매장 발주 가능
             Route::resource('products', Portal\Supplier\ProductController::class)->except(['show', 'create', 'edit']);

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Portal\Supplier;
 
 use App\Http\Controllers\Controller;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\Store;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -44,5 +45,26 @@ class OrderController extends Controller
         $order->load(['store', 'user', 'items' => $mine]);
 
         return view('portal.supplier.orders.show', compact('order'));
+    }
+
+    /** 자사 공급 품목의 배송상태(배송중/배송완료) 변경 */
+    public function updateItem(Request $request, OrderItem $item)
+    {
+        $sid = Auth::user()->supplier_id;
+        abort_unless($item->supply_type === 'supplier' && (int) $item->supplier_id === (int) $sid, 403);
+
+        $data = $request->validate([
+            'fulfillment_status' => ['required', 'in:pending,shipping,delivered'],
+        ]);
+
+        $item->fulfillment_status = $data['fulfillment_status'];
+        $item->shipped_at = in_array($data['fulfillment_status'], ['shipping', 'delivered'], true)
+            ? ($item->shipped_at ?? now())
+            : null;
+        $item->save();
+
+        $item->order?->syncStatus();
+
+        return back()->with('success', '공급 품목의 배송상태가 변경되었습니다.');
     }
 }
