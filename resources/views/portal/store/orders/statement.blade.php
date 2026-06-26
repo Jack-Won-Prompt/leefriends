@@ -28,5 +28,8 @@
 
     @include('portal.partials.store-order-statement-document', ['order' => $order])
 </div>
+@if (request()->boolean('print'))
+    <script>window.addEventListener('load', () => setTimeout(() => window.print(), 300));</script>
+@endif
 </body>
 </html>

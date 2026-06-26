@@ -89,7 +89,8 @@
         {{-- 거래명세서 모달 팝업 --}}
         <x-detail-modal :id="$order->id">
             <x-slot:actions>
-                <button type="button" onclick="window.print()" class="rounded-xl bg-neutral-900 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm shadow">🖨️ 인쇄</button>
+                <a href="{{ route('portal.store.orders.statement', ['order' => $order, 'print' => 1]) }}" target="_blank"
+                   class="rounded-xl bg-neutral-900 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm shadow">🖨️ 인쇄</a>
             </x-slot:actions>
             @include('portal.partials.store-order-statement-document', ['order' => $order])
         </x-detail-modal>
