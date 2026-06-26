@@ -49,6 +49,7 @@
                 ['portal.hq.stores.index', '매장 관리', []],
                 ['portal.hq.couriers.index', '택배사 관리', []],
             ]],
+            ['직원 관리', '👥', [['portal.staff.index', '직원 관리', []]]],
             ['공지사항', '📢', [['portal.hq.notices.index', '공지사항', []]]],
             ['창업 문의', '📨', [
                 ['portal.hq.inquiries.index', '창업 문의', ['portal.hq.inquiries.show']],
@@ -72,6 +73,7 @@
                 ['portal.store.purchases', '구매 현황', []],
                 ['portal.store.tax_invoices.index', '세금계산서', ['portal.store.tax_invoices.show']],
             ]],
+            ['직원 관리', '👥', [['portal.staff.index', '직원 관리', []]]],
         ],
         'supplier' => [
             ['대시보드', '📊', [['portal.dashboard', '대시보드', []]]],
@@ -94,6 +96,7 @@
                 ['portal.supplier.statements.index', '거래명세서 이력', []],
                 ['portal.supplier.invoices.index', '세금계산서 발행이력', ['portal.supplier.invoices.create']],
             ]],
+            ['직원 관리', '👥', [['portal.staff.index', '직원 관리', []]]],
         ],
     ];
     $nav = $menus[$role] ?? $menus['hq'];
@@ -122,7 +125,7 @@
         <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
             @foreach ($nav as [$groupLabel, $groupIcon, $children])
                 @php $groupActive = collect($children)->contains(fn ($c) => $isChildActive($c)); @endphp
-                @if (count($children) === 1 && empty($children[0][2]) && in_array($children[0][0], ['portal.dashboard', 'portal.chat.index', 'portal.hq.notices.index', 'portal.notices.index'], true))
+                @if (count($children) === 1 && empty($children[0][2]) && in_array($children[0][0], ['portal.dashboard', 'portal.chat.index', 'portal.hq.notices.index', 'portal.notices.index', 'portal.staff.index'], true))
                     {{-- 단일 링크 그룹 (대시보드) --}}
                     @php [$r, $label, $also] = $children[0]; $active = $isChildActive($children[0]); @endphp
                     <a href="{{ route($r) }}"

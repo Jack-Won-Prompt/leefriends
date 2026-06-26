@@ -75,6 +75,12 @@ Route::prefix('portal')->name('portal.')->group(function () {
         Route::post('notifications/read-all', [Portal\NotificationController::class, 'readAll'])->name('notifications.read_all');
         Route::post('notifications/{notification}/read', [Portal\NotificationController::class, 'read'])->name('notifications.read');
 
+        // 직원(계정) 관리 — 본사/매장/공급처 각자 소속 직원
+        Route::get('staff', [Portal\StaffController::class, 'index'])->name('staff.index');
+        Route::post('staff', [Portal\StaffController::class, 'store'])->name('staff.store');
+        Route::patch('staff/{user}', [Portal\StaffController::class, 'update'])->name('staff.update');
+        Route::delete('staff/{user}', [Portal\StaffController::class, 'destroy'])->name('staff.destroy');
+
         // 실시간 채팅 (본사 ↔ 매장 / 본사 ↔ 공급처)
         Route::get('chat', [Portal\ChatController::class, 'index'])->name('chat.index');
         Route::post('chat/{conversation}/send', [Portal\ChatController::class, 'send'])->name('chat.send');
