@@ -28,4 +28,9 @@ class PageController extends Controller
     {
         return view('privacy');
     }
+
+    public function accountDeletion()
+    {
+        return view('account-deletion');
+    }
 }
