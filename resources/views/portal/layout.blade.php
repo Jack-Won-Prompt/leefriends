@@ -47,6 +47,7 @@
                 ['portal.hq.categories.index', '카테고리 관리', []],
                 ['portal.hq.suppliers.index', '공급처 관리', []],
                 ['portal.hq.stores.index', '매장 관리', []],
+                ['portal.hq.couriers.index', '택배사 관리', []],
             ]],
             ['공지사항', '📢', [['portal.hq.notices.index', '공지사항', []]]],
             ['창업 문의', '📨', [

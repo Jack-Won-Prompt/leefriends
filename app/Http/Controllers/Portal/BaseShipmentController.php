@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
+use App\Models\Courier;
 use App\Models\OrderChange;
 use App\Models\OrderItem;
 use App\Models\Shipment;
@@ -99,6 +100,7 @@ abstract class BaseShipmentController extends Controller
         return view('portal.shared.shipments.show', [
             'shipment' => $shipment,
             'routePrefix' => $this->routePrefix(),
+            'couriers' => Courier::active()->ordered()->get(),
         ]);
     }
 
@@ -108,13 +110,18 @@ abstract class BaseShipmentController extends Controller
 
         $data = $request->validate([
             'carrier' => ['required', 'string', 'max:50'],
-            'tracking_no' => ['required', 'string', 'max:50'],
+            'tracking_no' => ['nullable', 'string', 'max:50'],
         ], [
-            'carrier.required' => '택배사를 입력해 주세요.',
-            'tracking_no.required' => '송장번호를 입력해 주세요.',
+            'carrier.required' => '택배사를 선택해 주세요.',
         ]);
 
-        $service->confirm($shipment, $data['carrier'], $data['tracking_no']);
+        // 직접 배송이면 송장번호 불필요, 그 외에는 필수
+        $isDirect = Courier::where('name', $data['carrier'])->where('is_direct', true)->exists();
+        if (! $isDirect && empty($data['tracking_no'])) {
+            return back()->withErrors(['tracking_no' => '송장번호를 입력해 주세요.'])->withInput();
+        }
+
+        $service->confirm($shipment, $data['carrier'], $data['tracking_no'] ?? '');
 
         return back()->with('success', '출고가 확정되었습니다. 매장에 배송시작 알림(FCM)을 전송했습니다.');
     }

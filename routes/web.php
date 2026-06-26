@@ -155,6 +155,12 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::post('categories', [Portal\Hq\CategoryController::class, 'store'])->name('categories.store');
             Route::patch('categories/{category}', [Portal\Hq\CategoryController::class, 'update'])->name('categories.update');
             Route::delete('categories/{category}', [Portal\Hq\CategoryController::class, 'destroy'])->name('categories.destroy');
+
+            // 택배사 관리 (직접 배송 포함)
+            Route::get('couriers', [Portal\Hq\CourierController::class, 'index'])->name('couriers.index');
+            Route::post('couriers', [Portal\Hq\CourierController::class, 'store'])->name('couriers.store');
+            Route::patch('couriers/{courier}', [Portal\Hq\CourierController::class, 'update'])->name('couriers.update');
+            Route::delete('couriers/{courier}', [Portal\Hq\CourierController::class, 'destroy'])->name('couriers.destroy');
             Route::post('suppliers/invite', [Portal\Hq\SupplierController::class, 'invite'])->name('suppliers.invite');
             Route::post('suppliers/{supplier}/reinvite', [Portal\Hq\SupplierController::class, 'reinvite'])->name('suppliers.reinvite');
             Route::resource('suppliers', Portal\Hq\SupplierController::class)->except(['show', 'create', 'edit']);

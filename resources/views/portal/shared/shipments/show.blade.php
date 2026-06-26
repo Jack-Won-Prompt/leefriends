@@ -33,19 +33,29 @@
     <div class="rounded-2xl bg-white shadow-sm border border-neutral-100 p-6">
         @if ($shipment->status === 'created')
             <h3 class="font-extrabold text-neutral-900 mb-4">송장 입력 · 출고확정</h3>
-            <form method="POST" action="{{ route($routePrefix . '.shipments.confirm', $shipment) }}" class="space-y-3">
+            <form method="POST" action="{{ route($routePrefix . '.shipments.confirm', $shipment) }}" class="space-y-3"
+                  x-data="{ direct: {{ old('carrier') && optional($couriers->firstWhere('name', old('carrier')))->is_direct ? 'true' : 'false' }} }">
                 @csrf @method('PATCH')
                 <div>
                     <label class="block text-sm font-bold text-neutral-700 mb-1.5">택배사</label>
-                    <input type="text" name="carrier" value="{{ old('carrier') }}" required list="carriers"
-                           class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400" placeholder="CJ대한통운">
-                    <datalist id="carriers"><option value="CJ대한통운"><option value="한진택배"><option value="롯데택배"><option value="우체국택배"><option value="로젠택배"></datalist>
+                    <select name="carrier" required
+                            @change="direct = ($event.target.selectedOptions[0]?.dataset.direct === '1')"
+                            class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+                        <option value="">택배사 선택…</option>
+                        @foreach ($couriers as $c)
+                            <option value="{{ $c->name }}" data-direct="{{ $c->is_direct ? 1 : 0 }}" @selected(old('carrier') === $c->name)>{{ $c->name }}@if ($c->is_direct) (송장 불필요)@endif</option>
+                        @endforeach
+                    </select>
+                    @if ($couriers->isEmpty())
+                        <p class="text-[11px] text-rose-500 mt-1">등록된 택배사가 없습니다. 본사 «택배사 관리»에서 먼저 등록하세요.</p>
+                    @endif
                 </div>
-                <div>
+                <div x-show="!direct">
                     <label class="block text-sm font-bold text-neutral-700 mb-1.5">송장번호</label>
-                    <input type="text" name="tracking_no" value="{{ old('tracking_no') }}" required
+                    <input type="text" name="tracking_no" value="{{ old('tracking_no') }}" :required="!direct"
                            class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400" placeholder="0000-0000-0000">
                 </div>
+                <p x-show="direct" x-cloak class="text-[11px] text-sky-600">직접 배송은 송장번호 없이 출고확정됩니다.</p>
                 <button class="w-full rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold py-3 transition">출고확정 (배송시작 · 매장 알림)</button>
                 <p class="text-[11px] text-neutral-400">확정 시 매장에 배송시작 + 송장 정보가 전달되고 FCM 푸시가 전송됩니다.</p>
             </form>
