@@ -61,7 +61,7 @@ class OrderController extends Controller
         ]);
     }
 
-    public function store(Request $request, \App\Services\Notification\NotificationService $notifications)
+    public function store(Request $request, \App\Services\Notification\NotificationService $notifications, \App\Services\Order\SupplierOrderMailer $orderMailer)
     {
         $user = Auth::user();
         abort_unless($user->store_id, 403, '연결된 매장이 없습니다.');
@@ -90,6 +90,11 @@ class OrderController extends Controller
 
         // 본사 + 해당 공급처에 새 발주 알림(FCM)
         $notifications->notifyNewOrder($order);
+
+        // 정식 발주는 공급처(직배송 품목)로 발주서 PDF 이메일 자동 발송
+        if ($type === 'normal') {
+            $orderMailer->sendForOrder($order);
+        }
 
         if ($type === 'sample') {
             return redirect()->route('portal.store.orders.show', $order)
