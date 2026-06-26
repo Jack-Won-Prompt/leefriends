@@ -26,7 +26,7 @@
             ['대시보드', '📊', [['portal.dashboard', '대시보드', []]]],
             ['채팅', '💬', [['portal.chat.index', '채팅', []]]],
             ['주문 · 판매', '📦', [
-                ['portal.hq.orders.index', '발주(구매주문)', ['portal.hq.orders.show']],
+                ['portal.hq.orders.index', '매장 발주 주문', ['portal.hq.orders.show']],
                 ['portal.hq.sales_orders.index', '판매주문', ['portal.hq.sales_orders.show']],
                 ['portal.hq.supplier_orders.index', '공급사 발주 현황', []],
                 ['portal.order_changes.index', '매장 주문 변경', []],

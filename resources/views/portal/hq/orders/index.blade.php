@@ -1,8 +1,8 @@
 @extends('portal.layout')
-@section('title', '발주(구매주문)')
+@section('title', '매장 발주 주문')
 
 @section('content')
-<x-wms.page-head title="발주(구매주문)" subtitle="매장이 접수한 구매주문을 조회합니다" icon="📦" />
+<x-wms.page-head title="매장 발주 주문" subtitle="매장이 접수한 구매주문을 조회합니다" icon="📦" />
 
 <x-wms.filter :action="route('portal.hq.orders.index')">
     <x-wms.field label="진행상태">
