@@ -332,7 +332,10 @@
             submitOrder() {
                 if (this.submitting) return;   // 연속 클릭 방지
                 this.submitting = true;
-                this.$el.submit();             // 실제 폼 전송
+                // $el(컴포넌트 루트=form) 또는 가장 가까운 form을 찾아 네이티브 submit 직접 호출
+                const form = (this.$el && this.$el.closest) ? this.$el.closest('form') : null;
+                const target = form || this.$el;
+                HTMLFormElement.prototype.submit.call(target);
             },
             matchesSearch(pid) {
                 const q = (this.search || '').trim().toLowerCase();
