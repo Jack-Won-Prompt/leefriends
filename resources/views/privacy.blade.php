@@ -124,7 +124,7 @@
                     <p><b>상호</b> : 주식회사 오다네트웍스</p>
                     <p><b>사업자등록번호</b> : 827-81-03115</p>
                     <p><b>주소</b> : 경기도 의정부시 천보로 14, 1113호(민락동)</p>
-                    <p><b>이메일</b> : privacy@leefriends.co.kr</p>
+                    <p><b>이메일</b> : jack@withworks.co.kr</p>
                 </div>
                 <p class="text-sm text-neutral-500 mt-3">
                     개인정보 침해에 관한 상담이 필요하신 경우 개인정보분쟁조정위원회(1833-6972),
