@@ -60,7 +60,7 @@
                 ['2026.01','브랜드 «LEEFRIENDS» 론칭, 강남본점 오픈'],
                 ['2026.03','애플망고 농가 직거래 계약 체결'],
                 ['2026.05','가맹 사업 본격 시작, 전국 매장 확대'],
-                ['2026.06','대한민국 디저트 브랜드 대상 빙수 부문 수상'],
+                ['2026.06','프리미엄 망고빙수 시즌 메뉴 출시'],
             ] as [$year,$desc])
                 <div class="flex gap-6 items-start reveal">
                     <div class="shrink-0 w-20 text-right font-black text-mango-600">{{ $year }}</div>
