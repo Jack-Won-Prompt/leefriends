@@ -15,7 +15,7 @@ class SalesOrderController extends Controller
         $status = $request->query('status', 'all');
         $store = $request->query('store', 'all');
 
-        $query = SalesOrder::forSeller('hq')->with(['store', 'order'])->latest();
+        $query = SalesOrder::forSeller('hq')->with(['store', 'order', 'items'])->latest();
         if (array_key_exists($status, SalesOrder::STATUSES)) {
             $query->where('status', $status);
         }
@@ -31,15 +31,8 @@ class SalesOrderController extends Controller
             'routePrefix' => 'portal.hq',
             'stores' => Store::orderBy('name')->get(),
             'store' => $store,
+            'asModal' => true, // 상세는 팝업으로
         ]);
-    }
-
-    public function show(SalesOrder $salesOrder)
-    {
-        abort_unless($salesOrder->seller_type === 'hq', 403);
-        $salesOrder->load(['store', 'order', 'items']);
-
-        return view('portal.shared.sales_orders.show', ['salesOrder' => $salesOrder, 'routePrefix' => 'portal.hq']);
     }
 
     public function confirm(SalesOrder $salesOrder)

@@ -142,7 +142,6 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::get('supplier-orders', [Portal\Hq\SupplierOrderController::class, 'index'])->name('supplier_orders.index');
 
             Route::get('sales-orders', [Portal\Hq\SalesOrderController::class, 'index'])->name('sales_orders.index');
-            Route::get('sales-orders/{salesOrder}', [Portal\Hq\SalesOrderController::class, 'show'])->name('sales_orders.show');
             Route::patch('sales-orders/{salesOrder}/confirm', [Portal\Hq\SalesOrderController::class, 'confirm'])->name('sales_orders.confirm');
 
             // 출고
