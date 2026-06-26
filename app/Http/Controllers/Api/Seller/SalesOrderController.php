@@ -93,6 +93,7 @@ class SalesOrderController extends Controller
             'sales_order_no' => $so->sales_order_no,
             'status' => $so->status,
             'status_label' => SalesOrder::STATUSES[$so->status] ?? $so->status,
+            'seller_type' => $so->seller_type, // hq=매장가 기준 / supplier=공급가 기준
             'store_name' => $so->store?->name,
             'order_no' => $so->order?->order_no,
             'item_count' => (int) $so->item_count,
