@@ -22,4 +22,10 @@ class InvoiceController extends Controller
 
         return view('portal.hq.invoices.index', compact('invoices', 'totals'));
     }
+
+    /** 세금계산서 인쇄 전용 페이지 (?print=1 자동 인쇄) */
+    public function print(TaxInvoice $invoice)
+    {
+        return view('portal.print.tax-invoice', compact('invoice'));
+    }
 }

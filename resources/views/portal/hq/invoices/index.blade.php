@@ -57,10 +57,29 @@
 @foreach ($invoices as $inv)
     <x-detail-modal :id="$inv->id">
         <x-slot:actions>
-            <button type="button" onclick="window.print()" class="rounded-xl bg-neutral-900 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm shadow">🖨️ 인쇄</button>
+            <button type="button" onclick="printFrame('{{ route('portal.hq.invoices.print', ['invoice' => $inv, 'print' => 1]) }}')"
+                    class="rounded-xl bg-neutral-900 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm shadow">🖨️ 인쇄</button>
         </x-slot:actions>
         @include('portal.partials.tax-invoice-document', ['invoice' => $inv])
     </x-detail-modal>
 @endforeach
 </div>
+
+@push('scripts')
+<script>
+    // 새 탭 없이 페이지 내 숨김 iframe으로 인쇄 (?print=1 → 로드 후 자동 인쇄)
+    function printFrame(url) {
+        document.querySelectorAll('iframe.__print-frame').forEach(el => el.remove());
+        const f = document.createElement('iframe');
+        f.className = '__print-frame';
+        f.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden;';
+        f.src = url;
+        f.onload = () => {
+            try { f.contentWindow.addEventListener('afterprint', () => setTimeout(() => f.remove(), 300)); } catch (e) {}
+            setTimeout(() => { if (document.body.contains(f)) f.remove(); }, 120000);
+        };
+        document.body.appendChild(f);
+    }
+</script>
+@endpush
 @endsection
