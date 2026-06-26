@@ -30,19 +30,21 @@ class TaxInvoiceController extends Controller
         $storeId = $request->integer('store_id') ?: null;
         $from = $request->date('from');
         $to = $request->date('to');
+        $searched = $request->boolean('searched');
 
+        $store = $storeId ? Store::find($storeId) : null;
         $orders = collect();
-        $store = null;
-        if ($storeId) {
-            $store = Store::find($storeId);
-            $orders = Order::where('store_id', $storeId)
+        if ($searched) {
+            // 매장 미지정(전체)이면 모든 매장의 미발행 발주를 조회
+            $orders = Order::query()
                 ->where('order_type', 'normal')
                 ->where('status', '!=', 'canceled')
                 ->whereNull('tax_invoice_id')
+                ->when($storeId, fn ($q) => $q->where('store_id', $storeId))
                 ->when($from, fn ($q) => $q->whereDate('created_at', '>=', $from))
                 ->when($to, fn ($q) => $q->whereDate('created_at', '<=', $to))
                 ->withCount('items')
-                ->with('items')
+                ->with(['items', 'store'])
                 ->latest('created_at')
                 ->get();
         }
@@ -51,6 +53,7 @@ class TaxInvoiceController extends Controller
             'stores' => Store::active()->orderBy('name')->get(['id', 'name', 'biz_no', 'email']),
             'store' => $store,
             'orders' => $orders,
+            'searched' => $searched,
             'filters' => [
                 'store_id' => $storeId,
                 'from' => $request->input('from'),
@@ -63,15 +66,13 @@ class TaxInvoiceController extends Controller
     public function store(Request $request, TaxInvoiceIssueService $service)
     {
         $data = $request->validate([
-            'store_id' => ['required', 'exists:stores,id'],
             'order_ids' => ['required', 'array', 'min:1'],
             'order_ids.*' => ['integer'],
         ], [
             'order_ids.required' => '발행할 발주를 한 건 이상 선택해 주세요.',
         ]);
 
-        $store = Store::findOrFail($data['store_id']);
-        $orders = Order::where('store_id', $store->id)
+        $orders = Order::where('order_type', 'normal')
             ->whereNull('tax_invoice_id')
             ->whereIn('id', $data['order_ids'])
             ->with(['items', 'store'])
@@ -80,6 +81,11 @@ class TaxInvoiceController extends Controller
         if ($orders->isEmpty()) {
             return back()->withErrors(['order_ids' => '발행 가능한 발주가 없습니다. (이미 발행되었거나 취소됨)'])->withInput();
         }
+        // 세금계산서는 매장(공급받는자) 1곳 기준 → 선택 발주가 모두 같은 매장이어야 함
+        if ($orders->pluck('store_id')->unique()->count() > 1) {
+            return back()->withErrors(['order_ids' => '서로 다른 매장의 발주는 한 장으로 발행할 수 없습니다. 같은 매장 발주만 선택하세요.'])->withInput();
+        }
+        $store = $orders->first()->store;
 
         try {
             $invoices = $service->hqToStoreOrders($store, $orders);
