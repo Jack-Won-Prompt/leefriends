@@ -32,32 +32,39 @@ class StatementController extends Controller
         [$type, $sid] = $this->seller($request);
 
         if ($type === 'hq') {
-            $list = Statement::with('taxInvoice')->latest('sent_at')->limit(100)->get()
-                ->map(fn ($s) => [
-                    'id' => $s->id,
-                    'title' => $s->store_name,
-                    'sub' => $s->email,
-                    'item_count' => (int) $s->item_count,
-                    'total' => (int) $s->total,
-                    'date' => optional($s->sent_at)->toDateString(),
-                    'resend_count' => (int) $s->resend_count,
-                    'invoiced' => (bool) $s->tax_invoice_id,
-                ]);
+            $page = Statement::with('taxInvoice')->latest('sent_at')->paginate(20);
+            $list = $page->getCollection()->map(fn ($s) => [
+                'id' => $s->id,
+                'title' => $s->store_name,
+                'sub' => $s->email,
+                'item_count' => (int) $s->item_count,
+                'total' => (int) $s->total,
+                'date' => optional($s->sent_at)->toDateString(),
+                'resend_count' => (int) $s->resend_count,
+                'invoiced' => (bool) $s->tax_invoice_id,
+            ]);
         } else {
-            $list = SupplierStatement::where('supplier_id', $sid)->with('taxInvoice')->latest()->limit(100)->get()
-                ->map(fn ($s) => [
-                    'id' => $s->id,
-                    'title' => $s->statement_no,
-                    'sub' => $s->supplier_name,
-                    'item_count' => (int) $s->item_count,
-                    'total' => (int) $s->total,
-                    'date' => optional($s->created_at)->toDateString(),
-                    'emailed' => (bool) $s->emailed_at,
-                    'invoiced' => (bool) $s->tax_invoice_id,
-                ]);
+            $page = SupplierStatement::where('supplier_id', $sid)->with('taxInvoice')->latest()->paginate(20);
+            $list = $page->getCollection()->map(fn ($s) => [
+                'id' => $s->id,
+                'title' => $s->statement_no,
+                'sub' => $s->supplier_name,
+                'item_count' => (int) $s->item_count,
+                'total' => (int) $s->total,
+                'date' => optional($s->created_at)->toDateString(),
+                'emailed' => (bool) $s->emailed_at,
+                'invoiced' => (bool) $s->tax_invoice_id,
+            ]);
         }
 
-        return response()->json(['data' => ['role' => $type, 'statements' => $list->values()]]);
+        return response()->json([
+            'data' => ['role' => $type, 'statements' => $list->values()],
+            'meta' => [
+                'current_page' => $page->currentPage(),
+                'last_page' => $page->lastPage(),
+                'total' => $page->total(),
+            ],
+        ]);
     }
 
     /** GET /seller/statements/catalog — 작성용 품목 카탈로그 (+본사: 매장 목록) */

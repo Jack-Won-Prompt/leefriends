@@ -31,10 +31,15 @@ class TaxInvoiceController extends Controller
                 fn ($q) => $q->where('direction', 'hq_to_store'),
                 fn ($q) => $q->where('direction', 'supplier_to_hq')->where('supplier_id', $sid))
             ->latest('issue_date')->latest()
-            ->limit(100)->get();
+            ->paginate(20);
 
         return response()->json([
-            'data' => $invoices->map(fn ($i) => $this->summary($i))->values(),
+            'data' => $invoices->getCollection()->map(fn ($i) => $this->summary($i))->values(),
+            'meta' => [
+                'current_page' => $invoices->currentPage(),
+                'last_page' => $invoices->lastPage(),
+                'total' => $invoices->total(),
+            ],
         ]);
     }
 

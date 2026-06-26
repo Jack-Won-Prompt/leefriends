@@ -38,15 +38,18 @@ class SupplierOrderController extends Controller
         }
 
         $totalSupply = (int) (clone $query)->sum('supply_amount');
-        $orders = $query->limit(100)->get();
+        $page = $query->paginate(20);
 
         return response()->json([
-            'data' => $orders->map(fn (SalesOrder $so) => $this->summary($so))->values(),
+            'data' => $page->getCollection()->map(fn (SalesOrder $so) => $this->summary($so))->values(),
             'meta' => [
                 'supplier' => $supplierId,
                 'status' => $status,
                 'total_supply' => $totalSupply,
-                'count' => $orders->count(),
+                'count' => $page->total(),
+                'current_page' => $page->currentPage(),
+                'last_page' => $page->lastPage(),
+                'total' => $page->total(),
                 'suppliers' => Supplier::orderBy('name')->get(['id', 'name'])
                     ->map(fn ($s) => ['id' => $s->id, 'name' => $s->name])->values(),
                 'statuses' => collect(SalesOrder::STATUSES)
