@@ -202,10 +202,11 @@
                 <textarea name="note" rows="2" placeholder="요청사항 (선택)"
                           class="w-full mt-4 rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">{{ old('note') }}</textarea>
 
-                <button type="submit"
+                <button type="button" @click="askConfirm()"
                         class="w-full mt-4 rounded-xl text-white font-black py-3.5 shadow hover:brightness-105 active:scale-[0.99] transition disabled:opacity-50 {{ $isSample ? 'bg-gradient-to-r from-violet-500 to-violet-600' : 'bg-gradient-to-r from-mango-500 to-mango-600' }}"
-                        x-bind:disabled="itemCount === 0">
-                    {{ $editOrder ? ($isSample ? '샘플 주문 수정 저장' : '발주 수정 저장') : ($isSample ? '샘플 주문 접수하기' : '발주 접수하기') }}
+                        x-bind:disabled="itemCount === 0 || submitting">
+                    <span x-show="!submitting">{{ $editOrder ? ($isSample ? '샘플 주문 수정 저장' : '발주 수정 저장') : ($isSample ? '샘플 주문 접수하기' : '발주 접수하기') }}</span>
+                    <span x-show="submitting" x-cloak>처리 중…</span>
                 </button>
                 <p class="text-[11px] text-neutral-400 mt-3 leading-relaxed">
                     * 수량 입력 후 <b>적용</b>을 눌러 {{ $isSample ? '샘플 주문 리스트' : '구매 리스트' }}에 담아 주세요.
@@ -277,6 +278,34 @@
             </div>
         </template>
     </div>
+
+    {{-- 발주 확인 팝업 (커스텀 alert) --}}
+    <div x-show="confirmOpen" x-cloak
+         class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+         @keydown.escape.window="!submitting && (confirmOpen = false)">
+        <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6"
+             @click.outside="!submitting && (confirmOpen = false)">
+            <div class="text-center">
+                <div class="text-4xl mb-3">{{ $isSample ? '🎁' : '🧾' }}</div>
+                <h3 class="text-lg font-extrabold text-neutral-900">{{ $isSample ? '샘플 주문하시겠습니까?' : '발주하시겠습니까?' }}</h3>
+                <p class="text-sm text-neutral-500 mt-1.5">
+                    선택 품목 <b class="text-neutral-700" x-text="itemCount"></b>건 · 총 <b class="text-neutral-700" x-text="totalQty"></b>개
+                    @unless ($isSample)
+                        <br>결제 예상금액 <b class="text-mango-700"><span x-text="totalAmount.toLocaleString()"></span>원</b>
+                    @endunless
+                </p>
+            </div>
+            <div class="flex gap-2 mt-6">
+                <button type="button" @click="confirmOpen = false" :disabled="submitting"
+                        class="flex-1 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-600 font-bold py-3 disabled:opacity-50">취소</button>
+                <button type="button" @click="submitOrder()" :disabled="submitting"
+                        class="flex-1 rounded-xl text-white font-bold py-3 disabled:opacity-60 {{ $isSample ? 'bg-violet-500 hover:bg-violet-600' : 'bg-mango-500 hover:bg-mango-600' }}">
+                    <span x-show="!submitting">{{ $isSample ? '주문하기' : '발주하기' }}</span>
+                    <span x-show="submitting" x-cloak>처리 중…</span>
+                </button>
+            </div>
+        </div>
+    </div>
 </form>
 
 @push('scripts')
@@ -294,6 +323,17 @@
             unitId: {},     // 작업 중 단위 (적용 전)
             cart: {},       // 적용된 구매 리스트: pid -> { qty, unitId }
             itemCount: 0, totalQty: 0, totalAmount: 0,
+            confirmOpen: false, // 발주 확인 팝업
+            submitting: false,  // 전송 중(중복 클릭 방지)
+            askConfirm() {
+                if (this.itemCount === 0 || this.submitting) return;
+                this.confirmOpen = true;
+            },
+            submitOrder() {
+                if (this.submitting) return;   // 연속 클릭 방지
+                this.submitting = true;
+                this.$el.submit();             // 실제 폼 전송
+            },
             matchesSearch(pid) {
                 const q = (this.search || '').trim().toLowerCase();
                 if (!q) return true;
