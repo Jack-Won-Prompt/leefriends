@@ -123,17 +123,14 @@
                                         @if ($p->spec)
                                             <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600">{{ $p->spec }}</span>
                                         @endif
+                                        @unless ($isSample)
+                                            <span class="text-sm text-neutral-500">단가 <span class="font-bold text-mango-700" x-text="priceOf({{ $p->id }}, unitId[{{ $p->id }}]).toLocaleString() + '원'"></span></span>
+                                        @endunless
+                                        <span class="text-[11px] text-neutral-400">{{ $p->code }}</span>
                                         <template x-if="cart[{{ $p->id }}]">
                                             <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">적용됨</span>
                                         </template>
                                     </div>
-                                    <p class="text-sm text-neutral-500 mt-0.5">
-                                        {{ $p->code }}@if ($p->spec) · {{ $p->spec }}@endif
-                                        @unless ($isSample)
-                                            · 단가
-                                            <span class="font-bold text-mango-700" x-text="priceOf({{ $p->id }}, unitId[{{ $p->id }}]).toLocaleString() + '원'"></span>
-                                        @endunless
-                                    </p>
                                 </div>
 
                                 {{-- 단위 선택 --}}

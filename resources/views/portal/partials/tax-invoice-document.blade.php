@@ -98,8 +98,9 @@
 
 <style>
 @media print {
+    @page { margin: 0; }
     body * { visibility: hidden; }
     #invoice-doc, #invoice-doc * { visibility: visible; }
-    #invoice-doc { position: absolute; left: 0; top: 0; width: 100%; }
+    #invoice-doc { position: absolute; left: 0; top: 0; width: 100%; padding: 12mm; }
 }
 </style>
