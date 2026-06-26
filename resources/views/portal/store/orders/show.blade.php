@@ -3,6 +3,7 @@
 @section('title', $isSample ? '샘플 주문 상세' : '발주 상세')
 
 @section('content')
+<div x-data="{ open: null }">
 <div class="flex items-center justify-between mb-5">
     @if ($isSample)
         <a href="{{ route('portal.store.sample_orders.index') }}" class="inline-flex items-center gap-1.5 text-sm font-bold text-neutral-500 hover:text-violet-600">← 샘플 주문 내역</a>
@@ -11,8 +12,8 @@
     @endif
     <div class="flex gap-2">
         @unless ($isSample)
-            <a href="{{ route('portal.store.orders.statement', $order) }}" target="_blank"
-               class="rounded-lg bg-neutral-900 hover:bg-mango-600 text-white px-4 py-2 font-bold text-sm">🧾 거래명세서</a>
+            <button type="button" @click="open = {{ $order->id }}"
+                    class="rounded-lg bg-neutral-900 hover:bg-mango-600 text-white px-4 py-2 font-bold text-sm">🧾 거래명세서</button>
         @endunless
         @if (! empty($editable))
             <a href="{{ route('portal.store.orders.edit', $order) }}" class="rounded-lg bg-neutral-100 hover:bg-neutral-200 px-4 py-2 font-bold text-sm">✏️ 수정</a>
@@ -83,5 +84,15 @@
             @endunless
         </table>
     </div>
+
+    @unless ($isSample)
+        {{-- 거래명세서 모달 팝업 --}}
+        <x-detail-modal :id="$order->id">
+            <x-slot:actions>
+                <button type="button" onclick="window.print()" class="rounded-xl bg-neutral-900 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm shadow">🖨️ 인쇄</button>
+            </x-slot:actions>
+            @include('portal.partials.store-order-statement-document', ['order' => $order])
+        </x-detail-modal>
+    @endunless
 </div>
 @endsection
