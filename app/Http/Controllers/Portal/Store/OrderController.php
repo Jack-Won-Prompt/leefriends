@@ -253,9 +253,12 @@ class OrderController extends Controller
             $unitId = (int) $units->get($pid);
             $unit = $p->units->firstWhere('id', $unitId) ?? $p->units->firstWhere('is_default', true) ?? $p->units->first();
 
-            // 샘플 주문은 가격을 노출/청구하지 않으므로 단가·금액 0 처리
-            $storePrice = $isSample ? 0 : ($unit->store_price ?? $p->store_price);
-            $supplyPrice = $isSample ? 0 : ($p->supply_type === 'supplier' ? ($unit->supply_price ?? $p->supply_price) : 0);
+            // 싯가 품목: 발주 시점 단가 미정 → 본사 확정 대기 (샘플 제외)
+            $isMarket = ! $isSample && $p->is_market_price;
+
+            // 샘플 또는 싯가 미확정은 단가·금액 0 처리
+            $storePrice = ($isSample || $isMarket) ? 0 : ($unit->store_price ?? $p->store_price);
+            $supplyPrice = ($isSample || $isMarket) ? 0 : ($p->supply_type === 'supplier' ? ($unit->supply_price ?? $p->supply_price) : 0);
             $storeLine = $storePrice * $qty;
             $supplyLine = $supplyPrice * $qty;
 
@@ -273,6 +276,7 @@ class OrderController extends Controller
                 'supply_unit_price' => $supplyPrice,
                 'store_line_amount' => $storeLine,
                 'supply_line_amount' => $supplyLine,
+                'price_pending' => $isMarket,
                 'fulfillment_status' => 'pending',
             ]);
 

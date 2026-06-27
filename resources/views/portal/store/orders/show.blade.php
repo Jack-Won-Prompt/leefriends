@@ -66,9 +66,9 @@
                                 <span class="text-xs font-bold text-mango-700">본사</span>
                             @endif
                         </td>
-                        @unless ($isSample)<td class="px-6 py-3.5 text-right">{{ number_format($it->store_unit_price) }}원</td>@endunless
+                        @unless ($isSample)<td class="px-6 py-3.5 text-right">@if ($it->price_pending)<span class="text-amber-600 font-semibold">싯가</span>@else{{ number_format($it->store_unit_price) }}원@endif</td>@endunless
                         <td class="px-6 py-3.5 text-right">{{ number_format($it->qty) }}{{ $it->unit }}</td>
-                        @unless ($isSample)<td class="px-6 py-3.5 text-right font-semibold">{{ number_format($it->store_line_amount) }}원</td>@endunless
+                        @unless ($isSample)<td class="px-6 py-3.5 text-right font-semibold">@if ($it->price_pending)<span class="text-amber-600">확정 대기</span>@else{{ number_format($it->store_line_amount) }}원@endif</td>@endunless
                         <td class="px-6 py-3.5">@include('portal.partials.fulfillment-status', ['status' => $it->fulfillment_status, 'label' => $it->fulfillment_label])</td>
                     </tr>
                 @endforeach

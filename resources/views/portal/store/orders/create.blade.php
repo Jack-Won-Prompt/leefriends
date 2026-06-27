@@ -14,6 +14,7 @@
                 'name' => $p->name,
                 'spec' => $p->spec,
                 'category' => $cat,
+                'market' => (bool) $p->is_market_price,
                 'units' => $p->units->map(fn ($u) => ['id' => $u->id, 'name' => $u->name, 'price' => (int) $u->store_price])->values(),
             ];
         }
@@ -124,7 +125,11 @@
                                             <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600">{{ $p->spec }}</span>
                                         @endif
                                         @unless ($isSample)
-                                            <span class="text-sm text-neutral-500">단가 <span class="font-bold text-mango-700" x-text="priceOf({{ $p->id }}, unitId[{{ $p->id }}]).toLocaleString() + '원'"></span></span>
+                                            @if ($p->is_market_price)
+                                                <span class="text-sm font-bold text-mango-700">싯가 <span class="text-[11px] font-normal text-neutral-400">(본사 확정)</span></span>
+                                            @else
+                                                <span class="text-sm text-neutral-500">단가 <span class="font-bold text-mango-700" x-text="priceOf({{ $p->id }}, unitId[{{ $p->id }}]).toLocaleString() + '원'"></span></span>
+                                            @endif
                                         @endunless
                                         <span class="text-[11px] text-neutral-400">{{ $p->code }}</span>
                                         <template x-if="cart[{{ $p->id }}]">
@@ -140,7 +145,7 @@
                                             class="rounded-lg border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm py-2">
                                         @foreach ($p->units as $u)
                                             <option value="{{ $u->id }}" @selected($u->id === $selUnit)>
-                                                {{ $u->name }}@unless ($isSample) ({{ number_format($u->store_price) }}원)@endunless
+                                                {{ $u->name }}@unless ($isSample)@if ($p->is_market_price) (싯가)@else ({{ number_format($u->store_price) }}원)@endif @endunless
                                             </option>
                                         @endforeach
                                     </select>
@@ -247,7 +252,7 @@
                                 <td class="px-5 py-3 font-bold text-neutral-900" x-text="catalog[pid].name"></td>
                                 <td class="px-5 py-3 hidden md:table-cell text-neutral-500" x-text="catalog[pid].spec || '-'"></td>
                                 <td class="px-5 py-3 text-neutral-500" x-text="unitName(pid, cart[pid].unitId)"></td>
-                                @unless ($isSample)<td class="px-5 py-3 text-right text-neutral-600" x-text="priceOf(pid, cart[pid].unitId).toLocaleString() + '원'"></td>@endunless
+                                @unless ($isSample)<td class="px-5 py-3 text-right text-neutral-600" x-text="catalog[pid].market ? '싯가' : priceOf(pid, cart[pid].unitId).toLocaleString() + '원'"></td>@endunless
                                 <td class="px-5 py-3">
                                     <div class="flex items-center justify-center gap-1">
                                         <button type="button" @click="cart[pid].qty = Math.max(1, cart[pid].qty - 1); recalc()" class="w-7 h-7 rounded bg-neutral-100 hover:bg-neutral-200 font-bold">−</button>
@@ -255,7 +260,7 @@
                                         <button type="button" @click="cart[pid].qty = cart[pid].qty + 1; recalc()" class="w-7 h-7 rounded bg-neutral-100 hover:bg-neutral-200 font-bold">＋</button>
                                     </div>
                                 </td>
-                                @unless ($isSample)<td class="px-5 py-3 text-right font-bold text-mango-700" x-text="(priceOf(pid, cart[pid].unitId) * cart[pid].qty).toLocaleString() + '원'"></td>@endunless
+                                @unless ($isSample)<td class="px-5 py-3 text-right font-bold text-mango-700" x-text="catalog[pid].market ? '싯가' : (priceOf(pid, cart[pid].unitId) * cart[pid].qty).toLocaleString() + '원'"></td>@endunless
                                 <td class="px-5 py-3 text-right">
                                     <button type="button" @click="removeFromCart(pid)" class="rounded-lg text-rose-600 hover:bg-rose-50 px-3 py-1.5 font-semibold">삭제</button>
                                 </td>
@@ -367,7 +372,7 @@
                 if (!p) return null;
                 return p.units.find(u => u.id == unitId) || p.units[0] || null;
             },
-            priceOf(pid, unitId) { const u = this.unitObj(pid, unitId); return u ? u.price : 0; },
+            priceOf(pid, unitId) { const p = this.catalog[pid]; if (p && p.market) return 0; const u = this.unitObj(pid, unitId); return u ? u.price : 0; },
             unitName(pid, unitId) { const u = this.unitObj(pid, unitId); return u ? u.name : ''; },
             inc(pid) { this.qty[pid] = (parseInt(this.qty[pid]) || 0) + 1; },
             dec(pid) { this.qty[pid] = Math.max(1, (parseInt(this.qty[pid]) || 1) - 1); },
