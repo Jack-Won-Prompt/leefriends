@@ -72,6 +72,13 @@ class SalesOrderController extends Controller
             ], 409);
         }
 
+        // 싯가 품목 단가 미확정이면 확인 차단
+        if (OrderItem::where('sales_order_id', $salesOrder->id)->where('price_pending', true)->exists()) {
+            return response()->json([
+                'message' => '싯가 품목의 단가가 확정되지 않았습니다. «받은 발주»에서 단가를 먼저 확정하세요.',
+            ], 409);
+        }
+
         $salesOrder->update(['status' => 'confirmed', 'confirmed_at' => now()]);
 
         return response()->json([

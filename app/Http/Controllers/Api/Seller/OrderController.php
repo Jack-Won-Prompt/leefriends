@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Seller;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Services\Notification\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -75,8 +76,10 @@ class OrderController extends Controller
                     'qty' => (int) $it->qty,
                     'supplier_name' => $it->supplier_name,
                     'supply_type' => $it->supply_type,
+                    'store_unit_price' => (int) $it->store_unit_price,
                     'store_line_amount' => (int) $it->store_line_amount,
                     'supply_line_amount' => (int) $it->supply_line_amount,
+                    'price_pending' => (bool) $it->price_pending,
                     'fulfillment_status' => $it->fulfillment_status,
                 ])->values(),
             ]),
@@ -107,6 +110,59 @@ class OrderController extends Controller
         $order->syncStatus();
 
         return response()->json(['message' => '본사 공급 품목의 배송상태가 변경되었습니다.']);
+    }
+
+    /**
+     * PATCH /api/v1/seller/orders/{order}/items/{item}/price — 싯가 품목 단가 확정 (본사 전용)
+     * body: { store_unit_price }
+     */
+    public function setItemPrice(
+        Request $request,
+        Order $order,
+        OrderItem $item,
+        NotificationService $notifications
+    ): JsonResponse {
+        [$type] = $this->seller($request);
+        abort_unless($type === 'hq', 403, '본사 계정만 사용할 수 있습니다.');
+        abort_unless($item->order_id === $order->id, 403);
+        abort_unless($item->price_pending, 422, '단가 확정 대기 중인 품목이 아닙니다.');
+
+        $data = $request->validate([
+            'store_unit_price' => ['required', 'integer', 'min:1', 'max:100000000'],
+        ], ['store_unit_price.required' => '단가를 입력해 주세요.']);
+
+        $price = (int) $data['store_unit_price'];
+        $item->update([
+            'store_unit_price' => $price,
+            'store_line_amount' => $price * $item->qty,
+            'price_pending' => false,
+        ]);
+
+        $order->recomputeAmounts();
+
+        try {
+            $notifications->notifyStore(
+                (int) $order->store_id,
+                'market_price_set',
+                '🥭 싯가 가격 확정',
+                "{$item->product_name} 단가가 ".number_format($price).'원으로 확정되었습니다.',
+                ['order_id' => $order->id],
+            );
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        $order->refresh();
+
+        return response()->json([
+            'message' => "«{$item->product_name}» 단가를 확정했습니다.",
+            'data' => [
+                'store_unit_price' => $price,
+                'store_line_amount' => $price * $item->qty,
+                'order_store_amount' => (int) $order->store_amount,
+                'order_has_pending' => $order->hasPendingPrice(),
+            ],
+        ]);
     }
 
     private function summary(Order $o, string $type): array

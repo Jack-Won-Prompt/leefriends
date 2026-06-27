@@ -63,6 +63,7 @@ class SupplyProductController extends Controller
             'supply_type_label' => $p->supply_type_label,
             'supplier_name' => $p->supply_type === 'supplier' ? $p->supplier?->name : '본사',
             'store_price' => (int) $p->store_price,
+            'is_market_price' => (bool) $p->is_market_price,
             'image' => $p->image ? asset($p->image) : null,
             'units' => $units,
         ];

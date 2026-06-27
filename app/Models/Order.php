@@ -60,6 +60,32 @@ class Order extends Model
         return self::STATUSES[$this->status] ?? $this->status;
     }
 
+    /** 싯가 품목 단가가 아직 확정되지 않은 품목이 있는지 */
+    public function hasPendingPrice(): bool
+    {
+        return $this->items()->where('price_pending', true)->exists();
+    }
+
+    /** 품목 라인합계로 주문 + 연결된 판매주문 금액을 재계산 (싯가 단가 확정 후 호출) */
+    public function recomputeAmounts(): void
+    {
+        $items = $this->items()->get();
+        $this->update([
+            'store_amount' => (int) $items->sum('store_line_amount'),
+            'supply_amount' => (int) $items->sum('supply_line_amount'),
+        ]);
+
+        foreach ($items->groupBy('sales_order_id') as $soId => $group) {
+            if (! $soId) {
+                continue;
+            }
+            SalesOrder::where('id', $soId)->update([
+                'store_amount' => (int) $group->sum('store_line_amount'),
+                'supply_amount' => (int) $group->sum('supply_line_amount'),
+            ]);
+        }
+    }
+
     /** 품목 배송상태를 종합해 주문 전체 상태를 재계산 */
     public function syncStatus(): void
     {

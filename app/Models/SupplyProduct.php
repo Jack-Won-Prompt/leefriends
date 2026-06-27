@@ -8,7 +8,7 @@ class SupplyProduct extends Model
 {
     protected $fillable = [
         'code', 'barcode', 'name', 'category', 'category_code', 'unit', 'spec', 'supply_type', 'supplier_id',
-        'supply_price', 'store_price', 'tax_type', 'image', 'sort_order', 'is_active',
+        'supply_price', 'store_price', 'is_market_price', 'tax_type', 'image', 'sort_order', 'is_active',
         'approval_status', 'registered_by', 'approval_note',
     ];
 
@@ -36,6 +36,7 @@ class SupplyProduct extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_market_price' => 'boolean',
         'supply_price' => 'integer',
         'store_price' => 'integer',
         'sort_order' => 'integer',

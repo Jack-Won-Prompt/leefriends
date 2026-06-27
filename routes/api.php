@@ -134,6 +134,7 @@ Route::prefix('v1')->group(function () {
             Route::get('orders', [Seller\OrderController::class, 'index'])->name('orders.index');
             Route::get('orders/{order}', [Seller\OrderController::class, 'show'])->name('orders.show');
             Route::patch('orders/{order}/items/{item}', [Seller\OrderController::class, 'updateItem'])->name('orders.items.update');
+            Route::patch('orders/{order}/items/{item}/price', [Seller\OrderController::class, 'setItemPrice'])->name('orders.items.price');
 
             // 매장 주문 변경 확인(반영)
             Route::get('order-changes', [Seller\OrderChangeController::class, 'index'])->name('order_changes.index');
