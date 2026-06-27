@@ -195,6 +195,7 @@ class ProductController extends Controller
             'supply_type' => ['required', 'in:hq,supplier'],
             'supplier_id' => ['nullable', 'required_if:supply_type,supplier', 'exists:suppliers,id'],
             'supply_price' => ['nullable', 'integer', 'min:0'],
+            'is_market_price' => ['nullable', 'boolean'],
             'sort_order' => ['nullable', 'integer'],
             'is_active' => ['nullable', 'boolean'],
             'image_file' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp,gif', 'max:4096'],
@@ -215,6 +216,7 @@ class ProductController extends Controller
             $data['supply_price'] = 0;
         }
 
+        $data['is_market_price'] = $request->boolean('is_market_price');
         $data['sort_order'] = (int) ($data['sort_order'] ?? 0);
         $data['tax_type'] = $data['tax_type'] ?? 'inc';
         $data['is_active'] = $request->boolean('is_active');

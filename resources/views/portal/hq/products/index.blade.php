@@ -24,7 +24,7 @@
 
 <x-wms.page-head title="품목 관리" subtitle="매장이 발주하는 품목(마카롱·쿠키·재료)과 단가를 관리합니다" icon="🍧">
     <x-slot:actions>
-        <button type="button" @click="openCreate('{{ route('portal.hq.products.store') }}', { is_active: true, category: '{{ $finishedCategories[0] }}', unit: '개', spec: '', store_price: 0, tax_type: 'inc', supply_type: 'hq', supplier_id: '', supply_price: 0, sort_order: 0, image: null })"
+        <button type="button" @click="openCreate('{{ route('portal.hq.products.store') }}', { is_active: true, category: '{{ $finishedCategories[0] }}', unit: '개', spec: '', store_price: 0, tax_type: 'inc', supply_type: 'hq', supplier_id: '', supply_price: 0, is_market_price: false, sort_order: 0, image: null })"
                 class="inline-flex items-center gap-1 rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm transition">+ 새 품목 추가</button>
     </x-slot:actions>
 </x-wms.page-head>
@@ -143,6 +143,7 @@
                                             @click="openEdit('{{ route('portal.hq.products.update', $p) }}', {{ Illuminate\Support\Js::from([
                                                 'name' => $p->name, 'code' => $p->code, 'category' => $p->category, 'spec' => $p->spec, 'unit' => $p->unit,
                                                 'store_price' => $p->store_price, 'tax_type' => $p->tax_type ?: 'inc', 'sort_order' => $p->sort_order, 'is_active' => (bool) $p->is_active,
+                                                'is_market_price' => (bool) $p->is_market_price,
                                                 'supply_type' => $p->supply_type, 'supplier_id' => $p->supplier_id, 'supply_price' => $p->supply_price,
                                                 'image' => $p->image ? asset($p->image) : null,
                                             ]) }})"
@@ -219,6 +220,12 @@
                 </div>
                 <label class="flex items-center gap-2 text-sm font-medium text-neutral-700 mt-7">
                     <input type="checkbox" name="is_active" value="1" x-model="form.is_active" class="rounded text-mango-500 focus:ring-mango-400"> 매장 발주 화면에 노출
+                </label>
+                <label class="flex items-start gap-2 text-sm font-medium text-neutral-700 mt-3">
+                    <input type="checkbox" name="is_market_price" value="1" x-model="form.is_market_price" class="mt-0.5 rounded text-mango-500 focus:ring-mango-400">
+                    <span>싯가 품목 (시세 변동)
+                        <span class="block text-[11px] font-normal text-neutral-400">망고처럼 시세가 매일 바뀌는 품목. 매장엔 «싯가»로 표시되고, 발주가 들어오면 «받은 발주»에서 단가를 확정합니다.</span>
+                    </span>
                 </label>
             </div>
 
