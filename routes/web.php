@@ -134,6 +134,7 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::get('orders', [Portal\Hq\OrderController::class, 'index'])->name('orders.index');
             Route::get('orders/{order}', [Portal\Hq\OrderController::class, 'show'])->name('orders.show');
             Route::patch('orders/{order}/items/{item}', [Portal\Hq\OrderController::class, 'updateItem'])->name('orders.items.update');
+            Route::patch('orders/{order}/items/{item}/price', [Portal\Hq\OrderController::class, 'setItemPrice'])->name('orders.items.price');
             Route::get('sales', [Portal\Hq\SalesController::class, 'index'])->name('sales');
             Route::get('sales/store/{store}', [Portal\Hq\SalesController::class, 'storeOrders'])->name('sales.store_orders');
 

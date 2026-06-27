@@ -66,4 +66,38 @@ class OrderController extends Controller
 
         return back()->with('success', '본사 공급 품목의 배송상태가 변경되었습니다.');
     }
+
+    /** 싯가 품목 단가 확정 */
+    public function setItemPrice(Request $request, Order $order, OrderItem $item, \App\Services\Notification\NotificationService $notifications)
+    {
+        abort_unless($item->order_id === $order->id, 403);
+        abort_unless($item->price_pending, 422, '단가 확정 대기 중인 품목이 아닙니다.');
+
+        $data = $request->validate([
+            'store_unit_price' => ['required', 'integer', 'min:1', 'max:100000000'],
+        ], ['store_unit_price.required' => '단가를 입력해 주세요.']);
+
+        $price = (int) $data['store_unit_price'];
+        $item->update([
+            'store_unit_price' => $price,
+            'store_line_amount' => $price * $item->qty,
+            'price_pending' => false,
+        ]);
+
+        $order->recomputeAmounts();
+
+        try {
+            $notifications->notifyStore(
+                (int) $order->store_id,
+                'market_price_set',
+                '🥭 싯가 가격 확정',
+                "{$item->product_name} 단가가 ".number_format($price).'원으로 확정되었습니다.',
+                ['order_id' => $order->id],
+            );
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        return back()->with('success', "«{$item->product_name}» 단가를 ".number_format($price).'원으로 확정했습니다.');
+    }
 }

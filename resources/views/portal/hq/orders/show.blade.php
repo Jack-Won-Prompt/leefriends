@@ -92,12 +92,21 @@
                             @endif
                         </td>
                         <td class="px-6 py-3.5 text-right text-neutral-500">{{ $it->supply_type === 'supplier' ? number_format($it->supply_unit_price).'원' : '-' }}</td>
-                        <td class="px-6 py-3.5 text-right">{{ number_format($it->store_unit_price) }}원</td>
+                        <td class="px-6 py-3.5 text-right">@if ($it->price_pending)<span class="text-amber-600 font-bold">싯가</span>@else{{ number_format($it->store_unit_price) }}원@endif</td>
                         <td class="px-6 py-3.5 text-right">{{ number_format($it->qty) }}{{ $it->unit }}</td>
                         <td class="px-6 py-3.5 text-right hidden md:table-cell text-neutral-500">{{ $it->supply_type === 'supplier' ? number_format($it->supply_line_amount).'원' : '-' }}</td>
                         <td class="px-6 py-3.5">@include('portal.partials.fulfillment-status', ['status' => $it->fulfillment_status, 'label' => $it->fulfillment_label])</td>
                         <td class="px-6 py-3.5">
-                            @if ($it->supply_type === 'hq')
+                            @if ($it->price_pending)
+                                {{-- 싯가 단가 확정 --}}
+                                <form method="POST" action="{{ route('portal.hq.orders.items.price', [$order, $it]) }}"
+                                      class="flex justify-end items-center gap-1.5">
+                                    @csrf @method('PATCH')
+                                    <input type="number" name="store_unit_price" min="1" required placeholder="단가"
+                                           class="w-24 rounded-lg border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm py-1.5 text-right">
+                                    <button class="rounded-lg px-3 py-1.5 font-semibold text-xs bg-mango-500 text-white hover:bg-mango-600 whitespace-nowrap">단가 확정</button>
+                                </form>
+                            @elseif ($it->supply_type === 'hq')
                                 <div class="flex justify-end gap-1.5">
                                     @foreach (['shipping' => '배송중', 'delivered' => '완료'] as $st => $lbl)
                                         @if ($it->fulfillment_status !== $st)
