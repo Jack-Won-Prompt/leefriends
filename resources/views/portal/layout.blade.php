@@ -84,7 +84,7 @@
             ]],
             ['주문 · 판매', '📦', [
                 ['portal.supplier.orders.index', '주문 관리', ['portal.supplier.orders.show']],
-                ['portal.supplier.sales_orders.index', '판매주문', ['portal.supplier.sales_orders.show']],
+                ['portal.supplier.sales_orders.index', '판매주문', []],
                 ['portal.order_changes.index', '매장 주문 변경', []],
             ]],
             ['출고 · 배송', '🚚', [

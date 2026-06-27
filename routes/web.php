@@ -223,7 +223,6 @@ Route::prefix('portal')->name('portal.')->group(function () {
 
             // 판매주문
             Route::get('sales-orders', [Portal\Supplier\SalesOrderController::class, 'index'])->name('sales_orders.index');
-            Route::get('sales-orders/{salesOrder}', [Portal\Supplier\SalesOrderController::class, 'show'])->name('sales_orders.show');
             Route::patch('sales-orders/{salesOrder}/confirm', [Portal\Supplier\SalesOrderController::class, 'confirm'])->name('sales_orders.confirm');
 
             // 출고

@@ -2,7 +2,6 @@
 @section('title', '판매주문')
 
 @section('content')
-@php($asModal = $asModal ?? false)
 <div x-data="{ open: null }">
 <x-wms.page-head title="판매주문" subtitle="구매주문에서 분할된 판매주문을 확인·처리합니다" icon="🧾" />
 
@@ -49,11 +48,7 @@
                     @foreach ($salesOrders as $so)
                         <tr class="hover:bg-mango-50/40 transition">
                             <td class="px-6 py-3.5 font-bold text-neutral-900">
-                                @if ($asModal)
-                                    <button type="button" @click="open = {{ $so->id }}" class="hover:text-mango-600 font-mono">{{ $so->sales_order_no }}</button>
-                                @else
-                                    <a href="{{ route($routePrefix . '.sales_orders.show', $so) }}" class="hover:text-mango-600 font-mono">{{ $so->sales_order_no }}</a>
-                                @endif
+                                <button type="button" @click="open = {{ $so->id }}" class="hover:text-mango-600 font-mono">{{ $so->sales_order_no }}</button>
                             </td>
                             <td class="px-6 py-3.5 hidden md:table-cell font-mono text-neutral-500">{{ $so->order->order_no ?? '-' }}</td>
                             <td class="px-6 py-3.5">{{ $so->store->name ?? '-' }}</td>
@@ -67,10 +62,8 @@
                                         @csrf @method('PATCH')
                                         <button class="rounded-lg bg-mango-500 hover:bg-mango-600 text-white px-3 py-1.5 font-semibold">판매주문 확인</button>
                                     </form>
-                                @elseif ($asModal)
-                                    <button type="button" @click="open = {{ $so->id }}" class="rounded-lg bg-neutral-100 hover:bg-neutral-200 px-3 py-1.5 font-semibold inline-block">상세</button>
                                 @else
-                                    <a href="{{ route($routePrefix . '.sales_orders.show', $so) }}" class="rounded-lg bg-neutral-100 hover:bg-neutral-200 px-3 py-1.5 font-semibold inline-block">상세</a>
+                                    <button type="button" @click="open = {{ $so->id }}" class="rounded-lg bg-neutral-100 hover:bg-neutral-200 px-3 py-1.5 font-semibold inline-block">상세</button>
                                 @endif
                             </td>
                         </tr>
@@ -83,13 +76,11 @@
 
 <div class="mt-5">{{ $salesOrders->links() }}</div>
 
-@if ($asModal)
-    {{-- 판매주문 상세 팝업 --}}
-    @foreach ($salesOrders as $so)
-        <x-detail-modal :id="$so->id">
-            @include('portal.partials.sales-order-detail', ['salesOrder' => $so, 'routePrefix' => $routePrefix])
-        </x-detail-modal>
-    @endforeach
-@endif
+{{-- 판매주문 상세 팝업 --}}
+@foreach ($salesOrders as $so)
+    <x-detail-modal :id="$so->id">
+        @include('portal.partials.sales-order-detail', ['salesOrder' => $so, 'routePrefix' => $routePrefix])
+    </x-detail-modal>
+@endforeach
 </div>
 @endsection

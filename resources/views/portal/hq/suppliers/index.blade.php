@@ -35,7 +35,7 @@
                         <th class="text-left font-semibold px-6 py-3">연락처</th>
                         <th class="text-right font-semibold px-6 py-3 hidden lg:table-cell">공급품목</th>
                         <th class="text-center font-semibold px-6 py-3">계정상태</th>
-                        <th class="text-right font-semibold px-6 py-3 w-28">관리</th>
+                        <th class="text-right font-semibold px-4 py-3 w-32 whitespace-nowrap">관리</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-neutral-100">
@@ -68,8 +68,8 @@
                                     </div>
                                 @endif
                             </td>
-                            <td class="px-6 py-3.5">
-                                <div class="flex justify-end gap-2">
+                            <td class="px-4 py-3.5">
+                                <div class="flex justify-end gap-1.5 whitespace-nowrap">
                                     <button type="button"
                                             @click="openEdit('{{ route('portal.hq.suppliers.update', $s) }}', {{ Illuminate\Support\Js::from([
                                                 'name' => $s->name, 'biz_no' => $s->biz_no, 'ceo' => $s->ceo,
@@ -78,10 +78,10 @@
                                                 'return_postcode' => $s->return_postcode, 'return_address' => $s->return_address, 'return_address_detail' => $s->return_address_detail,
                                                 'is_active' => (bool) $s->is_active,
                                             ]) }})"
-                                            class="rounded-lg bg-neutral-100 hover:bg-neutral-200 px-3 py-1.5 font-semibold">수정</button>
+                                            class="rounded-lg bg-neutral-100 hover:bg-neutral-200 px-3 py-1.5 font-semibold whitespace-nowrap">수정</button>
                                     <form method="POST" action="{{ route('portal.hq.suppliers.destroy', $s) }}" onsubmit="return confirm('삭제하시겠습니까?')">
                                         @csrf @method('DELETE')
-                                        <button class="rounded-lg text-rose-600 hover:bg-rose-50 px-3 py-1.5 font-semibold">삭제</button>
+                                        <button class="rounded-lg text-rose-600 hover:bg-rose-50 px-3 py-1.5 font-semibold whitespace-nowrap">삭제</button>
                                     </form>
                                 </div>
                             </td>

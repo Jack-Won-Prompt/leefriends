@@ -17,7 +17,7 @@ class SalesOrderController extends Controller
         $status = $request->query('status', 'all');
         $store = $request->query('store', 'all');
 
-        $query = SalesOrder::forSeller('supplier', $sid)->with(['store', 'order'])->latest();
+        $query = SalesOrder::forSeller('supplier', $sid)->with(['store', 'order', 'items'])->latest();
         if (array_key_exists($status, SalesOrder::STATUSES)) {
             $query->where('status', $status);
         }
@@ -33,15 +33,8 @@ class SalesOrderController extends Controller
             'routePrefix' => 'portal.supplier',
             'stores' => Store::whereIn('id', SalesOrder::forSeller('supplier', $sid)->distinct()->pluck('store_id'))->orderBy('name')->get(),
             'store' => $store,
+            'asModal' => true, // 상세는 팝업으로
         ]);
-    }
-
-    public function show(SalesOrder $salesOrder)
-    {
-        abort_unless($salesOrder->seller_type === 'supplier' && $salesOrder->supplier_id === Auth::user()->supplier_id, 403);
-        $salesOrder->load(['store', 'order', 'items']);
-
-        return view('portal.shared.sales_orders.show', ['salesOrder' => $salesOrder, 'routePrefix' => 'portal.supplier']);
     }
 
     public function confirm(SalesOrder $salesOrder)
