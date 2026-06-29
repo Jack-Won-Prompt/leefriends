@@ -76,6 +76,50 @@ class OrderController extends Controller
         return back()->with('success', "거래명세서를 매장({$to})으로 전송했습니다.");
     }
 
+    /** 발주 품목 수정 — 공급가·출고가·수량 (매장/판매주문/정산 반영) */
+    public function editItem(Request $request, Order $order, OrderItem $item, \App\Services\Notification\NotificationService $notifications)
+    {
+        abort_unless($item->order_id === $order->id, 403);
+
+        $data = $request->validate([
+            'qty' => ['required', 'integer', 'min:1', 'max:99999'],
+            'store_unit_price' => ['required', 'integer', 'min:0'],
+            'supply_unit_price' => ['nullable', 'integer', 'min:0'],
+        ], [
+            'qty.required' => '수량을 입력해 주세요.',
+            'store_unit_price.required' => '출고가를 입력해 주세요.',
+        ]);
+
+        $qty = (int) $data['qty'];
+        $store = (int) $data['store_unit_price'];
+        $supply = $item->supply_type === 'supplier' ? (int) ($data['supply_unit_price'] ?? 0) : 0;
+
+        $item->update([
+            'qty' => $qty,
+            'store_unit_price' => $store,
+            'supply_unit_price' => $supply,
+            'store_line_amount' => $store * $qty,
+            'supply_line_amount' => $supply * $qty,
+            'price_pending' => false,
+        ]);
+
+        $order->recomputeAmounts(); // 발주 + 판매주문 합계 동기화
+
+        try {
+            $notifications->notifyStore(
+                (int) $order->store_id,
+                'order_item_updated',
+                '✏️ 발주 품목 수정',
+                "{$item->product_name} 품목(출고가·수량)이 본사에서 수정되었습니다.",
+                ['order_id' => $order->id],
+            );
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        return back()->with('success', "«{$item->product_name}» 품목을 수정했습니다. (매장·정산에 반영)");
+    }
+
     /** 택배비(박스·단가) 추가/수정 → 발주 합계에 반영 */
     public function updateShipping(Request $request, Order $order)
     {

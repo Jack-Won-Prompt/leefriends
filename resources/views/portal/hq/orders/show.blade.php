@@ -135,8 +135,14 @@
 </div>
 
 {{-- 품목: 공급처명 확인 가능 --}}
-<div class="rounded-2xl bg-white shadow-sm border border-neutral-100 overflow-hidden">
-    <div class="px-6 py-4 border-b border-neutral-100 font-extrabold text-neutral-900">발주 품목 · 공급처 / 배송현황</div>
+<div class="rounded-2xl bg-white shadow-sm border border-neutral-100 overflow-hidden"
+     x-data="{ itemOpen: false, f: { id: null, name: '', supply: 0, store: 0, qty: 1, unit: '', isSupplier: false },
+               get lineStore() { return (this.store || 0) * (this.qty || 0); },
+               openItem(d) { this.f = d; this.itemOpen = true; } }">
+    <div class="px-6 py-4 border-b border-neutral-100 font-extrabold text-neutral-900 flex items-center justify-between">
+        <span>발주 품목 · 공급처 / 배송현황</span>
+        <span class="text-xs font-semibold text-neutral-400">품목명을 클릭해 수정</span>
+    </div>
     <div class="overflow-x-auto">
         <table class="w-full text-sm">
             <thead class="bg-neutral-50 text-neutral-500">
@@ -154,7 +160,11 @@
             <tbody class="divide-y divide-neutral-100">
                 @foreach ($order->items as $it)
                     <tr>
-                        <td class="px-6 py-3.5 font-bold text-neutral-900">{{ $it->product_name }}</td>
+                        <td class="px-6 py-3.5 font-bold">
+                            <button type="button"
+                                    @click="openItem({ id: {{ $it->id }}, name: {{ Illuminate\Support\Js::from($it->product_name) }}, supply: {{ (int) $it->supply_unit_price }}, store: {{ (int) $it->store_unit_price }}, qty: {{ (int) $it->qty }}, unit: {{ Illuminate\Support\Js::from($it->unit) }}, isSupplier: {{ $it->supply_type === 'supplier' ? 'true' : 'false' }} })"
+                                    class="text-left text-neutral-900 hover:text-mango-600 hover:underline">{{ $it->product_name }}</button>
+                        </td>
                         <td class="px-6 py-3.5">
                             @if ($it->supply_type === 'supplier')
                                 <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-sky-100 text-sky-700">공급처</span>
@@ -198,6 +208,42 @@
                 @endforeach
             </tbody>
         </table>
+    </div>
+
+    {{-- 품목 수정 팝업 (공급가·출고가·수량) --}}
+    <div x-show="itemOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+         @keydown.escape.window="itemOpen = false">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6" @click.outside="itemOpen = false">
+            <h3 class="text-lg font-extrabold text-neutral-900 mb-1">품목 수정</h3>
+            <p class="text-sm text-neutral-500 mb-4" x-text="f.name"></p>
+            <form method="POST" :action="'{{ url('portal/hq/orders/'.$order->id.'/items') }}/' + f.id + '/edit'" class="space-y-3">
+                @csrf @method('PATCH')
+                <div x-show="f.isSupplier">
+                    <label class="block text-sm font-bold text-neutral-700 mb-1.5">공급가 (원) <span class="text-neutral-400 font-normal">공급처 단가</span></label>
+                    <input type="number" name="supply_unit_price" x-model.number="f.supply" min="0"
+                           class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm text-right">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-neutral-700 mb-1.5">출고가 (원) <span class="text-neutral-400 font-normal">매장 판매가</span></label>
+                    <input type="number" name="store_unit_price" x-model.number="f.store" min="0" required
+                           class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm text-right">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-neutral-700 mb-1.5">수량 <span class="text-neutral-400 font-normal" x-text="f.unit ? '('+f.unit+')' : ''"></span></label>
+                    <input type="number" name="qty" x-model.number="f.qty" min="1" max="99999" required
+                           class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm text-right">
+                </div>
+                <div class="flex justify-between items-end rounded-xl bg-neutral-50 px-4 py-3">
+                    <span class="text-sm font-semibold text-neutral-600">출고 금액 (출고가 × 수량)</span>
+                    <span class="text-lg font-black text-mango-700"><span x-text="lineStore.toLocaleString()"></span>원</span>
+                </div>
+                <p class="text-[11px] text-neutral-400">수정 내용은 매장 발주 내역과 판매주문·정산에 즉시 반영됩니다.</p>
+                <div class="flex gap-2 pt-1">
+                    <button type="submit" class="flex-1 rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2.5 text-sm transition">저장</button>
+                    <button type="button" @click="itemOpen = false" class="rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-600 font-bold px-4 py-2.5 text-sm">취소</button>
+                </div>
+            </form>
+        </div>
     </div>
 </div>
 @endsection
