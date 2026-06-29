@@ -25,7 +25,7 @@
     </div>
 
     <div class="rounded-2xl bg-neutral-900 text-white p-7"
-         x-data="{ shipOpen: false, box: {{ (int) ($order->shipping_box_count ?? 0) }}, unit: {{ (int) ($order->shipping_unit_price ?? 0) }}, get fee() { return (this.box || 0) * (this.unit || 0); } }">
+         x-data="{ shipOpen: false, stmtOpen: false, box: {{ (int) ($order->shipping_box_count ?? 0) }}, unit: {{ (int) ($order->shipping_unit_price ?? 0) }}, get fee() { return (this.box || 0) * (this.unit || 0); } }">
         <h3 class="font-bold text-white/70 text-sm mb-4">정산 요약</h3>
         <div class="flex justify-between py-2 border-b border-white/10"><span class="text-white/70">매장 출고가 합계</span><span class="font-bold">{{ number_format($order->store_amount) }}원</span></div>
         <div class="flex justify-between py-2 border-b border-white/10">
@@ -67,6 +67,38 @@
                         <button type="button" @click="shipOpen = false" class="rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-600 font-bold px-4 py-2.5 text-sm">취소</button>
                     </div>
                 </form>
+            </div>
+        </div>
+
+        {{-- 거래명세서: PDF 모달 / 이메일 전송 / 전송상태 --}}
+        <div class="mt-5 pt-4 border-t border-white/10">
+            <p class="text-white/50 text-xs mb-2 font-semibold">거래명세서</p>
+            <div class="grid grid-cols-2 gap-2">
+                <button type="button" @click="stmtOpen = true"
+                        class="rounded-xl bg-white/10 hover:bg-white/15 text-white/90 font-bold py-2.5 text-sm transition">🧾 거래명세서</button>
+                <form method="POST" action="{{ route('portal.hq.orders.statement.email', $order) }}"
+                      onsubmit="return confirm('거래명세서 PDF를 매장({{ $order->store->email }})으로 전송합니다.\n진행하시겠습니까?')">
+                    @csrf
+                    <button type="submit" @if (! $order->store?->email) disabled @endif
+                            class="w-full rounded-xl bg-sky-500 hover:bg-sky-600 disabled:opacity-40 text-white font-bold py-2.5 text-sm transition">📧 {{ $order->statement_emailed_at ? '재전송' : '이메일 보내기' }}</button>
+                </form>
+            </div>
+            @if ($order->statement_emailed_at)
+                <p class="text-emerald-300 text-xs mt-2">✓ {{ $order->statement_emailed_at->format('Y.m.d H:i') }} 매장 전송됨@if ($order->statement_email_count > 1) ({{ $order->statement_email_count }}회)@endif</p>
+            @else
+                <p class="text-white/40 text-xs mt-2">미전송@unless ($order->store?->email) · 매장 이메일 없음@endunless</p>
+            @endif
+
+            {{-- 거래명세서 PDF 모달 팝업 --}}
+            <div x-show="stmtOpen" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-black/50 p-4" @keydown.escape.window="stmtOpen = false">
+                <div class="relative mx-auto max-w-3xl my-8 text-neutral-800">
+                    <div class="flex items-center justify-end gap-2 mb-3">
+                        <a href="{{ route('portal.hq.orders.statement.pdf', $order) }}" target="_blank"
+                           class="rounded-xl bg-white/90 hover:bg-white text-neutral-700 font-bold px-4 py-2 text-sm shadow">⬇ PDF 다운로드</a>
+                        <button type="button" @click="stmtOpen = false" class="rounded-xl bg-white/90 hover:bg-white text-neutral-700 font-bold px-4 py-2 text-sm shadow">닫기 ✕</button>
+                    </div>
+                    @include('portal.partials.store-order-statement-document', ['order' => $order])
+                </div>
             </div>
         </div>
 

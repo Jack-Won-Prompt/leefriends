@@ -10,6 +10,7 @@ class Order extends Model
         'order_no', 'store_id', 'user_id', 'status', 'order_type',
         'store_amount', 'supply_amount', 'note', 'tax_invoice_id',
         'shipping_box_count', 'shipping_unit_price', 'shipping_fee',
+        'statement_emailed_at', 'statement_email_count',
     ];
 
     protected $casts = [
@@ -18,6 +19,8 @@ class Order extends Model
         'shipping_box_count' => 'integer',
         'shipping_unit_price' => 'integer',
         'shipping_fee' => 'integer',
+        'statement_emailed_at' => 'datetime',
+        'statement_email_count' => 'integer',
     ];
 
     /** 발주 합계 = 매장 출고가 합계 + 택배비 합계 */

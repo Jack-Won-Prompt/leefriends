@@ -62,9 +62,19 @@
                     @endforeach
                 </tbody>
                 <tfoot>
-                    <tr class="bg-neutral-50 font-black">
-                        <td class="px-4 py-3" colspan="5">합계 (총 {{ number_format($totalQty) }}개)</td>
-                        <td class="px-4 py-3 text-right text-mango-700">{{ number_format($totalAmount) }}원</td>
+                    <tr class="bg-neutral-50 font-bold">
+                        <td class="px-4 py-3" colspan="5">매장 출고가 합계 (총 {{ number_format($totalQty) }}개)</td>
+                        <td class="px-4 py-3 text-right">{{ number_format($order->store_amount) }}원</td>
+                    </tr>
+                    @if ($order->shipping_fee)
+                        <tr class="bg-neutral-50 font-bold">
+                            <td class="px-4 py-3" colspan="5">택배비 ({{ number_format($order->shipping_box_count) }}박스 × {{ number_format($order->shipping_unit_price) }}원)</td>
+                            <td class="px-4 py-3 text-right">{{ number_format($order->shipping_fee) }}원</td>
+                        </tr>
+                    @endif
+                    <tr class="bg-neutral-50 font-black border-t border-neutral-200">
+                        <td class="px-4 py-3" colspan="5">발주 합계</td>
+                        <td class="px-4 py-3 text-right text-mango-700">{{ number_format($order->order_total) }}원</td>
                     </tr>
                 </tfoot>
             </table>

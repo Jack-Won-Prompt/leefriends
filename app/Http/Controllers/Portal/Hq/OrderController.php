@@ -47,6 +47,35 @@ class OrderController extends Controller
         return view('portal.hq.orders.show', compact('order'));
     }
 
+    /** 발주 거래명세서 PDF 다운로드/미리보기 */
+    public function statementPdf(Order $order)
+    {
+        $order->load(['items', 'store']);
+
+        return \Barryvdh\DomPDF\Facade\Pdf::loadView('portal.print.order-statement-pdf', compact('order'))
+            ->setPaper('a4')->stream('거래명세서_'.$order->order_no.'.pdf');
+    }
+
+    /** 발주 거래명세서 PDF를 매장 이메일로 전송 + 전송상태 기록 */
+    public function statementEmail(Order $order)
+    {
+        $order->load(['items', 'store']);
+        $to = $order->store?->email;
+        if (! $to) {
+            return back()->withErrors(['statement' => '매장 이메일이 없습니다. 매장 관리에서 이메일을 먼저 등록하세요.']);
+        }
+
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('portal.print.order-statement-pdf', compact('order'))->setPaper('a4');
+
+        \Illuminate\Support\Facades\Mail::to($to)->send(
+            new \App\Mail\OrderStatementMail($order, $pdf->output(), '거래명세서_'.$order->order_no.'.pdf')
+        );
+
+        $order->update(['statement_emailed_at' => now(), 'statement_email_count' => $order->statement_email_count + 1]);
+
+        return back()->with('success', "거래명세서를 매장({$to})으로 전송했습니다.");
+    }
+
     /** 택배비(박스·단가) 추가/수정 → 발주 합계에 반영 */
     public function updateShipping(Request $request, Order $order)
     {
