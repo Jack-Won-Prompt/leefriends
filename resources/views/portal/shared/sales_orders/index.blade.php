@@ -41,7 +41,7 @@
                         <th class="text-right font-semibold px-6 py-3">공급액</th>
                         <th class="text-left font-semibold px-6 py-3">상태</th>
                         <th class="text-left font-semibold px-6 py-3 hidden md:table-cell">접수일</th>
-                        <th class="text-right font-semibold px-6 py-3 w-32">처리</th>
+                        <th class="text-right font-semibold px-4 py-3 w-36 whitespace-nowrap">처리</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-neutral-100">
@@ -56,11 +56,11 @@
                             <td class="px-6 py-3.5 text-right font-semibold">{{ number_format($so->supply_amount) }}원</td>
                             <td class="px-6 py-3.5">@include('portal.partials.lifecycle-status', ['status' => $so->status, 'label' => $so->status_label])</td>
                             <td class="px-6 py-3.5 hidden md:table-cell text-neutral-400">{{ $so->created_at->format('Y.m.d H:i') }}</td>
-                            <td class="px-6 py-3.5 text-right">
+                            <td class="px-4 py-3.5 text-right whitespace-nowrap">
                                 @if ($so->status === 'created')
                                     <form method="POST" action="{{ route($routePrefix . '.sales_orders.confirm', $so) }}">
                                         @csrf @method('PATCH')
-                                        <button class="rounded-lg bg-mango-500 hover:bg-mango-600 text-white px-3 py-1.5 font-semibold">판매주문 확인</button>
+                                        <button class="rounded-lg bg-mango-500 hover:bg-mango-600 text-white px-3 py-1.5 font-semibold whitespace-nowrap">판매주문 확인</button>
                                     </form>
                                 @else
                                     <button type="button" @click="open = {{ $so->id }}" class="rounded-lg bg-neutral-100 hover:bg-neutral-200 px-3 py-1.5 font-semibold inline-block">상세</button>
