@@ -9,12 +9,22 @@ class Order extends Model
     protected $fillable = [
         'order_no', 'store_id', 'user_id', 'status', 'order_type',
         'store_amount', 'supply_amount', 'note', 'tax_invoice_id',
+        'shipping_box_count', 'shipping_unit_price', 'shipping_fee',
     ];
 
     protected $casts = [
         'store_amount' => 'integer',
         'supply_amount' => 'integer',
+        'shipping_box_count' => 'integer',
+        'shipping_unit_price' => 'integer',
+        'shipping_fee' => 'integer',
     ];
+
+    /** 발주 합계 = 매장 출고가 합계 + 택배비 합계 */
+    public function getOrderTotalAttribute(): int
+    {
+        return (int) $this->store_amount + (int) $this->shipping_fee;
+    }
 
     public function isSample(): bool
     {

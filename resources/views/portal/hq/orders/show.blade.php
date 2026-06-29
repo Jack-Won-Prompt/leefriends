@@ -24,11 +24,51 @@
         @endif
     </div>
 
-    <div class="rounded-2xl bg-neutral-900 text-white p-7">
+    <div class="rounded-2xl bg-neutral-900 text-white p-7"
+         x-data="{ shipOpen: false, box: {{ (int) ($order->shipping_box_count ?? 0) }}, unit: {{ (int) ($order->shipping_unit_price ?? 0) }}, get fee() { return (this.box || 0) * (this.unit || 0); } }">
         <h3 class="font-bold text-white/70 text-sm mb-4">정산 요약</h3>
         <div class="flex justify-between py-2 border-b border-white/10"><span class="text-white/70">매장 출고가 합계</span><span class="font-bold">{{ number_format($order->store_amount) }}원</span></div>
-        <div class="flex justify-between py-2 border-b border-white/10"><span class="text-white/70">공급가(원가) 합계</span><span class="font-bold">{{ number_format($order->supply_amount) }}원</span></div>
-        <div class="flex justify-between py-3 mt-1"><span class="text-mango-300 font-bold">본사 마진</span><span class="text-mango-300 font-black text-lg">{{ number_format($order->store_amount - $order->supply_amount) }}원</span></div>
+        <div class="flex justify-between py-2 border-b border-white/10">
+            <span class="text-white/70">택배비 합계
+                @if ($order->shipping_fee)<span class="text-white/40 text-xs">({{ number_format($order->shipping_box_count) }}박스 × {{ number_format($order->shipping_unit_price) }}원)</span>@endif
+            </span>
+            <span class="font-bold">{{ number_format($order->shipping_fee) }}원</span>
+        </div>
+        <div class="flex justify-between py-3 mt-1"><span class="text-mango-300 font-bold">발주 합계</span><span class="text-mango-300 font-black text-lg">{{ number_format($order->order_total) }}원</span></div>
+
+        <button type="button" @click="shipOpen = true"
+                class="w-full mt-2 rounded-xl bg-white/10 hover:bg-white/15 text-white/90 font-bold px-4 py-2.5 text-sm transition">
+            🚚 택배비 {{ $order->shipping_fee ? '수정' : '추가' }}
+        </button>
+
+        {{-- 택배비 추가/수정 오버레이 팝업 --}}
+        <div x-show="shipOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+             @keydown.escape.window="shipOpen = false">
+            <div class="bg-white text-neutral-800 rounded-2xl shadow-xl w-full max-w-sm p-6" @click.outside="shipOpen = false">
+                <h3 class="text-lg font-extrabold text-neutral-900 mb-4">🚚 택배비 입력</h3>
+                <form method="POST" action="{{ route('portal.hq.orders.shipping', $order) }}" class="space-y-3">
+                    @csrf @method('PATCH')
+                    <div>
+                        <label class="block text-sm font-bold text-neutral-700 mb-1.5">박스 수</label>
+                        <input type="number" name="shipping_box_count" x-model.number="box" min="0" max="9999"
+                               class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm" placeholder="0">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-neutral-700 mb-1.5">박스당 단가 (원)</label>
+                        <input type="number" name="shipping_unit_price" x-model.number="unit" min="0" max="9999999"
+                               class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm" placeholder="0">
+                    </div>
+                    <div class="flex justify-between items-end rounded-xl bg-neutral-50 px-4 py-3">
+                        <span class="text-sm font-semibold text-neutral-600">택배비 합계</span>
+                        <span class="text-xl font-black text-mango-700"><span x-text="fee.toLocaleString()"></span>원</span>
+                    </div>
+                    <div class="flex gap-2 pt-1">
+                        <button type="submit" class="flex-1 rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2.5 text-sm transition">저장</button>
+                        <button type="button" @click="shipOpen = false" class="rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-600 font-bold px-4 py-2.5 text-sm">취소</button>
+                    </div>
+                </form>
+            </div>
+        </div>
 
         @php($taxInvoice = $order->taxInvoice)
         <div class="mt-5 pt-4 border-t border-white/10">

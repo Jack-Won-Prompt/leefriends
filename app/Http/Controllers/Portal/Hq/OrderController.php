@@ -47,6 +47,26 @@ class OrderController extends Controller
         return view('portal.hq.orders.show', compact('order'));
     }
 
+    /** 택배비(박스·단가) 추가/수정 → 발주 합계에 반영 */
+    public function updateShipping(Request $request, Order $order)
+    {
+        $data = $request->validate([
+            'shipping_box_count' => ['nullable', 'integer', 'min:0', 'max:9999'],
+            'shipping_unit_price' => ['nullable', 'integer', 'min:0', 'max:9999999'],
+        ]);
+
+        $box = (int) ($data['shipping_box_count'] ?? 0);
+        $unit = (int) ($data['shipping_unit_price'] ?? 0);
+
+        $order->update([
+            'shipping_box_count' => $box ?: null,
+            'shipping_unit_price' => $unit ?: null,
+            'shipping_fee' => $box * $unit,
+        ]);
+
+        return back()->with('success', '택배비를 저장했습니다. (발주 합계에 반영)');
+    }
+
     /** 본사 직공급 품목의 배송상태 처리 */
     public function updateItem(Request $request, Order $order, OrderItem $item)
     {
