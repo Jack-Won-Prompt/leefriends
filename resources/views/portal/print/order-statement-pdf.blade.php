@@ -97,7 +97,7 @@
         </tbody>
     </table>
 
-    <div class="note">본 명세서는 매장 구매가(부가세 포함) 기준으로 발행되었습니다. 공급 주체와 무관하게 본사가 공급자입니다. · LEEFRIENDS 발주포털</div>
+    <div class="note">LEEFRIENDS 발주포털</div>
 </div>
 </body>
 </html>
