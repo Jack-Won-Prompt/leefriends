@@ -81,11 +81,6 @@ class OrderController extends Controller
     {
         abort_unless($item->order_id === $order->id, 403);
 
-        // 배송 완료 전까지 수정 가능 (출고 전·출고 후/배송중 모두 허용, 배송 완료만 차단)
-        if ($item->fulfillment_status === 'delivered') {
-            return back()->withErrors(['item' => '배송 완료된 품목은 수정할 수 없습니다.']);
-        }
-
         $data = $request->validate([
             'qty' => ['required', 'integer', 'min:1', 'max:99999'],
             'store_unit_price' => ['required', 'integer', 'min:0'],
