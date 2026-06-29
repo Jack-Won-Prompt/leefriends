@@ -18,7 +18,6 @@
                     <tr><td style="padding:6px 0; color:#888;">총 수량</td><td style="padding:6px 0; text-align:right; font-weight:700;">{{ number_format(collect($lines)->sum('qty')) }}개</td></tr>
                     <tr style="border-top:1px solid #eee;"><td style="padding:10px 0; color:#444; font-weight:700;">합계 금액</td><td style="padding:10px 0; text-align:right; font-weight:800; color:#D45A1F; font-size:18px;">{{ number_format($total) }}원</td></tr>
                 </table>
-                <p style="font-size:12px; color:#9ca3af; margin:20px 0 0;">※ 본 명세서는 매장 구매가(부가세 포함) 기준입니다.</p>
             </div>
         </div>
         <p style="text-align:center; color:#9ca3af; font-size:12px; margin-top:16px;">© {{ date('Y') }} LEEFRIENDS · 주식회사 오다네트웍스</p>

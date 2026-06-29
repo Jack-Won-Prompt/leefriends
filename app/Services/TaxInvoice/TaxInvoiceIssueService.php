@@ -63,6 +63,21 @@ class TaxInvoiceIssueService
                 $line['order_no'] = $o->order_no;
                 $lines[] = $line;
             }
+            // 택배비(과세, 부가세 포함)도 한 라인으로 포함
+            if ((int) $o->shipping_fee > 0) {
+                [$supply, $tax] = SupplyProduct::taxBreakdown('inc', (int) $o->shipping_fee);
+                $lines[] = [
+                    'item_id' => null,
+                    'name' => '택배비',
+                    'spec' => '',
+                    'qty' => 1,
+                    'unit_price' => (int) $o->shipping_fee,
+                    'tax_type' => 'inc',
+                    'supply' => $supply,
+                    'tax' => $tax,
+                    'order_no' => $o->order_no,
+                ];
+            }
         }
 
         $invoicer = $this->hqParty();
