@@ -69,6 +69,12 @@ class OrderController extends Controller
         return response()->json([
             'data' => array_merge($this->summary($order, $type), [
                 'note' => $order->note,
+                'store_email' => $order->store?->email,
+                'is_sample' => ($order->order_type ?? 'normal') === 'sample',
+                'tax_invoiced' => (bool) $order->tax_invoice_id,
+                'statement_emailed' => $order->statement_emailed_at !== null,
+                'statement_email_count' => (int) $order->statement_email_count,
+                'has_pending_price' => $order->items->where('price_pending', true)->isNotEmpty(),
                 'items' => $order->items->map(fn (OrderItem $it) => [
                     'id' => $it->id,
                     'product_name' => $it->product_name,
@@ -163,6 +169,72 @@ class OrderController extends Controller
                 'order_has_pending' => $order->hasPendingPrice(),
             ],
         ]);
+    }
+
+    /**
+     * POST /api/v1/seller/orders/{order}/tax-invoice — 이 발주로 세금계산서 발행 (본사 → 매장)
+     */
+    public function issueForOrder(Request $request, Order $order, \App\Services\TaxInvoice\TaxInvoiceIssueService $service): JsonResponse
+    {
+        [$type] = $this->seller($request);
+        abort_unless($type === 'hq', 403, '본사 계정만 사용할 수 있습니다.');
+
+        if (($order->order_type ?? 'normal') === 'sample') {
+            return response()->json(['message' => '샘플 주문은 세금계산서를 발행할 수 없습니다.'], 422);
+        }
+        if ($order->tax_invoice_id) {
+            return response()->json(['message' => '이미 이 발주에 대한 세금계산서가 발행되었습니다.'], 409);
+        }
+        if ($order->hasPendingPrice()) {
+            return response()->json(['message' => '싯가 품목 단가가 확정되지 않았습니다. 먼저 단가를 확정하세요.'], 409);
+        }
+
+        try {
+            $invoices = $service->hqToStore($order);
+        } catch (\Throwable $e) {
+            return response()->json(['message' => '세금계산서 발행 실패: '.$e->getMessage()], 422);
+        }
+
+        $nos = $invoices->pluck('invoice_no')->implode(', ');
+
+        return response()->json([
+            'message' => $invoices->count() > 1
+                ? "세금계산서·계산서 2건을 발행했습니다. (번호 {$nos})"
+                : "세금계산서를 발행했습니다. (번호 {$nos})",
+            'data' => ['invoice_ids' => $invoices->pluck('id')->values()],
+        ], 201);
+    }
+
+    /**
+     * POST /api/v1/seller/orders/{order}/statement-email — 발주 거래명세서 PDF를 매장 이메일로 전송 (본사)
+     */
+    public function statementEmail(Request $request, Order $order): JsonResponse
+    {
+        [$type] = $this->seller($request);
+        abort_unless($type === 'hq', 403, '본사 계정만 사용할 수 있습니다.');
+
+        if (($order->order_type ?? 'normal') === 'sample') {
+            return response()->json(['message' => '샘플 주문은 거래명세서를 제공하지 않습니다.'], 422);
+        }
+
+        $order->load(['items', 'store']);
+        $to = $order->store?->email;
+        if (! $to) {
+            return response()->json(['message' => '매장 이메일이 없습니다. 매장 관리에서 이메일을 먼저 등록하세요.'], 422);
+        }
+
+        try {
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('portal.print.order-statement-pdf', compact('order'))->setPaper('a4');
+            \Illuminate\Support\Facades\Mail::to($to)->send(
+                new \App\Mail\OrderStatementMail($order, $pdf->output(), '거래명세서_'.$order->order_no.'.pdf')
+            );
+        } catch (\Throwable $e) {
+            return response()->json(['message' => '거래명세서 전송 실패: '.$e->getMessage()], 422);
+        }
+
+        $order->update(['statement_emailed_at' => now(), 'statement_email_count' => $order->statement_email_count + 1]);
+
+        return response()->json(['message' => "거래명세서를 매장({$to})으로 전송했습니다."]);
     }
 
     private function summary(Order $o, string $type): array
