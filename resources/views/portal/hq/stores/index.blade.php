@@ -113,22 +113,21 @@
                 <input type="email" name="email" x-model="editForm.email" maxlength="100"
                        class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
             </div>
-            <div class="grid grid-cols-3 gap-3">
-                <div>
-                    <label class="block text-sm font-bold text-neutral-700 mb-1.5">우편번호</label>
-                    <input type="text" name="postcode" x-model="editForm.postcode" maxlength="20"
-                           class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+            <div>
+                <label class="block text-sm font-bold text-neutral-700 mb-1.5">주소 (배송지)</label>
+                <div class="flex gap-2">
+                    <input type="text" name="postcode" x-model="editForm.postcode" readonly placeholder="우편번호"
+                           class="w-32 rounded-xl border-neutral-200 bg-neutral-50 text-sm">
+                    <button type="button" @click="findAddress(d => { editForm.postcode = d.postcode; editForm.address = d.address })"
+                            class="rounded-xl bg-neutral-900 hover:bg-mango-600 text-white font-bold px-4 text-sm">주소 검색</button>
                 </div>
-                <div class="col-span-2">
-                    <label class="block text-sm font-bold text-neutral-700 mb-1.5">주소 (배송지)</label>
-                    <input type="text" name="address" x-model="editForm.address" maxlength="255"
-                           class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
-                </div>
+                <input type="text" name="address" x-model="editForm.address" readonly placeholder="주소 검색 버튼을 눌러 주세요"
+                       class="w-full mt-2 rounded-xl border-neutral-200 bg-neutral-50 focus:border-mango-400 focus:ring-mango-400 text-sm">
             </div>
             <div>
                 <label class="block text-sm font-bold text-neutral-700 mb-1.5">상세주소</label>
                 <input type="text" name="address_detail" x-model="editForm.address_detail" maxlength="255"
-                       class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+                       class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm" placeholder="동·호수 등">
             </div>
             <div class="rounded-xl bg-amber-50 border border-amber-100 p-3 space-y-3">
                 <p class="text-xs font-bold text-amber-700">📄 사업자정보 <span class="font-normal text-amber-500">(세금계산서 발행용)</span></p>
@@ -207,4 +206,5 @@
 </div>
 
 </div>
+@include('portal.partials.postcode-search')
 @endsection
