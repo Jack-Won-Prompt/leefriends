@@ -141,7 +141,7 @@
                openItem(d) { this.f = d; this.itemOpen = true; } }">
     <div class="px-6 py-4 border-b border-neutral-100 font-extrabold text-neutral-900 flex items-center justify-between">
         <span>발주 품목 · 공급처 / 배송현황</span>
-        <span class="text-xs font-semibold text-neutral-400">품목명을 클릭해 수정</span>
+        <span class="text-xs font-semibold text-neutral-400">출고 전 품목은 품목명을 클릭해 수정</span>
     </div>
     <div class="overflow-x-auto">
         <table class="w-full text-sm">
@@ -161,9 +161,15 @@
                 @foreach ($order->items as $it)
                     <tr>
                         <td class="px-6 py-3.5 font-bold">
-                            <button type="button"
-                                    @click="openItem({ id: {{ $it->id }}, name: {{ Illuminate\Support\Js::from($it->product_name) }}, supply: {{ (int) $it->supply_unit_price }}, store: {{ (int) $it->store_unit_price }}, qty: {{ (int) $it->qty }}, unit: {{ Illuminate\Support\Js::from($it->unit) }}, isSupplier: {{ $it->supply_type === 'supplier' ? 'true' : 'false' }} })"
-                                    class="text-left text-neutral-900 hover:text-mango-600 hover:underline">{{ $it->product_name }}</button>
+                            @php($editable = ! $it->shipment_id && $it->fulfillment_status === 'pending')
+                            @if ($editable)
+                                <button type="button"
+                                        @click="openItem({ id: {{ $it->id }}, name: {{ Illuminate\Support\Js::from($it->product_name) }}, supply: {{ (int) $it->supply_unit_price }}, store: {{ (int) $it->store_unit_price }}, qty: {{ (int) $it->qty }}, unit: {{ Illuminate\Support\Js::from($it->unit) }}, isSupplier: {{ $it->supply_type === 'supplier' ? 'true' : 'false' }} })"
+                                        class="text-left text-neutral-900 hover:text-mango-600 hover:underline">{{ $it->product_name }}</button>
+                            @else
+                                <span class="text-neutral-900">{{ $it->product_name }}</span>
+                                <span class="block text-[11px] text-neutral-400">출고 후 수정 불가</span>
+                            @endif
                         </td>
                         <td class="px-6 py-3.5">
                             @if ($it->supply_type === 'supplier')

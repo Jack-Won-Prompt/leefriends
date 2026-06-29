@@ -81,6 +81,11 @@ class OrderController extends Controller
     {
         abort_unless($item->order_id === $order->id, 403);
 
+        // 출고 전(미배송) 품목만 수정 가능
+        if ($item->shipment_id || $item->fulfillment_status !== 'pending') {
+            return back()->withErrors(['item' => '이미 출고된 품목은 수정할 수 없습니다. (출고 전 발주만 수정 가능)']);
+        }
+
         $data = $request->validate([
             'qty' => ['required', 'integer', 'min:1', 'max:99999'],
             'store_unit_price' => ['required', 'integer', 'min:0'],
