@@ -86,6 +86,7 @@ class OrderController extends Controller
                     'qty' => (int) $it->qty,
                     'supplier_name' => $it->supplier_name,
                     'supply_type' => $it->supply_type,
+                    'supply_unit_price' => (int) $it->supply_unit_price,
                     'store_unit_price' => (int) $it->store_unit_price,
                     'store_line_amount' => (int) $it->store_line_amount,
                     'supply_line_amount' => (int) $it->supply_line_amount,
@@ -120,6 +121,65 @@ class OrderController extends Controller
         $order->syncStatus();
 
         return response()->json(['message' => '본사 공급 품목의 배송상태가 변경되었습니다.']);
+    }
+
+    /**
+     * PATCH /api/v1/seller/orders/{order}/items/{item}/edit — 품목 공급가/출고가/수량 수정 (본사)
+     * body: { supply_unit_price?, store_unit_price, qty }
+     */
+    public function editItem(Request $request, Order $order, OrderItem $item, NotificationService $notifications): JsonResponse
+    {
+        [$type] = $this->seller($request);
+        abort_unless($type === 'hq', 403, '본사 계정만 사용할 수 있습니다.');
+        abort_unless($item->order_id === $order->id, 403);
+
+        $data = $request->validate([
+            'supply_unit_price' => ['nullable', 'integer', 'min:0', 'max:100000000'],
+            'store_unit_price' => ['required', 'integer', 'min:0', 'max:100000000'],
+            'qty' => ['required', 'integer', 'min:1', 'max:99999'],
+        ]);
+
+        $supply = (int) ($data['supply_unit_price'] ?? $item->supply_unit_price);
+        $store = (int) $data['store_unit_price'];
+        $qty = (int) $data['qty'];
+
+        $item->update([
+            'supply_unit_price' => $supply,
+            'store_unit_price' => $store,
+            'qty' => $qty,
+            'supply_line_amount' => $supply * $qty,
+            'store_line_amount' => $store * $qty,
+            'price_pending' => false,
+        ]);
+
+        $order->recomputeAmounts();
+
+        try {
+            $notifications->notifyStore(
+                (int) $order->store_id,
+                'order_item_updated',
+                '📝 발주 품목 변경',
+                "{$item->product_name} 내용이 본사에서 수정되었습니다. (수량 {$qty}, 출고가 ".number_format($store).'원)',
+                ['order_id' => $order->id],
+            );
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        $order->refresh();
+
+        return response()->json([
+            'message' => "«{$item->product_name}» 품목을 수정했습니다.",
+            'data' => [
+                'qty' => $qty,
+                'supply_unit_price' => $supply,
+                'store_unit_price' => $store,
+                'store_line_amount' => $store * $qty,
+                'supply_line_amount' => $supply * $qty,
+                'order_store_amount' => (int) $order->store_amount,
+                'order_total' => (int) $order->order_total,
+            ],
+        ]);
     }
 
     /**
