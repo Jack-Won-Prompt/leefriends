@@ -75,6 +75,10 @@ class OrderController extends Controller
                 'statement_emailed' => $order->statement_emailed_at !== null,
                 'statement_email_count' => (int) $order->statement_email_count,
                 'has_pending_price' => $order->items->where('price_pending', true)->isNotEmpty(),
+                'shipping_box_count' => (int) $order->shipping_box_count,
+                'shipping_unit_price' => (int) $order->shipping_unit_price,
+                'shipping_fee' => (int) $order->shipping_fee,
+                'order_total' => (int) $order->order_total,
                 'items' => $order->items->map(fn (OrderItem $it) => [
                     'id' => $it->id,
                     'product_name' => $it->product_name,
@@ -203,6 +207,40 @@ class OrderController extends Controller
                 : "세금계산서를 발행했습니다. (번호 {$nos})",
             'data' => ['invoice_ids' => $invoices->pluck('id')->values()],
         ], 201);
+    }
+
+    /**
+     * PATCH /api/v1/seller/orders/{order}/shipping — 택배비(박스·단가) 등록/수정 (본사)
+     * body: { shipping_box_count, shipping_unit_price }
+     */
+    public function updateShipping(Request $request, Order $order): JsonResponse
+    {
+        [$type] = $this->seller($request);
+        abort_unless($type === 'hq', 403, '본사 계정만 사용할 수 있습니다.');
+
+        $data = $request->validate([
+            'shipping_box_count' => ['nullable', 'integer', 'min:0', 'max:9999'],
+            'shipping_unit_price' => ['nullable', 'integer', 'min:0', 'max:9999999'],
+        ]);
+
+        $box = (int) ($data['shipping_box_count'] ?? 0);
+        $unit = (int) ($data['shipping_unit_price'] ?? 0);
+
+        $order->update([
+            'shipping_box_count' => $box ?: null,
+            'shipping_unit_price' => $unit ?: null,
+            'shipping_fee' => $box * $unit,
+        ]);
+
+        return response()->json([
+            'message' => '택배비를 저장했습니다. (발주 합계에 반영)',
+            'data' => [
+                'shipping_box_count' => $box,
+                'shipping_unit_price' => $unit,
+                'shipping_fee' => $box * $unit,
+                'order_total' => (int) $order->fresh()->order_total,
+            ],
+        ]);
     }
 
     /**
