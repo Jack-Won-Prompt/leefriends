@@ -45,7 +45,10 @@ return [
          * Times-Roman, Times-Bold, Times-BoldItalic, Times-Italic,
          * Symbol, ZapfDingbats.
          */
-        'font_dir' => storage_path('fonts'), // advised by dompdf (https://github.com/dompdf/dompdf/pull/782)
+        // 폰트 메트릭 캐시(.ufm)를 쓰기 가능한 storage/app/dompdf 에 생성.
+        // (배포된 storage/fonts 는 읽기전용일 수 있어 권한 오류 방지. NanumGothic.ttf 는
+        //  @font-face url 에서 절대경로 storage_path('fonts/..') 로 직접 읽으므로 영향 없음)
+        'font_dir' => storage_path('app/dompdf'), // advised by dompdf (https://github.com/dompdf/dompdf/pull/782)
 
         /**
          * The location of the DOMPDF font cache directory
@@ -55,7 +58,7 @@ return [
          *
          * Note: This directory must exist and be writable by the webserver process.
          */
-        'font_cache' => storage_path('fonts'),
+        'font_cache' => storage_path('app/dompdf'),
 
         /**
          * The location of a temporary directory.
