@@ -144,11 +144,11 @@
             goToday() { const t = this.today.split('-'); this.year = parseInt(t[0]); this.month = parseInt(t[1]) - 1; },
             addOn(date) { this.mode = 'create'; this.form = { id: null, date: date, title: '', content: '', color: 'mango' }; this.open = true; },
             edit(it) { this.mode = 'edit'; this.form = { id: it.id, date: it.date, title: it.title, content: it.content || '', color: it.color || 'mango' }; this.open = true; },
-            action() { return this.mode === 'create' ? '{{ route('portal.hq.schedules.store') }}' : '{{ url('portal/hq/schedules') }}/' + this.form.id; },
+            action() { return this.mode === 'create' ? '{{ route('portal.schedules.store') }}' : '{{ url('portal/schedules') }}/' + this.form.id; },
             remove() {
                 if (!confirm('이 일정을 삭제할까요?')) return;
                 const f = this.$refs.deleteForm;
-                f.setAttribute('action', '{{ url('portal/hq/schedules') }}/' + this.form.id);
+                f.setAttribute('action', '{{ url('portal/schedules') }}/' + this.form.id);
                 f.submit();
             },
         };

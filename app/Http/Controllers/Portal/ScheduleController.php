@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Portal\Hq;
+namespace App\Http\Controllers\Portal;
 
 use App\Http\Controllers\Controller;
 use App\Models\Schedule;
@@ -9,15 +9,15 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 
 /**
- * 본사 일정 관리 (캘린더). 날짜별 일정/내용 등록·수정·삭제.
+ * 일정 관리 (캘린더) — 본사/매장/공급처 각자 소속 일정.
+ * 역할 + 소속(store_id/supplier_id) 범위로만 조회·관리.
  */
 class ScheduleController extends Controller
 {
     public function index(Request $request)
     {
-        $schedules = Schedule::orderBy('schedule_date')->orderBy('id')->get();
+        $schedules = Schedule::forUser(Auth::user())->orderBy('schedule_date')->orderBy('id')->get();
 
-        // 캘린더용: 날짜(Y-m-d) → 일정 배열
         $byDate = $schedules->groupBy(fn ($s) => $s->schedule_date->format('Y-m-d'))
             ->map(fn ($group) => $group->map(fn ($s) => [
                 'id' => $s->id,
@@ -27,16 +27,20 @@ class ScheduleController extends Controller
                 'color' => $s->color,
             ])->values());
 
-        return view('portal.hq.schedules.index', [
+        return view('portal.schedules.index', [
             'byDate' => $byDate,
-            'ym' => $request->query('ym'), // 초기 표시 월 (YYYY-MM)
+            'ym' => $request->query('ym'),
         ]);
     }
 
     public function store(Request $request)
     {
+        $me = Auth::user();
         $data = $this->validateData($request);
-        $data['created_by'] = Auth::id();
+        $data['role'] = $me->role;
+        $data['store_id'] = $me->store_id;
+        $data['supplier_id'] = $me->supplier_id;
+        $data['created_by'] = $me->id;
         Schedule::create($data);
 
         return $this->redirectBack($request, '일정을 등록했습니다.');
@@ -44,6 +48,7 @@ class ScheduleController extends Controller
 
     public function update(Request $request, Schedule $schedule)
     {
+        $this->authorizeOwn($schedule);
         $schedule->update($this->validateData($request));
 
         return $this->redirectBack($request, '일정을 수정했습니다.');
@@ -51,9 +56,19 @@ class ScheduleController extends Controller
 
     public function destroy(Request $request, Schedule $schedule)
     {
+        $this->authorizeOwn($schedule);
         $schedule->delete();
 
         return $this->redirectBack($request, '일정을 삭제했습니다.');
+    }
+
+    private function authorizeOwn(Schedule $schedule): void
+    {
+        $me = Auth::user();
+        $ok = $schedule->role === $me->role
+            && (int) $schedule->store_id === (int) $me->store_id
+            && (int) $schedule->supplier_id === (int) $me->supplier_id;
+        abort_unless($ok, 403);
     }
 
     private function validateData(Request $request): array
@@ -69,11 +84,10 @@ class ScheduleController extends Controller
         ]);
     }
 
-    /** 보던 월(ym)을 유지하며 목록으로 복귀 */
     private function redirectBack(Request $request, string $msg)
     {
         $ym = $request->input('ym');
 
-        return redirect()->route('portal.hq.schedules.index', $ym ? ['ym' => $ym] : [])->with('success', $msg);
+        return redirect()->route('portal.schedules.index', $ym ? ['ym' => $ym] : [])->with('success', $msg);
     }
 }

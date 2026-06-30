@@ -49,7 +49,7 @@
                 ['portal.hq.stores.index', '매장 관리', []],
                 ['portal.hq.couriers.index', '택배사 관리', []],
             ]],
-            ['일정 관리', '📅', [['portal.hq.schedules.index', '일정 관리', []]]],
+            ['일정 관리', '📅', [['portal.schedules.index', '일정 관리', []]]],
             ['직원 관리', '👥', [['portal.staff.index', '직원 관리', []]]],
             ['공지사항', '📢', [['portal.hq.notices.index', '공지사항', []]]],
             ['창업 문의', '📨', [
@@ -74,6 +74,7 @@
                 ['portal.store.purchases', '구매 현황', []],
                 ['portal.store.tax_invoices.index', '세금계산서', ['portal.store.tax_invoices.show']],
             ]],
+            ['일정 관리', '📅', [['portal.schedules.index', '일정 관리', []]]],
             ['직원 관리', '👥', [['portal.staff.index', '직원 관리', []]]],
         ],
         'supplier' => [
@@ -97,6 +98,7 @@
                 ['portal.supplier.statements.index', '거래명세서 이력', []],
                 ['portal.supplier.invoices.index', '세금계산서 발행이력', ['portal.supplier.invoices.create']],
             ]],
+            ['일정 관리', '📅', [['portal.schedules.index', '일정 관리', []]]],
             ['직원 관리', '👥', [['portal.staff.index', '직원 관리', []]]],
         ],
     ];
@@ -126,7 +128,7 @@
         <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
             @foreach ($nav as [$groupLabel, $groupIcon, $children])
                 @php $groupActive = collect($children)->contains(fn ($c) => $isChildActive($c)); @endphp
-                @if (count($children) === 1 && empty($children[0][2]) && in_array($children[0][0], ['portal.dashboard', 'portal.chat.index', 'portal.hq.notices.index', 'portal.notices.index', 'portal.staff.index', 'portal.hq.schedules.index'], true))
+                @if (count($children) === 1 && empty($children[0][2]) && in_array($children[0][0], ['portal.dashboard', 'portal.chat.index', 'portal.hq.notices.index', 'portal.notices.index', 'portal.staff.index', 'portal.schedules.index'], true))
                     {{-- 단일 링크 그룹 (대시보드) --}}
                     @php [$r, $label, $also] = $children[0]; $active = $isChildActive($children[0]); @endphp
                     <a href="{{ route($r) }}"
@@ -170,8 +172,8 @@
                 <h1 class="text-lg font-extrabold text-neutral-900 leading-none truncate">@yield('title', '포털')</h1>
             </div>
             <div class="flex items-center gap-3 text-sm">
-                @if ($role === 'hq')
-                    @php $todaySchedules = \App\Models\Schedule::onDate(today())->orderBy('id')->get(); @endphp
+                @if (in_array($role, ['hq', 'store', 'supplier'], true))
+                    @php $todaySchedules = \App\Models\Schedule::forUser($user)->onDate(today())->orderBy('id')->get(); @endphp
                     <div class="relative" x-data="{ open: false }">
                         <button @click="open = !open" class="relative w-10 h-10 grid place-items-center rounded-xl hover:bg-neutral-100" title="오늘 일정">
                             <span class="text-xl">📅</span>
@@ -192,7 +194,7 @@
                                     <p class="px-4 py-8 text-center text-sm text-neutral-400">오늘 등록된 일정이 없습니다.</p>
                                 @endforelse
                             </div>
-                            <a href="{{ route('portal.hq.schedules.index') }}" class="block text-center py-2.5 text-sm font-bold text-neutral-500 hover:bg-neutral-50 border-t border-neutral-100">일정 관리</a>
+                            <a href="{{ route('portal.schedules.index') }}" class="block text-center py-2.5 text-sm font-bold text-neutral-500 hover:bg-neutral-50 border-t border-neutral-100">일정 관리</a>
                         </div>
                     </div>
                 @endif

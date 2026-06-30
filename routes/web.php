@@ -75,6 +75,12 @@ Route::prefix('portal')->name('portal.')->group(function () {
         Route::post('notifications/read-all', [Portal\NotificationController::class, 'readAll'])->name('notifications.read_all');
         Route::post('notifications/{notification}/read', [Portal\NotificationController::class, 'read'])->name('notifications.read');
 
+        // 일정 관리(캘린더) — 본사/매장/공급처 각자 소속 일정
+        Route::get('schedules', [Portal\ScheduleController::class, 'index'])->name('schedules.index');
+        Route::post('schedules', [Portal\ScheduleController::class, 'store'])->name('schedules.store');
+        Route::patch('schedules/{schedule}', [Portal\ScheduleController::class, 'update'])->name('schedules.update');
+        Route::delete('schedules/{schedule}', [Portal\ScheduleController::class, 'destroy'])->name('schedules.destroy');
+
         // 직원(계정) 관리 — 본사/매장/공급처 각자 소속 직원
         Route::get('staff', [Portal\StaffController::class, 'index'])->name('staff.index');
         Route::post('staff', [Portal\StaffController::class, 'store'])->name('staff.store');
@@ -165,12 +171,6 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::post('categories', [Portal\Hq\CategoryController::class, 'store'])->name('categories.store');
             Route::patch('categories/{category}', [Portal\Hq\CategoryController::class, 'update'])->name('categories.update');
             Route::delete('categories/{category}', [Portal\Hq\CategoryController::class, 'destroy'])->name('categories.destroy');
-
-            // 일정 관리 (캘린더)
-            Route::get('schedules', [Portal\Hq\ScheduleController::class, 'index'])->name('schedules.index');
-            Route::post('schedules', [Portal\Hq\ScheduleController::class, 'store'])->name('schedules.store');
-            Route::patch('schedules/{schedule}', [Portal\Hq\ScheduleController::class, 'update'])->name('schedules.update');
-            Route::delete('schedules/{schedule}', [Portal\Hq\ScheduleController::class, 'destroy'])->name('schedules.destroy');
 
             // 택배사 관리 (직접 배송 포함)
             Route::get('couriers', [Portal\Hq\CourierController::class, 'index'])->name('couriers.index');
