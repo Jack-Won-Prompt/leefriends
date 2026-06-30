@@ -18,6 +18,8 @@ class NotificationController extends Controller
         $userId = $request->user()->id;
 
         $notifications = AppNotification::where('user_id', $userId)
+            // unread=1 이면 읽지 않은 알림만 (읽으면 목록에서 사라짐)
+            ->when($request->boolean('unread'), fn ($q) => $q->unread())
             ->latest()
             ->paginate(20);
 
