@@ -49,6 +49,7 @@
                 ['portal.hq.stores.index', '매장 관리', []],
                 ['portal.hq.couriers.index', '택배사 관리', []],
             ]],
+            ['일정 관리', '📅', [['portal.hq.schedules.index', '일정 관리', []]]],
             ['직원 관리', '👥', [['portal.staff.index', '직원 관리', []]]],
             ['공지사항', '📢', [['portal.hq.notices.index', '공지사항', []]]],
             ['창업 문의', '📨', [
@@ -125,7 +126,7 @@
         <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
             @foreach ($nav as [$groupLabel, $groupIcon, $children])
                 @php $groupActive = collect($children)->contains(fn ($c) => $isChildActive($c)); @endphp
-                @if (count($children) === 1 && empty($children[0][2]) && in_array($children[0][0], ['portal.dashboard', 'portal.chat.index', 'portal.hq.notices.index', 'portal.notices.index', 'portal.staff.index'], true))
+                @if (count($children) === 1 && empty($children[0][2]) && in_array($children[0][0], ['portal.dashboard', 'portal.chat.index', 'portal.hq.notices.index', 'portal.notices.index', 'portal.staff.index', 'portal.hq.schedules.index'], true))
                     {{-- 단일 링크 그룹 (대시보드) --}}
                     @php [$r, $label, $also] = $children[0]; $active = $isChildActive($children[0]); @endphp
                     <a href="{{ route($r) }}"
@@ -169,6 +170,32 @@
                 <h1 class="text-lg font-extrabold text-neutral-900 leading-none truncate">@yield('title', '포털')</h1>
             </div>
             <div class="flex items-center gap-3 text-sm">
+                @if ($role === 'hq')
+                    @php $todaySchedules = \App\Models\Schedule::onDate(today())->orderBy('id')->get(); @endphp
+                    <div class="relative" x-data="{ open: false }">
+                        <button @click="open = !open" class="relative w-10 h-10 grid place-items-center rounded-xl hover:bg-neutral-100" title="오늘 일정">
+                            <span class="text-xl">📅</span>
+                            @if ($todaySchedules->count() > 0)
+                                <span class="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 grid place-items-center text-[10px] font-bold text-white bg-mango-500 rounded-full">{{ $todaySchedules->count() }}</span>
+                            @endif
+                        </button>
+                        <div x-show="open" x-cloak @click.outside="open = false" x-transition.origin.top.right
+                             class="absolute right-0 mt-2 w-80 bg-white rounded-2xl shadow-xl border border-neutral-100 overflow-hidden z-50">
+                            <div class="px-4 py-3 border-b border-neutral-100 font-extrabold text-neutral-900">오늘 일정 <span class="text-neutral-400 font-normal">{{ today()->format('m월 d일') }}</span></div>
+                            <div class="max-h-96 overflow-y-auto divide-y divide-neutral-50">
+                                @forelse ($todaySchedules as $s)
+                                    <div class="px-4 py-3">
+                                        <p class="text-sm font-bold text-neutral-800">{{ $s->title }}</p>
+                                        @if ($s->content)<p class="text-xs text-neutral-500 mt-0.5 whitespace-pre-line">{{ \Illuminate\Support\Str::limit($s->content, 120) }}</p>@endif
+                                    </div>
+                                @empty
+                                    <p class="px-4 py-8 text-center text-sm text-neutral-400">오늘 등록된 일정이 없습니다.</p>
+                                @endforelse
+                            </div>
+                            <a href="{{ route('portal.hq.schedules.index') }}" class="block text-center py-2.5 text-sm font-bold text-neutral-500 hover:bg-neutral-50 border-t border-neutral-100">일정 관리</a>
+                        </div>
+                    </div>
+                @endif
                 @php
                     $recentNotis = $user->notifications()->take(6)->get();
                     $unreadCount = $user->notifications()->whereNull('read_at')->count();

@@ -166,6 +166,12 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::patch('categories/{category}', [Portal\Hq\CategoryController::class, 'update'])->name('categories.update');
             Route::delete('categories/{category}', [Portal\Hq\CategoryController::class, 'destroy'])->name('categories.destroy');
 
+            // 일정 관리 (캘린더)
+            Route::get('schedules', [Portal\Hq\ScheduleController::class, 'index'])->name('schedules.index');
+            Route::post('schedules', [Portal\Hq\ScheduleController::class, 'store'])->name('schedules.store');
+            Route::patch('schedules/{schedule}', [Portal\Hq\ScheduleController::class, 'update'])->name('schedules.update');
+            Route::delete('schedules/{schedule}', [Portal\Hq\ScheduleController::class, 'destroy'])->name('schedules.destroy');
+
             // 택배사 관리 (직접 배송 포함)
             Route::get('couriers', [Portal\Hq\CourierController::class, 'index'])->name('couriers.index');
             Route::post('couriers', [Portal\Hq\CourierController::class, 'store'])->name('couriers.store');
