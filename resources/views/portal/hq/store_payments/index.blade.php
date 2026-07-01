@@ -4,17 +4,34 @@
 @section('content')
 <x-wms.page-head title="매장별 입금현황" subtitle="매장별 총 발주액 대비 입금완료·미입금 집계 (계좌 대사 기준)" icon="💳" />
 
-{{-- 전체 + 월별(1~12월) 조회 --}}
-@php $btn = 'inline-flex items-center justify-center rounded-xl px-3.5 py-2 text-sm font-bold transition'; @endphp
-<div class="flex flex-wrap items-center gap-1.5 mb-6">
-    <a href="{{ route('portal.hq.store_payments.index') }}"
-       class="{{ $btn }} {{ ! $month ? 'bg-mango-500 text-white' : 'bg-white border border-neutral-200 text-neutral-600 hover:bg-neutral-50' }}">전체</a>
-    <span class="mx-1 text-neutral-300">|</span>
-    <span class="text-sm font-bold text-neutral-500 mr-1">{{ $year }}년</span>
-    @for ($m = 1; $m <= 12; $m++)
-        <a href="{{ route('portal.hq.store_payments.index', ['year' => $year, 'month' => $m]) }}"
-           class="{{ $btn }} {{ (int) $month === $m ? 'bg-mango-500 text-white' : 'bg-white border border-neutral-200 text-neutral-600 hover:bg-neutral-50' }}">{{ $m }}월</a>
-    @endfor
+{{-- 전체 + 월별(1~12월) + 기간 조회 --}}
+@php
+    $btn = 'inline-flex items-center justify-center rounded-xl px-3.5 py-2 text-sm font-bold transition';
+    $isRange = ! $month && ($from || $to);
+@endphp
+<div class="flex flex-wrap items-end justify-between gap-4 mb-6">
+    <div class="flex flex-wrap items-center gap-1.5">
+        <a href="{{ route('portal.hq.store_payments.index') }}"
+           class="{{ $btn }} {{ ! $month && ! $isRange ? 'bg-mango-500 text-white' : 'bg-white border border-neutral-200 text-neutral-600 hover:bg-neutral-50' }}">전체</a>
+        <span class="mx-1 text-neutral-300">|</span>
+        <span class="text-sm font-bold text-neutral-500 mr-1">{{ $year }}년</span>
+        @for ($m = 1; $m <= 12; $m++)
+            <a href="{{ route('portal.hq.store_payments.index', ['year' => $year, 'month' => $m]) }}"
+               class="{{ $btn }} {{ (int) $month === $m ? 'bg-mango-500 text-white' : 'bg-white border border-neutral-200 text-neutral-600 hover:bg-neutral-50' }}">{{ $m }}월</a>
+        @endfor
+    </div>
+    <form method="GET" action="{{ route('portal.hq.store_payments.index') }}"
+          class="flex items-end gap-2 {{ $isRange ? 'ring-2 ring-mango-300 rounded-xl p-2' : '' }}">
+        <div>
+            <label class="block text-xs font-semibold text-neutral-500 mb-1">시작일</label>
+            <input type="date" name="from" value="{{ $isRange ? $from : '' }}" class="rounded-xl border-neutral-200 text-sm py-2">
+        </div>
+        <div>
+            <label class="block text-xs font-semibold text-neutral-500 mb-1">종료일</label>
+            <input type="date" name="to" value="{{ $isRange ? $to : '' }}" class="rounded-xl border-neutral-200 text-sm py-2">
+        </div>
+        <button type="submit" class="rounded-xl bg-neutral-800 hover:bg-neutral-900 text-white font-bold px-4 py-2 text-sm transition">기간 조회</button>
+    </form>
 </div>
 
 {{-- 요약 --}}
@@ -74,7 +91,17 @@
                                 @endif
                             </td>
                             <td class="px-6 py-3.5 hidden md:table-cell text-neutral-400 text-xs">{{ $s->last_paid_at ? \Illuminate\Support\Carbon::parse($s->last_paid_at)->format('Y.m.d') : '-' }}</td>
-                            <td class="px-6 py-3.5 text-right text-neutral-300">›</td>
+                            <td class="px-6 py-3.5 text-right" onclick="event.stopPropagation()">
+                                @if ($s->unpaid_cnt > 0)
+                                    <form method="POST" action="{{ route('portal.hq.store_payments.request_unpaid', ['store' => $s->id, 'period' => $period, 'from' => $from, 'to' => $to, 'year' => $year, 'month' => $month]) }}"
+                                          onsubmit="return confirm('{{ $s->name }}에 미입금 {{ $s->unpaid_cnt }}건 · {{ number_format($unpaidAmt) }}원 안내 SMS를 전송합니다.\n진행하시겠습니까?')">
+                                        @csrf
+                                        <button type="submit" class="inline-flex items-center gap-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-1.5 text-xs transition">💬 미입금 SMS</button>
+                                    </form>
+                                @else
+                                    <span class="text-neutral-300">›</span>
+                                @endif
+                            </td>
                         </tr>
                     @endforeach
                 </tbody>

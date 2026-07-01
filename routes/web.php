@@ -152,6 +152,7 @@ Route::prefix('portal')->name('portal.')->group(function () {
             // 매장별 입금현황
             Route::get('store-payments', [Portal\Hq\StorePaymentController::class, 'index'])->name('store_payments.index');
             Route::get('store-payments/{store}', [Portal\Hq\StorePaymentController::class, 'show'])->name('store_payments.show');
+            Route::post('store-payments/{store}/request-unpaid', [Portal\Hq\StorePaymentController::class, 'requestUnpaid'])->name('store_payments.request_unpaid');
 
             // 판매주문
             // 공급사 발주 현황 (공급사별 판매주문)

@@ -90,6 +90,35 @@ class StorePaymentController extends Controller
         ]);
     }
 
+    /** 매장 미입금 총액을 SMS로 발송 (현재 조회 기간 기준) */
+    public function requestUnpaid(Request $request, Store $store, \App\Services\Order\PaymentRequestSms $sms)
+    {
+        $period = $request->query('period', 'all');
+        $year = (int) $request->query('year', now()->year);
+        $month = (int) $request->query('month');
+        [$from, $to] = $this->dateRange($request);
+        if ($month >= 1 && $month <= 12) {
+            $from = sprintf('%04d-%02d-01', $year, $month);
+            $to = date('Y-m-t', strtotime($from));
+        }
+
+        $q = $this->apply(
+            Order::where('store_id', $store->id)->where('order_type', 'normal')
+                ->where('status', '!=', 'canceled')->whereNull('paid_at'),
+            $period, $from, $to
+        );
+        $amount = (int) (clone $q)->sum(\DB::raw('store_amount + shipping_fee'));
+        $count = (clone $q)->count();
+
+        try {
+            $sms->dispatchUnpaidSummary($store, $amount, $count);
+        } catch (\Throwable $e) {
+            return back()->with('error', '미입금 안내 SMS 전송 실패: '.$e->getMessage());
+        }
+
+        return back()->with('success', "{$store->name}에 미입금 ".number_format($count).'건 · '.number_format($amount).'원 안내 SMS를 전송했습니다.');
+    }
+
     private function apply($q, string $period, ?string $from, ?string $to)
     {
         if ($from) {

@@ -3,6 +3,7 @@
 namespace App\Services\Order;
 
 use App\Models\Order;
+use App\Models\Store;
 use App\Services\Popbill\PopbillMessagingService;
 use Illuminate\Support\Facades\Log;
 
@@ -53,5 +54,30 @@ class PaymentRequestSms
             .'확인 후 입금 부탁드립니다.';
 
         return $this->messaging->send($corp, $phone, '발주 입금요청', $content, $store->name ?? null);
+    }
+
+    /** 매장 미입금 총액 안내 문자 — 반환: 접수번호. 실패 시 예외. */
+    public function dispatchUnpaidSummary(Store $store, int $unpaidAmount, int $unpaidCount): string
+    {
+        $phone = preg_replace('/\D/', '', (string) ($store->phone ?? ''));
+        if (! $phone) {
+            throw new \RuntimeException('매장 전화번호가 없습니다.');
+        }
+        if ($unpaidAmount <= 0) {
+            throw new \RuntimeException('미입금 금액이 없습니다.');
+        }
+
+        $bank = config('popbill.deposit.bank');
+        $account = config('popbill.deposit.account');
+        $holder = config('popbill.deposit.holder');
+        $corp = preg_replace('/\D/', '', (string) config('popbill.sms.corp_num'));
+
+        $content = "[리프렌즈] 미입금 안내\n"
+            .'미입금 '.number_format($unpaidCount).'건 · '.number_format($unpaidAmount)."원\n"
+            ."입금계좌: {$bank} {$account}\n"
+            ."예금주: {$holder}\n"
+            .'확인 후 입금 부탁드립니다.';
+
+        return $this->messaging->send($corp, $phone, '미입금 안내', $content, $store->name ?? null);
     }
 }
