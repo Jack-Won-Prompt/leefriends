@@ -201,7 +201,7 @@ Route::prefix('portal')->name('portal.')->group(function () {
             // 매출/매입 관리 (홈택스 세금계산서 수집)
             Route::get('hometax', [Portal\Hq\HometaxTaxinvoiceController::class, 'index'])->name('hometax.index');
             Route::post('hometax/request', [Portal\Hq\HometaxTaxinvoiceController::class, 'requestJob'])->name('hometax.request');
-            Route::get('hometax/jobs/{job}/state', [Portal\Hq\HometaxTaxinvoiceController::class, 'jobState'])->name('hometax.job_state');
+            Route::get('hometax/jobs/{job:job_id}/state', [Portal\Hq\HometaxTaxinvoiceController::class, 'jobState'])->name('hometax.job_state');
             Route::get('hometax/detail', [Portal\Hq\HometaxTaxinvoiceController::class, 'detail'])->name('hometax.detail');
             Route::get('hometax/cert', [Portal\Hq\HometaxTaxinvoiceController::class, 'certUrl'])->name('hometax.cert');
             Route::get('hometax/flatrate', [Portal\Hq\HometaxTaxinvoiceController::class, 'flatRateUrl'])->name('hometax.flatrate');
@@ -209,7 +209,7 @@ Route::prefix('portal')->name('portal.')->group(function () {
             // 계좌연동 입금확인 (계좌조회 + 주문 대사)
             Route::get('bank', [Portal\Hq\BankDepositController::class, 'index'])->name('bank.index');
             Route::post('bank/request', [Portal\Hq\BankDepositController::class, 'requestJob'])->name('bank.request');
-            Route::get('bank/jobs/{job}/state', [Portal\Hq\BankDepositController::class, 'jobState'])->name('bank.job_state');
+            Route::get('bank/jobs/{job:job_id}/state', [Portal\Hq\BankDepositController::class, 'jobState'])->name('bank.job_state');
             Route::post('bank/map', [Portal\Hq\BankDepositController::class, 'mapDepositor'])->name('bank.map');
             Route::post('bank/match', [Portal\Hq\BankDepositController::class, 'match'])->name('bank.match');
             Route::delete('bank/deposits/{deposit}/match', [Portal\Hq\BankDepositController::class, 'unmatch'])->name('bank.unmatch');
