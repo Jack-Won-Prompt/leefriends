@@ -196,6 +196,14 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::post('tax-invoices/{invoice}/cancel', [Portal\Hq\TaxInvoiceController::class, 'cancel'])->name('tax_invoices.cancel');
             Route::get('tax-invoices/{invoice}/print', [Portal\Hq\TaxInvoiceController::class, 'printInvoice'])->name('tax_invoices.print');
             Route::post('orders/{order}/tax-invoice', [Portal\Hq\TaxInvoiceController::class, 'issueForOrder'])->name('tax_invoices.issue');
+
+            // 매출/매입 관리 (홈택스 세금계산서 수집)
+            Route::get('hometax', [Portal\Hq\HometaxTaxinvoiceController::class, 'index'])->name('hometax.index');
+            Route::post('hometax/request', [Portal\Hq\HometaxTaxinvoiceController::class, 'requestJob'])->name('hometax.request');
+            Route::get('hometax/jobs/{job}/state', [Portal\Hq\HometaxTaxinvoiceController::class, 'jobState'])->name('hometax.job_state');
+            Route::get('hometax/detail', [Portal\Hq\HometaxTaxinvoiceController::class, 'detail'])->name('hometax.detail');
+            Route::get('hometax/cert', [Portal\Hq\HometaxTaxinvoiceController::class, 'certUrl'])->name('hometax.cert');
+            Route::get('hometax/flatrate', [Portal\Hq\HometaxTaxinvoiceController::class, 'flatRateUrl'])->name('hometax.flatrate');
             Route::post('statements/{statement}/tax-invoice', [Portal\Hq\TaxInvoiceController::class, 'issueForStatement'])->name('tax_invoices.issue_statement');
 
             // 거래명세서 (매장·품목 선택 → PDF 미리보기/이메일 전송 + 발송 이력)
