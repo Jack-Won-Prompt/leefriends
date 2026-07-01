@@ -49,6 +49,7 @@
                         <th class="text-right font-semibold px-6 py-3 hidden lg:table-cell">공급가(원가)</th>
                         <th class="text-left font-semibold px-6 py-3">상태</th>
                         <th class="text-left font-semibold px-6 py-3">세금계산서</th>
+                        <th class="text-left font-semibold px-6 py-3">입금요청</th>
                         <th class="text-left font-semibold px-6 py-3 hidden md:table-cell">접수일</th>
                     </tr>
                 </thead>
@@ -66,6 +67,20 @@
                                     <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">발행완료</span>
                                 @else
                                     <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-neutral-100 text-neutral-400">미발행</span>
+                                @endif
+                            </td>
+                            <td class="px-6 py-3.5" onclick="event.stopPropagation()">
+                                @if ($o->status === 'canceled')
+                                    <span class="text-xs text-neutral-300">—</span>
+                                @elseif ($o->paid_at)
+                                    <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">입금완료</span>
+                                @else
+                                    <form method="POST" action="{{ route('portal.hq.orders.payment_request', $o) }}"
+                                          onsubmit="return confirm('{{ $o->store->name ?? '매장' }}({{ $o->store->phone ?? '번호없음' }})에 입금요청 SMS를 전송합니다.\n발주금액 {{ number_format($o->order_total) }}원\n진행하시겠습니까?')">
+                                        @csrf
+                                        <button type="submit" @unless ($o->store?->phone) disabled @endunless
+                                                class="inline-flex items-center gap-1 rounded-lg bg-mango-500 hover:bg-mango-600 disabled:opacity-40 text-white font-bold px-3 py-1.5 text-xs transition">💬 입금요청</button>
+                                    </form>
                                 @endif
                             </td>
                             <td class="px-6 py-3.5 hidden md:table-cell text-neutral-400">{{ $o->created_at->format('Y.m.d H:i') }}</td>

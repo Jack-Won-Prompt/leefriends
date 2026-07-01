@@ -10,6 +10,22 @@ use Illuminate\Http\Request;
 
 class OrderController extends Controller
 {
+    /** 입금요청 SMS 전송 + 주문 상태를 '접수'로 */
+    public function paymentRequest(Order $order, \App\Services\Order\PaymentRequestSms $sms)
+    {
+        try {
+            $sms->dispatch($order);
+        } catch (\Throwable $e) {
+            return back()->with('error', '입금요청 SMS 전송 실패: '.$e->getMessage());
+        }
+
+        if ($order->status !== 'pending') {
+            $order->update(['status' => 'pending']);
+        }
+
+        return back()->with('success', '입금요청 SMS를 전송하고 주문을 접수 상태로 변경했습니다. ('.($order->store->name ?? '매장').')');
+    }
+
     public function index(Request $request)
     {
         $status = $request->query('status', 'all');

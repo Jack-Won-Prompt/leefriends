@@ -15,14 +15,28 @@ class PaymentRequestSms
     {
     }
 
+    /** 자동 발송(발주 등록 시) — 실패해도 예외를 삼키고 로그만 남긴다. */
     public function send(Order $order): void
+    {
+        try {
+            $this->dispatch($order);
+        } catch (\Throwable $e) {
+            Log::warning('입금요청 SMS 발송 실패', ['order_id' => $order->id, 'error' => $e->getMessage()]);
+        }
+    }
+
+    /** 수동 발송(입금요청 버튼) — 실패 시 예외를 던져 호출측이 결과를 표시하게 한다. 반환: 접수번호. */
+    public function dispatch(Order $order): string
     {
         $store = $order->store;
         $phone = preg_replace('/\D/', '', (string) ($store->phone ?? ''));
         $amount = (int) $order->order_total;
 
-        if (! $phone || $amount <= 0) {
-            return; // 수신번호 없거나 금액 0(샘플 등)이면 발송 안 함
+        if (! $phone) {
+            throw new \RuntimeException('매장 전화번호가 없습니다.');
+        }
+        if ($amount <= 0) {
+            throw new \RuntimeException('발주금액이 0원입니다.');
         }
 
         $bank = config('popbill.deposit.bank');
@@ -38,11 +52,6 @@ class PaymentRequestSms
             ."예금주: {$holder}\n"
             .'확인 후 입금 부탁드립니다.';
 
-        try {
-            $this->messaging->send($corp, $phone, '발주 입금요청', $content, $store->name ?? null);
-        } catch (\Throwable $e) {
-            // 문자 실패가 발주 처리를 막지 않도록 로그만 남김
-            Log::warning('입금요청 SMS 발송 실패', ['order_id' => $order->id, 'error' => $e->getMessage()]);
-        }
+        return $this->messaging->send($corp, $phone, '발주 입금요청', $content, $store->name ?? null);
     }
 }

@@ -143,6 +143,7 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::patch('orders/{order}/items/{item}/price', [Portal\Hq\OrderController::class, 'setItemPrice'])->name('orders.items.price');
             Route::patch('orders/{order}/items/{item}/edit', [Portal\Hq\OrderController::class, 'editItem'])->name('orders.items.edit');
             Route::patch('orders/{order}/shipping', [Portal\Hq\OrderController::class, 'updateShipping'])->name('orders.shipping');
+            Route::post('orders/{order}/payment-request', [Portal\Hq\OrderController::class, 'paymentRequest'])->name('orders.payment_request');
             Route::get('orders/{order}/statement/pdf', [Portal\Hq\OrderController::class, 'statementPdf'])->name('orders.statement.pdf');
             Route::post('orders/{order}/statement/email', [Portal\Hq\OrderController::class, 'statementEmail'])->name('orders.statement.email');
             Route::get('sales', [Portal\Hq\SalesController::class, 'index'])->name('sales');
