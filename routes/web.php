@@ -81,6 +81,24 @@ Route::prefix('portal')->name('portal.')->group(function () {
         Route::patch('schedules/{schedule}', [Portal\ScheduleController::class, 'update'])->name('schedules.update');
         Route::delete('schedules/{schedule}', [Portal\ScheduleController::class, 'destroy'])->name('schedules.destroy');
 
+        // 근태관리 — 출퇴근(아르바이트 등록 / 정직원 승인) + 휴무 + 급여
+        Route::get('attendance', [Portal\AttendanceController::class, 'index'])->name('attendance.index');
+        Route::post('attendance/clock-in', [Portal\AttendanceController::class, 'clockIn'])->name('attendance.clock_in');
+        Route::post('attendance/clock-out', [Portal\AttendanceController::class, 'clockOut'])->name('attendance.clock_out');
+        Route::get('attendance/approvals', [Portal\AttendanceController::class, 'approvals'])->name('attendance.approvals');
+        Route::patch('attendance/{attendance}/approve', [Portal\AttendanceController::class, 'approve'])->name('attendance.approve');
+        Route::patch('attendance/{attendance}/reject', [Portal\AttendanceController::class, 'reject'])->name('attendance.reject');
+
+        Route::get('leaves', [Portal\LeaveController::class, 'index'])->name('leaves.index');
+        Route::post('leaves', [Portal\LeaveController::class, 'store'])->name('leaves.store');
+        Route::delete('leaves/{leave}', [Portal\LeaveController::class, 'destroy'])->name('leaves.destroy');
+        Route::patch('leaves/{leave}/approve', [Portal\LeaveController::class, 'approve'])->name('leaves.approve');
+        Route::patch('leaves/{leave}/reject', [Portal\LeaveController::class, 'reject'])->name('leaves.reject');
+
+        Route::get('wages', [Portal\WageController::class, 'index'])->name('wages.index');
+        Route::post('wages/pay', [Portal\WageController::class, 'pay'])->name('wages.pay');
+        Route::delete('wages/settlements/{settlement}', [Portal\WageController::class, 'unpay'])->name('wages.unpay');
+
         // 직원(계정) 관리 — 본사/매장/공급처 각자 소속 직원
         Route::get('staff', [Portal\StaffController::class, 'index'])->name('staff.index');
         Route::post('staff', [Portal\StaffController::class, 'store'])->name('staff.store');

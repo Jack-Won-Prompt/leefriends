@@ -18,6 +18,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\EnsureAdmin::class,
             'role' => \App\Http\Middleware\EnsureRole::class,
         ]);
+        // 아르바이트 직원은 근태관리만 접근 (포털 전역 적용)
+        $middleware->web(append: [
+            \App\Http\Middleware\RestrictPartTime::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

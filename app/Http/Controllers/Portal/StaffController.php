@@ -28,9 +28,12 @@ class StaffController extends Controller
             'email' => ['required', 'email', 'max:100', Rule::unique('users', 'email')],
             'password' => ['required', 'string', 'min:4', 'max:100'],
             'phone' => ['nullable', 'string', 'max:30'],
+            'employment_type' => ['required', Rule::in(array_keys(User::EMPLOYMENT_TYPES))],
+            'hourly_wage' => ['nullable', 'required_if:employment_type,part_time', 'integer', 'min:0', 'max:1000000'],
         ], [
             'email.unique' => '이미 사용 중인 이메일입니다.',
             'password.required' => '임시 비밀번호를 입력해 주세요.',
+            'hourly_wage.required_if' => '아르바이트는 시급을 입력해 주세요.',
         ]);
 
         $me = Auth::user();
@@ -40,6 +43,8 @@ class StaffController extends Controller
             'phone' => $data['phone'] ?? null,
             'password' => $data['password'], // 모델 cast(hashed)로 자동 해시
             'role' => $me->role,
+            'employment_type' => $data['employment_type'],
+            'hourly_wage' => $data['employment_type'] === 'part_time' ? (int) $data['hourly_wage'] : null,
             'store_id' => $me->store_id,
             'supplier_id' => $me->supplier_id,
             'is_admin' => false,
@@ -58,11 +63,18 @@ class StaffController extends Controller
             'email' => ['required', 'email', 'max:100', Rule::unique('users', 'email')->ignore($user->id)],
             'phone' => ['nullable', 'string', 'max:30'],
             'password' => ['nullable', 'string', 'min:4', 'max:100'],
-        ], ['email.unique' => '이미 사용 중인 이메일입니다.']);
+            'employment_type' => ['required', Rule::in(array_keys(User::EMPLOYMENT_TYPES))],
+            'hourly_wage' => ['nullable', 'required_if:employment_type,part_time', 'integer', 'min:0', 'max:1000000'],
+        ], [
+            'email.unique' => '이미 사용 중인 이메일입니다.',
+            'hourly_wage.required_if' => '아르바이트는 시급을 입력해 주세요.',
+        ]);
 
         $user->name = $data['name'];
         $user->email = $data['email'];
         $user->phone = $data['phone'] ?? null;
+        $user->employment_type = $data['employment_type'];
+        $user->hourly_wage = $data['employment_type'] === 'part_time' ? (int) $data['hourly_wage'] : null;
         if (! empty($data['password'])) {
             $user->password = $data['password']; // 비밀번호 재설정(입력 시에만)
         }

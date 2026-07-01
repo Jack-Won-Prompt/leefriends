@@ -25,6 +25,8 @@ class User extends Authenticatable
         'password',
         'is_admin',
         'role',
+        'employment_type',
+        'hourly_wage',
         'store_id',
         'supplier_id',
         'invite_token',
@@ -35,6 +37,11 @@ class User extends Authenticatable
         'hq' => '본사',
         'store' => '매장',
         'supplier' => '공급처',
+    ];
+
+    public const EMPLOYMENT_TYPES = [
+        'regular' => '정직원',
+        'part_time' => '아르바이트',
     ];
 
     /**
@@ -58,7 +65,28 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_admin' => 'boolean',
+            'hourly_wage' => 'integer',
         ];
+    }
+
+    public function isPartTime(): bool
+    {
+        return $this->employment_type === 'part_time';
+    }
+
+    public function getEmploymentLabelAttribute(): string
+    {
+        return self::EMPLOYMENT_TYPES[$this->employment_type] ?? '정직원';
+    }
+
+    /** 같은 소속(역할+조직)의 정직원들 */
+    public function orgRegularStaff()
+    {
+        return User::where('role', $this->role)
+            ->where('employment_type', 'regular')
+            ->when($this->role === 'store', fn ($q) => $q->where('store_id', $this->store_id))
+            ->when($this->role === 'supplier', fn ($q) => $q->where('supplier_id', $this->supplier_id))
+            ->get();
     }
 
     public function store()
