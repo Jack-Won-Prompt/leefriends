@@ -79,6 +79,35 @@ Route::prefix('v1')->group(function () {
         Route::put('schedules/{schedule}', [\App\Http\Controllers\Api\ScheduleController::class, 'update'])->name('api.schedules.update');
         Route::delete('schedules/{schedule}', [\App\Http\Controllers\Api\ScheduleController::class, 'destroy'])->name('api.schedules.destroy');
 
+        // 근태관리 — 출퇴근(아르바이트 등록 / 정직원 승인) + 휴무 + 급여
+        Route::prefix('attendance')->name('api.attendance.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\AttendanceController::class, 'index'])->name('index');
+            Route::post('clock-in', [\App\Http\Controllers\Api\AttendanceController::class, 'clockIn'])->name('clock_in');
+            Route::post('clock-out', [\App\Http\Controllers\Api\AttendanceController::class, 'clockOut'])->name('clock_out');
+            Route::post('record', [\App\Http\Controllers\Api\AttendanceController::class, 'store'])->name('store');
+            Route::put('{attendance}/own', [\App\Http\Controllers\Api\AttendanceController::class, 'updateOwn'])->name('update_own');
+            Route::delete('{attendance}/own', [\App\Http\Controllers\Api\AttendanceController::class, 'destroyOwn'])->name('destroy_own');
+            Route::get('approvals', [\App\Http\Controllers\Api\AttendanceController::class, 'approvals'])->name('approvals');
+            Route::post('bulk-approve', [\App\Http\Controllers\Api\AttendanceController::class, 'bulkApprove'])->name('bulk_approve');
+            Route::get('manage/{user}', [\App\Http\Controllers\Api\AttendanceController::class, 'manage'])->name('manage');
+            Route::post('manage/{user}', [\App\Http\Controllers\Api\AttendanceController::class, 'storeManual'])->name('manage_store');
+            Route::patch('{attendance}/times', [\App\Http\Controllers\Api\AttendanceController::class, 'updateTimes'])->name('update_times');
+            Route::patch('{attendance}/approve', [\App\Http\Controllers\Api\AttendanceController::class, 'approve'])->name('approve');
+            Route::patch('{attendance}/reject', [\App\Http\Controllers\Api\AttendanceController::class, 'reject'])->name('reject');
+        });
+        Route::prefix('leaves')->name('api.leaves.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\LeaveController::class, 'index'])->name('index');
+            Route::post('/', [\App\Http\Controllers\Api\LeaveController::class, 'store'])->name('store');
+            Route::delete('{leave}', [\App\Http\Controllers\Api\LeaveController::class, 'destroy'])->name('destroy');
+            Route::patch('{leave}/approve', [\App\Http\Controllers\Api\LeaveController::class, 'approve'])->name('approve');
+            Route::patch('{leave}/reject', [\App\Http\Controllers\Api\LeaveController::class, 'reject'])->name('reject');
+        });
+        Route::prefix('wages')->name('api.wages.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\WageController::class, 'index'])->name('index');
+            Route::post('pay', [\App\Http\Controllers\Api\WageController::class, 'pay'])->name('pay');
+            Route::delete('{settlement}', [\App\Http\Controllers\Api\WageController::class, 'unpay'])->name('unpay');
+        });
+
         // 알림
         Route::get('notifications', [NotificationController::class, 'index'])->name('api.notifications.index');
         Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('api.notifications.unread');

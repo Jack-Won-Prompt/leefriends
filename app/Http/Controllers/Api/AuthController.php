@@ -83,6 +83,9 @@ class AuthController extends Controller
             'role_label' => User::ROLES[$role] ?? $role,
             'store_id' => $user->store_id,
             'store_name' => $user->store?->name,
+            'employment_type' => $user->employment_type ?? 'regular',
+            'is_part_time' => method_exists($user, 'isPartTime') ? $user->isPartTime() : false,
+            'hourly_wage' => (int) ($user->hourly_wage ?? 0),
         ];
     }
 
