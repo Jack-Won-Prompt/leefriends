@@ -4,10 +4,42 @@
 @section('content')
 @php
     $statusChip = ['pending'=>'bg-amber-100 text-amber-700','approved'=>'bg-emerald-100 text-emerald-700','rejected'=>'bg-rose-100 text-rose-700'];
-    $approvable = $attendances->where('status','pending')->filter(fn($a)=>$a->clock_out_at)->pluck('id')->values();
+    $approvable = collect($attendances->items())->where('status','pending')->filter(fn($a)=>$a->clock_out_at)->pluck('id')->values();
 @endphp
 <div x-data="{ picked: [], allIds: {{ \Illuminate\Support\Js::from($approvable) }} }">
 <x-wms.page-head title="근태 승인" subtitle="출근·퇴근 시간을 확인하고 승인합니다. 여러 건을 한 번에 승인할 수 있습니다." icon="✅" />
+
+{{-- 필터 --}}
+<form method="GET" action="{{ route('portal.attendance.approvals') }}" class="flex flex-wrap items-end gap-3 mb-5">
+    <div>
+        <label class="block text-xs font-semibold text-neutral-500 mb-1">상태</label>
+        <select name="status" class="rounded-xl border-neutral-200 text-sm py-2">
+            <option value="all" @selected($status==='all')>전체</option>
+            <option value="pending" @selected($status==='pending')>승인대기</option>
+            <option value="approved" @selected($status==='approved')>승인</option>
+            <option value="rejected" @selected($status==='rejected')>반려</option>
+        </select>
+    </div>
+    <div>
+        <label class="block text-xs font-semibold text-neutral-500 mb-1">직원</label>
+        <select name="user" class="rounded-xl border-neutral-200 text-sm py-2 min-w-[9rem]">
+            <option value="">전체</option>
+            @foreach ($parttimers as $p)
+                <option value="{{ $p->id }}" @selected((int)$userId === $p->id)>{{ $p->name }}</option>
+            @endforeach
+        </select>
+    </div>
+    <div>
+        <label class="block text-xs font-semibold text-neutral-500 mb-1">시작일</label>
+        <input type="date" name="from" value="{{ $from }}" class="rounded-xl border-neutral-200 text-sm py-2">
+    </div>
+    <div>
+        <label class="block text-xs font-semibold text-neutral-500 mb-1">종료일</label>
+        <input type="date" name="to" value="{{ $to }}" class="rounded-xl border-neutral-200 text-sm py-2">
+    </div>
+    <button type="submit" class="rounded-xl bg-neutral-800 hover:bg-neutral-900 text-white font-bold px-4 py-2.5 text-sm transition">조회</button>
+    <a href="{{ route('portal.attendance.approvals') }}" class="rounded-xl border border-neutral-200 hover:bg-neutral-50 text-neutral-500 font-bold px-4 py-2.5 text-sm">초기화</a>
+</form>
 
 {{-- 출퇴근 일괄 승인 툴바 --}}
 <div x-show="picked.length" x-cloak class="mb-3 flex items-center gap-3 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3">
@@ -70,6 +102,9 @@
             @endforelse
         </tbody>
     </table>
+    @if ($attendances->hasPages())
+        <div class="px-5 py-3 border-t border-neutral-100">{{ $attendances->links() }}</div>
+    @endif
 </x-wms.panel>
 
 {{-- 휴무 --}}
@@ -110,6 +145,9 @@
             @endforelse
         </tbody>
     </table>
+    @if ($leaves->hasPages())
+        <div class="px-5 py-3 border-t border-neutral-100">{{ $leaves->links() }}</div>
+    @endif
 </x-wms.panel>
 </div>
 @endsection

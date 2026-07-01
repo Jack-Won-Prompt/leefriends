@@ -168,12 +168,41 @@ class AttendanceController extends Controller
         $me = Auth::user();
         abort_if($me->isPartTime(), 403);
 
-        $attendances = Attendance::forOrg($me)->with('user')
-            ->orderByRaw("status = 'pending' desc")->latest('clock_in_at')->limit(100)->get();
-        $leaves = Leave::forOrg($me)->with('user')
-            ->orderByRaw("status = 'pending' desc")->latest('leave_date')->limit(100)->get();
+        $status = $request->query('status', 'all');
+        $userId = $request->query('user') ?: null;
+        $from = $request->query('from') ?: null;
+        $to = $request->query('to') ?: null;
 
-        return view('portal.attendance.approvals', compact('attendances', 'leaves'));
+        $parttimers = \App\Models\User::where('role', $me->role)->where('employment_type', 'part_time')
+            ->when($me->role === 'store', fn ($q) => $q->where('store_id', $me->store_id))
+            ->when($me->role === 'supplier', fn ($q) => $q->where('supplier_id', $me->supplier_id))
+            ->orderBy('name')->get(['id', 'name']);
+
+        $attQ = Attendance::forOrg($me)->with('user');
+        $leaveQ = Leave::forOrg($me)->with('user');
+        if (in_array($status, ['pending', 'approved', 'rejected'], true)) {
+            $attQ->where('status', $status);
+            $leaveQ->where('status', $status);
+        }
+        if ($userId) {
+            $attQ->where('user_id', $userId);
+            $leaveQ->where('user_id', $userId);
+        }
+        if ($from) {
+            $attQ->whereDate('work_date', '>=', $from);
+            $leaveQ->whereDate('leave_date', '>=', $from);
+        }
+        if ($to) {
+            $attQ->whereDate('work_date', '<=', $to);
+            $leaveQ->whereDate('leave_date', '<=', $to);
+        }
+
+        $attendances = $attQ->orderByRaw("status = 'pending' desc")->latest('clock_in_at')
+            ->paginate(15, ['*'], 'ap')->withQueryString();
+        $leaves = $leaveQ->orderByRaw("status = 'pending' desc")->latest('leave_date')
+            ->paginate(15, ['*'], 'lp')->withQueryString();
+
+        return view('portal.attendance.approvals', compact('attendances', 'leaves', 'parttimers', 'status', 'userId', 'from', 'to'));
     }
 
     public function approve(Attendance $attendance)
