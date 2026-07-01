@@ -34,7 +34,10 @@
             </div>
             <p class="text-sm text-neutral-400 mt-1">{{ $isSample ? '주문일' : '발주일' }} {{ $order->created_at->format('Y년 m월 d일 H:i') }}</p>
         </div>
-        @include('portal.partials.order-status', ['status' => $order->status, 'label' => $order->status_label])
+        <div class="flex items-center gap-2">
+            @include('portal.partials.order-status', ['status' => $order->status, 'label' => $order->status_label])
+            @include('portal.partials.payment-badge', ['order' => $order])
+        </div>
     </div>
     @if ($order->note)
         <p class="mt-4 text-sm text-neutral-600 bg-neutral-50 rounded-xl p-4">📝 {{ $order->note }}</p>

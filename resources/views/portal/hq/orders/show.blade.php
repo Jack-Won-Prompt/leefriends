@@ -35,6 +35,14 @@
             <span class="font-bold">{{ number_format($order->shipping_fee) }}원</span>
         </div>
         <div class="flex justify-between py-3 mt-1"><span class="text-mango-300 font-bold">발주 합계</span><span class="text-mango-300 font-black text-lg">{{ number_format($order->order_total) }}원</span></div>
+        <div class="flex justify-between items-center py-2 border-t border-white/10">
+            <span class="text-white/70">입금 상태</span>
+            @if ($order->paid_at)
+                <span class="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300">💰 입금완료 · {{ $order->paid_at->format('m.d H:i') }}</span>
+            @else
+                <span class="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-white/10 text-white/50">입금대기</span>
+            @endif
+        </div>
 
         @if ($order->status === 'canceled')
             <p class="mt-4 rounded-xl bg-white/10 text-white/60 text-sm text-center py-3">취소된 발주입니다. 택배비·거래명세서·세금계산서 처리는 제공되지 않습니다.</p>

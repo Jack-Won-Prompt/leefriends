@@ -30,7 +30,12 @@
                         <td class="px-6 py-3.5 font-bold text-neutral-900">{{ $o->order_no }}</td>
                         <td class="px-6 py-3.5 text-right hidden md:table-cell text-neutral-500">{{ $o->items_count }}</td>
                         <td class="px-6 py-3.5 text-right font-semibold">{{ number_format($o->store_amount) }}원</td>
-                        <td class="px-6 py-3.5">@include('portal.partials.order-status', ['status' => $o->status, 'label' => $o->status_label])</td>
+                        <td class="px-6 py-3.5">
+                            <div class="flex items-center gap-1.5">
+                                @include('portal.partials.order-status', ['status' => $o->status, 'label' => $o->status_label])
+                                @include('portal.partials.payment-badge', ['order' => $o])
+                            </div>
+                        </td>
                         <td class="px-6 py-3.5 hidden md:table-cell text-neutral-400">{{ $o->created_at->format('Y.m.d H:i') }}</td>
                     </tr>
                 @endforeach
