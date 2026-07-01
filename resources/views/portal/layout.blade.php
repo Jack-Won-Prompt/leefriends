@@ -42,6 +42,7 @@
                 ['portal.hq.tax_invoices.index', '세금계산서 발행이력', []],
                 ['portal.hq.invoices.index', '세금계산서(수취)', []],
                 ['portal.hq.hometax.index', '매출/매입 관리', []],
+                ['portal.hq.bank.index', '계좌 입금확인', []],
             ]],
             ['기준정보', '🗂️', [
                 ['portal.hq.products.index', '품목 관리', []],

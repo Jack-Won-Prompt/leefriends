@@ -204,6 +204,16 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::get('hometax/detail', [Portal\Hq\HometaxTaxinvoiceController::class, 'detail'])->name('hometax.detail');
             Route::get('hometax/cert', [Portal\Hq\HometaxTaxinvoiceController::class, 'certUrl'])->name('hometax.cert');
             Route::get('hometax/flatrate', [Portal\Hq\HometaxTaxinvoiceController::class, 'flatRateUrl'])->name('hometax.flatrate');
+
+            // 계좌연동 입금확인 (계좌조회 + 주문 대사)
+            Route::get('bank', [Portal\Hq\BankDepositController::class, 'index'])->name('bank.index');
+            Route::post('bank/request', [Portal\Hq\BankDepositController::class, 'requestJob'])->name('bank.request');
+            Route::get('bank/jobs/{job}/state', [Portal\Hq\BankDepositController::class, 'jobState'])->name('bank.job_state');
+            Route::post('bank/map', [Portal\Hq\BankDepositController::class, 'mapDepositor'])->name('bank.map');
+            Route::post('bank/match', [Portal\Hq\BankDepositController::class, 'match'])->name('bank.match');
+            Route::delete('bank/deposits/{deposit}/match', [Portal\Hq\BankDepositController::class, 'unmatch'])->name('bank.unmatch');
+            Route::post('bank/auto-match', [Portal\Hq\BankDepositController::class, 'autoMatch'])->name('bank.auto_match');
+            Route::get('bank/flatrate', [Portal\Hq\BankDepositController::class, 'flatRateUrl'])->name('bank.flatrate');
             Route::post('statements/{statement}/tax-invoice', [Portal\Hq\TaxInvoiceController::class, 'issueForStatement'])->name('tax_invoices.issue_statement');
 
             // 거래명세서 (매장·품목 선택 → PDF 미리보기/이메일 전송 + 발송 이력)

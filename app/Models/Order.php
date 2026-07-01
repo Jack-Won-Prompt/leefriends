@@ -10,7 +10,7 @@ class Order extends Model
         'order_no', 'store_id', 'user_id', 'status', 'order_type',
         'store_amount', 'supply_amount', 'note', 'tax_invoice_id',
         'shipping_box_count', 'shipping_unit_price', 'shipping_fee',
-        'statement_emailed_at', 'statement_email_count',
+        'statement_emailed_at', 'statement_email_count', 'paid_at',
     ];
 
     protected $casts = [
@@ -21,7 +21,18 @@ class Order extends Model
         'shipping_fee' => 'integer',
         'statement_emailed_at' => 'datetime',
         'statement_email_count' => 'integer',
+        'paid_at' => 'datetime',
     ];
+
+    public function isPaid(): bool
+    {
+        return ! is_null($this->paid_at);
+    }
+
+    public function bankDeposit()
+    {
+        return $this->hasOne(BankDeposit::class, 'matched_order_id');
+    }
 
     /** 발주 합계 = 매장 출고가 합계 + 택배비 합계 */
     public function getOrderTotalAttribute(): int
