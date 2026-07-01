@@ -18,6 +18,8 @@ return [
 
     // 문자(SMS/LMS) 발신 — 팝빌 메시징
     'sms' => [
+        // 발신 사업자번호: 발신번호가 승인된 팝빌 회원(발행 사업자번호와 분리 가능)
+        'corp_num' => env('POPBILL_SMS_CORP_NUM', env('POPBILL_TEST_CORP_NUM')),
         'sender'   => env('POPBILL_SENDER_NUM', env('POPBILL_TEST_SENDER_NUM')), // 사전 등록된 발신번호
         'simulate' => env('POPBILL_SMS_SIMULATE', false), // true면 실제 발송 대신 로그
     ],

@@ -28,7 +28,8 @@ class PaymentRequestSms
         $bank = config('popbill.deposit.bank');
         $account = config('popbill.deposit.account');
         $holder = config('popbill.deposit.holder');
-        $corp = preg_replace('/\D/', '', (string) config('popbill.hq.corp_num'));
+        // 발신번호가 승인된 SMS 발송 사업자번호(발행 사업자번호와 분리)
+        $corp = preg_replace('/\D/', '', (string) config('popbill.sms.corp_num'));
 
         $content = "[리프렌즈] 발주 접수\n"
             ."발주번호: {$order->order_no}\n"
