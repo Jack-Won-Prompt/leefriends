@@ -335,6 +335,32 @@ class OrderController extends Controller
         return response()->json(['message' => "거래명세서를 매장({$to})으로 전송했습니다."]);
     }
 
+    /** 입금요청 SMS 전송 + 주문 상태 접수(pending). 본사 전용. (웹 Portal\Hq\OrderController@paymentRequest 와 동일) */
+    public function paymentRequest(Request $request, Order $order, \App\Services\Order\PaymentRequestSms $sms): JsonResponse
+    {
+        [$type] = $this->seller($request);
+        abort_unless($type === 'hq', 403, '본사 계정만 사용할 수 있습니다.');
+
+        if (($order->order_type ?? 'normal') === 'sample') {
+            return response()->json(['message' => '샘플 주문은 입금요청을 보내지 않습니다.'], 422);
+        }
+        if ($order->status === 'canceled') {
+            return response()->json(['message' => '취소된 발주입니다.'], 422);
+        }
+
+        try {
+            $sms->dispatch($order);
+        } catch (\Throwable $e) {
+            return response()->json(['message' => '입금요청 SMS 전송 실패: '.$e->getMessage()], 422);
+        }
+
+        if ($order->status !== 'pending') {
+            $order->update(['status' => 'pending']);
+        }
+
+        return response()->json(['message' => '입금요청 SMS를 전송했습니다. ('.($order->store->name ?? '매장').')']);
+    }
+
     private function summary(Order $o, string $type): array
     {
         // 공급처는 자사 품목 합계만 의미가 있으므로 로드된 items 기준 집계

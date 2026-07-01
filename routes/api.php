@@ -145,6 +145,7 @@ Route::prefix('v1')->group(function () {
             Route::patch('orders/{order}/shipping', [Seller\OrderController::class, 'updateShipping'])->name('orders.shipping');
             Route::post('orders/{order}/tax-invoice', [Seller\OrderController::class, 'issueForOrder'])->name('orders.tax_invoice');
             Route::post('orders/{order}/statement-email', [Seller\OrderController::class, 'statementEmail'])->name('orders.statement_email');
+            Route::post('orders/{order}/payment-request', [Seller\OrderController::class, 'paymentRequest'])->name('orders.payment_request');
 
             // 매장 주문 변경 확인(반영)
             Route::get('order-changes', [Seller\OrderChangeController::class, 'index'])->name('order_changes.index');
