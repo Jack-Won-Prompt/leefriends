@@ -149,6 +149,10 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::get('sales', [Portal\Hq\SalesController::class, 'index'])->name('sales');
             Route::get('sales/store/{store}', [Portal\Hq\SalesController::class, 'storeOrders'])->name('sales.store_orders');
 
+            // 매장별 입금현황
+            Route::get('store-payments', [Portal\Hq\StorePaymentController::class, 'index'])->name('store_payments.index');
+            Route::get('store-payments/{store}', [Portal\Hq\StorePaymentController::class, 'show'])->name('store_payments.show');
+
             // 판매주문
             // 공급사 발주 현황 (공급사별 판매주문)
             Route::get('supplier-orders', [Portal\Hq\SupplierOrderController::class, 'index'])->name('supplier_orders.index');
