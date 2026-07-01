@@ -73,6 +73,12 @@ Route::prefix('v1')->group(function () {
         Route::get('inventory/movements', [InventoryController::class, 'movements'])->name('api.inventory.movements');
         Route::post('inventory/usage', [InventoryController::class, 'usage'])->name('api.inventory.usage');
 
+        // 일정(캘린더) — 본사/매장/공급처 각자 소속
+        Route::get('schedules', [\App\Http\Controllers\Api\ScheduleController::class, 'index'])->name('api.schedules.index');
+        Route::post('schedules', [\App\Http\Controllers\Api\ScheduleController::class, 'store'])->name('api.schedules.store');
+        Route::put('schedules/{schedule}', [\App\Http\Controllers\Api\ScheduleController::class, 'update'])->name('api.schedules.update');
+        Route::delete('schedules/{schedule}', [\App\Http\Controllers\Api\ScheduleController::class, 'destroy'])->name('api.schedules.destroy');
+
         // 알림
         Route::get('notifications', [NotificationController::class, 'index'])->name('api.notifications.index');
         Route::get('notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('api.notifications.unread');
