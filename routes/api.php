@@ -178,7 +178,7 @@ Route::prefix('v1')->group(function () {
             // 본사 계좌 입금확인 — 계좌 거래내역 수집 + 입금자 매핑 + 주문 대사 (본사 전용)
             Route::get('bank', [Seller\BankController::class, 'index'])->name('bank.index');
             Route::post('bank/request', [Seller\BankController::class, 'requestJob'])->name('bank.request');
-            Route::get('bank/jobs/{job}/state', [Seller\BankController::class, 'jobState'])->name('bank.job_state');
+            Route::get('bank/jobs/{job:job_id}/state', [Seller\BankController::class, 'jobState'])->name('bank.job_state');
             Route::post('bank/map', [Seller\BankController::class, 'mapDepositor'])->name('bank.map');
             Route::post('bank/match', [Seller\BankController::class, 'match'])->name('bank.match');
             Route::delete('bank/deposits/{deposit}/match', [Seller\BankController::class, 'unmatch'])->name('bank.unmatch');
@@ -188,7 +188,7 @@ Route::prefix('v1')->group(function () {
             // 본사 매출/매입 — 홈택스 전자세금계산서 수집·조회 (본사 전용)
             Route::get('hometax', [Seller\HometaxController::class, 'index'])->name('hometax.index');
             Route::post('hometax/request', [Seller\HometaxController::class, 'requestJob'])->name('hometax.request');
-            Route::get('hometax/jobs/{job}/state', [Seller\HometaxController::class, 'jobState'])->name('hometax.job_state');
+            Route::get('hometax/jobs/{job:job_id}/state', [Seller\HometaxController::class, 'jobState'])->name('hometax.job_state');
             Route::get('hometax/detail', [Seller\HometaxController::class, 'detail'])->name('hometax.detail');
             Route::get('hometax/cert-url', [Seller\HometaxController::class, 'certUrl'])->name('hometax.cert_url');
             Route::get('hometax/flat-rate-url', [Seller\HometaxController::class, 'flatRateUrl'])->name('hometax.flat_rate_url');
