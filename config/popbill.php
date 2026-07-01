@@ -16,6 +16,19 @@ return [
         'cert_key'  => env('POPBILL_TEST_CERT_KEY'),
     ],
 
+    // 문자(SMS/LMS) 발신 — 팝빌 메시징
+    'sms' => [
+        'sender'   => env('POPBILL_SENDER_NUM', env('POPBILL_TEST_SENDER_NUM')), // 사전 등록된 발신번호
+        'simulate' => env('POPBILL_SMS_SIMULATE', false), // true면 실제 발송 대신 로그
+    ],
+
+    // 발주 입금요청 안내 계좌
+    'deposit' => [
+        'bank'    => env('DEPOSIT_BANK_NAME', '우리은행'),
+        'account' => env('DEPOSIT_ACCOUNT_NO', '1005-004-805764'),
+        'holder'  => env('DEPOSIT_ACCOUNT_HOLDER', '주식회사 오다네트웍스'),
+    ],
+
     // 본사(발행자=공급자) 사업자 정보 — 본사→매장 발행 시 사용
     'hq' => [
         'corp_num'  => env('POPBILL_HQ_CORP_NUM', '8278103115'),       // 주식회사 오다네트웍스 827-81-03115

@@ -36,6 +36,9 @@
         </div>
         <div class="flex justify-between py-3 mt-1"><span class="text-mango-300 font-bold">발주 합계</span><span class="text-mango-300 font-black text-lg">{{ number_format($order->order_total) }}원</span></div>
 
+        @if ($order->status === 'canceled')
+            <p class="mt-4 rounded-xl bg-white/10 text-white/60 text-sm text-center py-3">취소된 발주입니다. 택배비·거래명세서·세금계산서 처리는 제공되지 않습니다.</p>
+        @else
         <button type="button" @click="shipOpen = true"
                 class="w-full mt-2 rounded-xl bg-white/10 hover:bg-white/15 text-white/90 font-bold px-4 py-2.5 text-sm transition">
             🚚 택배비 {{ $order->shipping_fee ? '수정' : '추가' }}
@@ -131,6 +134,7 @@
                 </form>
             @endif
         </div>
+        @endif
     </div>
 </div>
 

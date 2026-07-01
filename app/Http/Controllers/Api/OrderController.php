@@ -144,9 +144,10 @@ class OrderController extends Controller
         // 본사 + 해당 공급처에 새 발주 알림(FCM)
         $notifications->notifyNewOrder($order);
 
-        // 정식 발주는 공급처(직배송 품목)로 발주서 PDF 이메일 자동 발송
+        // 정식 발주는 공급처(직배송 품목)로 발주서 PDF 이메일 자동 발송 + 매장에 입금요청 SMS
         if ($type === 'normal') {
             $orderMailer->sendForOrder($order);
+            app(\App\Services\Order\PaymentRequestSms::class)->send($order);
         }
 
         return response()->json([
