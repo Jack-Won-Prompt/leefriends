@@ -175,6 +175,14 @@ Route::prefix('v1')->group(function () {
             Route::get('supplier-orders', [Seller\SupplierOrderController::class, 'index'])->name('supplier_orders.index');
             Route::get('supplier-orders/{salesOrder}', [Seller\SupplierOrderController::class, 'show'])->name('supplier_orders.show');
 
+            // 본사 매출/매입 — 홈택스 전자세금계산서 수집·조회 (본사 전용)
+            Route::get('hometax', [Seller\HometaxController::class, 'index'])->name('hometax.index');
+            Route::post('hometax/request', [Seller\HometaxController::class, 'requestJob'])->name('hometax.request');
+            Route::get('hometax/jobs/{job}/state', [Seller\HometaxController::class, 'jobState'])->name('hometax.job_state');
+            Route::get('hometax/detail', [Seller\HometaxController::class, 'detail'])->name('hometax.detail');
+            Route::get('hometax/cert-url', [Seller\HometaxController::class, 'certUrl'])->name('hometax.cert_url');
+            Route::get('hometax/flat-rate-url', [Seller\HometaxController::class, 'flatRateUrl'])->name('hometax.flat_rate_url');
+
             // 거래명세서 — 작성 / 전송 / 발행 / 이력
             Route::get('statements', [Seller\StatementController::class, 'index'])->name('statements.index');
             Route::get('statements/catalog', [Seller\StatementController::class, 'catalog'])->name('statements.catalog');
