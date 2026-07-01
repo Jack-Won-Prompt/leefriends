@@ -54,8 +54,10 @@
                         <span class="text-xs font-bold px-2 py-0.5 rounded-full {{ $c }}">{{ $a->statusLabel() }}</span>
                     </td>
                     <td class="px-5 py-3 text-right whitespace-nowrap">
-                        <button type="button" @click="editId = (editId === {{ $a->id }} ? null : {{ $a->id }})" class="text-mango-600 hover:underline text-xs font-bold mr-2">수정</button>
-                        @if ($a->status !== 'approved')
+                        @if ($a->status === 'approved')
+                            <span class="text-xs text-neutral-300">승인 완료</span>
+                        @else
+                            <button type="button" @click="editId = (editId === {{ $a->id }} ? null : {{ $a->id }})" class="text-mango-600 hover:underline text-xs font-bold mr-2">수정</button>
                             <form method="POST" action="{{ route('portal.attendance.destroy_own', $a) }}" class="inline" onsubmit="return confirm('이 출퇴근 기록을 삭제할까요?')">
                                 @csrf @method('DELETE')
                                 <button class="text-neutral-400 hover:text-rose-500 text-xs font-bold">삭제</button>

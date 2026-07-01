@@ -113,6 +113,7 @@ class AttendanceController extends Controller
     {
         $me = Auth::user();
         abort_unless($me->isPartTime() && $attendance->user_id === $me->id, 403);
+        abort_if($attendance->status === 'approved', 400, '승인된 출퇴근은 수정할 수 없습니다.');
 
         $data = $this->validateTimes($request);
         [$in, $out] = $this->buildTimes($data);
