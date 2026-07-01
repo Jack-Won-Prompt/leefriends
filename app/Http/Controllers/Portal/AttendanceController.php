@@ -143,6 +143,106 @@ class AttendanceController extends Controller
         return back()->with('success', count($items).'건을 일괄 승인했습니다.');
     }
 
+    /** 정직원: 특정 아르바이트의 출퇴근 관리(입력/수정/승인) 화면 */
+    public function manage(Request $request, \App\Models\User $user)
+    {
+        $me = Auth::user();
+        $this->assertManageable($user);
+
+        $from = $request->query('from') ?: now()->startOfMonth()->format('Y-m-d');
+        $to = $request->query('to') ?: now()->format('Y-m-d');
+        if ($from > $to) {
+            [$from, $to] = [$to, $from];
+        }
+
+        $records = Attendance::where('user_id', $user->id)
+            ->whereBetween('work_date', [$from, $to])
+            ->orderByDesc('work_date')->orderByDesc('clock_in_at')->get();
+
+        return view('portal.attendance.manage', compact('user', 'records', 'from', 'to'));
+    }
+
+    /** 정직원이 아르바이트 출퇴근을 직접 등록(입력) — 등록 시 즉시 승인 */
+    public function storeManual(Request $request, \App\Models\User $user)
+    {
+        $me = Auth::user();
+        $this->assertManageable($user);
+
+        $data = $request->validate([
+            'work_date' => ['required', 'date'],
+            'clock_in' => ['required', 'date_format:H:i'],
+            'clock_out' => ['nullable', 'date_format:H:i', 'after:clock_in'],
+        ], [
+            'clock_in.required' => '출근 시간을 입력해 주세요.',
+            'clock_out.after' => '퇴근 시간은 출근 시간 이후여야 합니다.',
+        ]);
+
+        $in = \Illuminate\Support\Carbon::parse($data['work_date'].' '.$data['clock_in']);
+        $out = ! empty($data['clock_out']) ? \Illuminate\Support\Carbon::parse($data['work_date'].' '.$data['clock_out']) : null;
+
+        Attendance::create([
+            'user_id' => $user->id,
+            'role' => $user->role,
+            'store_id' => $user->store_id,
+            'supplier_id' => $user->supplier_id,
+            'work_date' => $data['work_date'],
+            'clock_in_at' => $in,
+            'clock_out_at' => $out,
+            'status' => $out ? 'approved' : 'pending',
+            'approved_by' => $out ? $me->id : null,
+            'approved_at' => $out ? now() : null,
+            'note' => '정직원 직접 입력',
+        ]);
+
+        return back()->with('success', '출퇴근을 등록했습니다.');
+    }
+
+    /** 정직원이 출퇴근 시간 수정(+승인 가능) */
+    public function updateTimes(Request $request, Attendance $attendance)
+    {
+        $this->authorizeOrg($attendance);
+
+        $data = $request->validate([
+            'work_date' => ['required', 'date'],
+            'clock_in' => ['required', 'date_format:H:i'],
+            'clock_out' => ['nullable', 'date_format:H:i', 'after:clock_in'],
+            'approve' => ['nullable', 'boolean'],
+        ], ['clock_out.after' => '퇴근 시간은 출근 시간 이후여야 합니다.']);
+
+        $in = \Illuminate\Support\Carbon::parse($data['work_date'].' '.$data['clock_in']);
+        $out = ! empty($data['clock_out']) ? \Illuminate\Support\Carbon::parse($data['work_date'].' '.$data['clock_out']) : null;
+
+        $payload = [
+            'work_date' => $data['work_date'],
+            'clock_in_at' => $in,
+            'clock_out_at' => $out,
+        ];
+        if (! empty($data['approve']) && $out) {
+            $payload['status'] = 'approved';
+            $payload['approved_by'] = Auth::id();
+            $payload['approved_at'] = now();
+        }
+        $attendance->update($payload);
+
+        if (! empty($data['approve']) && $out) {
+            $this->notifyOwner($attendance->user_id, '✅ 출퇴근 승인', "{$attendance->work_date->format('m/d')} 출퇴근이 승인되었습니다.");
+        }
+
+        return back()->with('success', '출퇴근 시간을 수정했습니다.');
+    }
+
+    /** 대상 아르바이트가 내 소속인지 검증 */
+    private function assertManageable(\App\Models\User $user): void
+    {
+        $me = Auth::user();
+        abort_if($me->isPartTime(), 403);
+        $ok = $user->employment_type === 'part_time'
+            && $user->role === $me->role
+            && (int) $user->store_id === (int) $me->store_id
+            && (int) $user->supplier_id === (int) $me->supplier_id;
+        abort_unless($ok, 403);
+    }
+
     private function authorizeOrg(Attendance $attendance): void
     {
         $me = Auth::user();

@@ -38,7 +38,11 @@
             @forelse ($rows as $r)
                 @php $u = $r['user']; $paid = $r['settlement'] && $r['settlement']->status === 'paid'; @endphp
                 <tr class="hover:bg-neutral-50">
-                    <td class="px-5 py-3 font-bold text-neutral-900">{{ $u->name }}</td>
+                    <td class="px-5 py-3 font-bold text-neutral-900">
+                        {{ $u->name }}
+                        <a href="{{ route('portal.attendance.manage', ['user' => $u->id, 'from' => $from, 'to' => $to]) }}"
+                           class="block text-xs font-semibold text-mango-600 hover:underline mt-0.5">🕐 출퇴근 관리</a>
+                    </td>
                     <td class="px-5 py-3 text-right tabular-nums text-neutral-500">{{ number_format($u->hourly_wage) }}원</td>
                     <td class="px-5 py-3 text-right tabular-nums">{{ $r['days'] }}일</td>
                     <td class="px-5 py-3 text-right tabular-nums">{{ $r['hours'] }}시간</td>
