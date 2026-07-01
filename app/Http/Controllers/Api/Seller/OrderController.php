@@ -378,6 +378,8 @@ class OrderController extends Controller
             'item_count' => $itemCount,
             'store_amount' => (int) $o->store_amount,
             'supply_amount' => $supply,
+            'paid' => $o->isPaid(),
+            'paid_at' => $o->paid_at?->format('Y-m-d H:i'),
             'created_at' => $o->created_at?->format('Y-m-d H:i'),
         ];
     }

@@ -333,6 +333,8 @@ class OrderController extends Controller
             'status_label' => Order::STATUSES[$o->status] ?? $o->status,
             'item_count' => $o->items_count ?? $o->items()->count(),
             'store_amount' => (int) $o->store_amount,
+            'paid' => $o->isPaid(),
+            'paid_at' => $o->paid_at?->format('Y-m-d H:i'),
             'created_at' => $o->created_at?->format('Y-m-d H:i'),
         ];
     }
