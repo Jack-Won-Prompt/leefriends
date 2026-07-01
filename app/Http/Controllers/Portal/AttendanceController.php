@@ -82,6 +82,85 @@ class AttendanceController extends Controller
         return back()->with('success', '퇴근을 등록했습니다.');
     }
 
+    /** 아르바이트 본인: 출퇴근 수동 등록 */
+    public function store(Request $request)
+    {
+        $me = Auth::user();
+        abort_unless($me->isPartTime(), 403);
+
+        $data = $this->validateTimes($request);
+        [$in, $out] = $this->buildTimes($data);
+
+        Attendance::create([
+            'user_id' => $me->id,
+            'role' => $me->role,
+            'store_id' => $me->store_id,
+            'supplier_id' => $me->supplier_id,
+            'work_date' => $data['work_date'],
+            'clock_in_at' => $in,
+            'clock_out_at' => $out,
+            'status' => 'pending',
+        ]);
+
+        $this->notify->notifyUsers($me->orgRegularStaff(), 'attendance',
+            '🕐 출퇴근 등록', "{$me->name}님이 {$in->format('m/d')} 출퇴근을 등록했습니다.", []);
+
+        return back()->with('success', '출퇴근을 등록했습니다. 정직원 승인 후 확정됩니다.');
+    }
+
+    /** 아르바이트 본인: 출퇴근 수정 (수정 시 승인대기로 전환) */
+    public function updateOwn(Request $request, Attendance $attendance)
+    {
+        $me = Auth::user();
+        abort_unless($me->isPartTime() && $attendance->user_id === $me->id, 403);
+
+        $data = $this->validateTimes($request);
+        [$in, $out] = $this->buildTimes($data);
+
+        $attendance->update([
+            'work_date' => $data['work_date'],
+            'clock_in_at' => $in,
+            'clock_out_at' => $out,
+            'status' => 'pending',
+            'approved_by' => null,
+            'approved_at' => null,
+        ]);
+
+        return back()->with('success', '출퇴근을 수정했습니다. 다시 승인 대기 상태가 됩니다.');
+    }
+
+    /** 아르바이트 본인: 승인되지 않은 출퇴근 삭제 */
+    public function destroyOwn(Attendance $attendance)
+    {
+        $me = Auth::user();
+        abort_unless($me->isPartTime() && $attendance->user_id === $me->id, 403);
+        abort_if($attendance->status === 'approved', 400, '승인된 출퇴근은 삭제할 수 없습니다.');
+
+        $attendance->delete();
+
+        return back()->with('success', '출퇴근 기록을 삭제했습니다.');
+    }
+
+    private function validateTimes(Request $request): array
+    {
+        return $request->validate([
+            'work_date' => ['required', 'date'],
+            'clock_in' => ['required', 'date_format:H:i'],
+            'clock_out' => ['nullable', 'date_format:H:i', 'after:clock_in'],
+        ], [
+            'clock_in.required' => '출근 시간을 입력해 주세요.',
+            'clock_out.after' => '퇴근 시간은 출근 시간 이후여야 합니다.',
+        ]);
+    }
+
+    private function buildTimes(array $data): array
+    {
+        $in = \Illuminate\Support\Carbon::parse($data['work_date'].' '.$data['clock_in']);
+        $out = ! empty($data['clock_out']) ? \Illuminate\Support\Carbon::parse($data['work_date'].' '.$data['clock_out']) : null;
+
+        return [$in, $out];
+    }
+
     /** 정직원: 근태 승인 화면 (출퇴근 + 휴무 대기 목록) */
     public function approvals(Request $request)
     {
