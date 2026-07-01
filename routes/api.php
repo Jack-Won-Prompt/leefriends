@@ -175,6 +175,11 @@ Route::prefix('v1')->group(function () {
             Route::get('supplier-orders', [Seller\SupplierOrderController::class, 'index'])->name('supplier_orders.index');
             Route::get('supplier-orders/{salesOrder}', [Seller\SupplierOrderController::class, 'show'])->name('supplier_orders.show');
 
+            // 매장별 입금현황 — 총 발주액 대비 입금완료/미입금 (본사 전용)
+            Route::get('store-payments', [Seller\StorePaymentController::class, 'index'])->name('store_payments.index');
+            Route::get('store-payments/{store}', [Seller\StorePaymentController::class, 'show'])->name('store_payments.show');
+            Route::post('store-payments/{store}/request-unpaid', [Seller\StorePaymentController::class, 'requestUnpaid'])->name('store_payments.request_unpaid');
+
             // 본사 계좌 입금확인 — 계좌 거래내역 수집 + 입금자 매핑 + 주문 대사 (본사 전용)
             Route::get('bank', [Seller\BankController::class, 'index'])->name('bank.index');
             Route::post('bank/request', [Seller\BankController::class, 'requestJob'])->name('bank.request');
