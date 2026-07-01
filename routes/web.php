@@ -211,6 +211,7 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::post('bank/request', [Portal\Hq\BankDepositController::class, 'requestJob'])->name('bank.request');
             Route::get('bank/jobs/{job:job_id}/state', [Portal\Hq\BankDepositController::class, 'jobState'])->name('bank.job_state');
             Route::post('bank/map', [Portal\Hq\BankDepositController::class, 'mapDepositor'])->name('bank.map');
+            Route::post('bank/map-bulk', [Portal\Hq\BankDepositController::class, 'mapDepositorBulk'])->name('bank.map_bulk');
             Route::post('bank/match', [Portal\Hq\BankDepositController::class, 'match'])->name('bank.match');
             Route::delete('bank/deposits/{deposit}/match', [Portal\Hq\BankDepositController::class, 'unmatch'])->name('bank.unmatch');
             Route::post('bank/auto-match', [Portal\Hq\BankDepositController::class, 'autoMatch'])->name('bank.auto_match');

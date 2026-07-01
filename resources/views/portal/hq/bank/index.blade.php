@@ -24,7 +24,8 @@
     </div>
 @endif
 
-<div x-data="bank({{ $polling ? 'true' : 'false' }}, '{{ $selected->job_id ?? '' }}')">
+@php $allDepositorNames = $deposits->pluck('depositor')->filter()->unique()->values(); @endphp
+<div x-data="bank({{ $polling ? 'true' : 'false' }}, '{{ $selected->job_id ?? '' }}', {{ \Illuminate\Support\Js::from($allDepositorNames) }})">
 
 {{-- 계좌 선택 + 기간 수집 --}}
 <x-wms.panel class="mb-5">
@@ -71,11 +72,28 @@
 </div>
 @endif
 
+{{-- 여러 입금자 → 한 매장 일괄 매핑 툴바 --}}
+<div x-show="picked.length" x-cloak class="mb-3 flex flex-wrap items-center gap-3 rounded-xl bg-mango-50 border border-mango-200 px-4 py-3">
+    <span class="text-sm font-bold text-mango-800">선택한 입금자 <span x-text="picked.length"></span>명</span>
+    <form method="POST" action="{{ route('portal.hq.bank.map_bulk') }}" class="flex flex-wrap items-center gap-2">
+        @csrf
+        <input type="hidden" name="acc" value="{{ $selAcc }}">
+        <template x-for="name in picked" :key="name"><input type="hidden" name="depositor_names[]" :value="name"></template>
+        <select name="store_id" x-model="bulkStore" class="rounded-xl border-neutral-200 text-sm py-2">
+            <option value="">매장 선택…</option>
+            @foreach ($stores as $s)<option value="{{ $s->id }}">{{ $s->name }}</option>@endforeach
+        </select>
+        <button type="submit" :disabled="!bulkStore" class="rounded-xl bg-mango-500 hover:bg-mango-600 disabled:opacity-40 text-white font-bold px-4 py-2 text-sm transition">선택 매핑</button>
+        <button type="button" @click="picked = []" class="text-xs text-neutral-500 hover:underline">선택 해제</button>
+    </form>
+</div>
+
 {{-- 입금내역 --}}
 <x-wms.panel>
     <table class="w-full text-sm">
         <thead class="bg-neutral-50 text-neutral-500">
             <tr>
+                <th class="px-4 py-3 w-10"><input type="checkbox" @change="toggleAll($event)" class="rounded border-neutral-300 text-mango-500 focus:ring-mango-400"></th>
                 <th class="text-left font-semibold px-5 py-3 w-28">거래일</th>
                 <th class="text-left font-semibold px-5 py-3">입금자</th>
                 <th class="text-left font-semibold px-5 py-3 w-44">매장(매핑)</th>
@@ -91,6 +109,11 @@
                     $cands = $candidates[$d->id] ?? collect();
                 @endphp
                 <tr class="hover:bg-neutral-50 align-top">
+                    <td class="px-4 py-3">
+                        @if ($d->depositor)
+                            <input type="checkbox" x-model="picked" value="{{ $d->depositor }}" class="rounded border-neutral-300 text-mango-500 focus:ring-mango-400">
+                        @endif
+                    </td>
                     <td class="px-5 py-3 text-neutral-600">{{ \Illuminate\Support\Str::of((string) $d->trade_date)->replaceMatches('/(\d{4})(\d{2})(\d{2})/', '$1.$2.$3') }}</td>
                     <td class="px-5 py-3 font-medium text-neutral-800">
                         {{ $d->depositor ?: '(입금자명 없음)' }}
@@ -135,7 +158,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="5" class="px-5 py-12 text-center text-neutral-400 text-sm">
+                <tr><td colspan="6" class="px-5 py-12 text-center text-neutral-400 text-sm">
                     계좌와 기간을 선택하고 <span class="font-bold text-neutral-500">입금내역 수집</span>을 눌러 입금 거래를 가져오세요.
                 </td></tr>
             @endforelse
@@ -179,10 +202,12 @@
 </div>
 
 <script>
-function bank(polling, jobId) {
+function bank(polling, jobId, allNames) {
     return {
         polling: polling, jobId: jobId, stateLabel: '수집 중…',
         mapOpen: false, mapDepositorName: '', mapStoreId: '',
+        picked: [], bulkStore: '', allNames: allNames || [],
+        toggleAll(e) { this.picked = e.target.checked ? [...this.allNames] : []; },
         init() { if (this.polling && this.jobId) this.poll(); },
         poll() {
             fetch(`{{ url('portal/hq/bank/jobs') }}/${this.jobId}/state`, { headers: { 'Accept': 'application/json' } })
