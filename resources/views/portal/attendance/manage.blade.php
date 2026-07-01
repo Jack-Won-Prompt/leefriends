@@ -71,8 +71,8 @@
 </x-wms.panel>
 
 {{-- 출퇴근 시간 등록/수정 팝업 --}}
-<div x-show="open" x-cloak class="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4" @click.self="open = false">
-    <div class="w-full max-w-sm bg-white rounded-2xl shadow-xl overflow-hidden">
+<div x-show="open" x-cloak class="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4 overflow-y-auto" @click.self="open = false">
+    <div class="w-full max-w-sm bg-white rounded-2xl shadow-xl max-h-[90vh] overflow-y-auto my-auto">
         <div class="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
             <h2 class="font-extrabold text-neutral-900" x-text="form.isNew ? '출퇴근 등록' : '출퇴근 시간 수정'"></h2>
             <button @click="open = false" class="text-neutral-400 hover:text-neutral-600">✕</button>
