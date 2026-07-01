@@ -86,6 +86,7 @@ Route::prefix('portal')->name('portal.')->group(function () {
         Route::post('attendance/clock-in', [Portal\AttendanceController::class, 'clockIn'])->name('attendance.clock_in');
         Route::post('attendance/clock-out', [Portal\AttendanceController::class, 'clockOut'])->name('attendance.clock_out');
         Route::get('attendance/approvals', [Portal\AttendanceController::class, 'approvals'])->name('attendance.approvals');
+        Route::post('attendance/bulk-approve', [Portal\AttendanceController::class, 'bulkApprove'])->name('attendance.bulk_approve');
         Route::patch('attendance/{attendance}/approve', [Portal\AttendanceController::class, 'approve'])->name('attendance.approve');
         Route::patch('attendance/{attendance}/reject', [Portal\AttendanceController::class, 'reject'])->name('attendance.reject');
 

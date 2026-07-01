@@ -2,9 +2,23 @@
 @section('title', '근태 승인')
 
 @section('content')
-<x-wms.page-head title="근태 승인" subtitle="소속 아르바이트의 출퇴근·휴무를 승인·반려합니다." icon="✅" />
+@php
+    $statusChip = ['pending'=>'bg-amber-100 text-amber-700','approved'=>'bg-emerald-100 text-emerald-700','rejected'=>'bg-rose-100 text-rose-700'];
+    $approvable = $attendances->where('status','pending')->filter(fn($a)=>$a->clock_out_at)->pluck('id')->values();
+@endphp
+<div x-data="{ picked: [], allIds: {{ \Illuminate\Support\Js::from($approvable) }} }">
+<x-wms.page-head title="근태 승인" subtitle="출근·퇴근 시간을 확인하고 승인합니다. 여러 건을 한 번에 승인할 수 있습니다." icon="✅" />
 
-@php $statusChip = ['pending'=>'bg-amber-100 text-amber-700','approved'=>'bg-emerald-100 text-emerald-700','rejected'=>'bg-rose-100 text-rose-700']; @endphp
+{{-- 출퇴근 일괄 승인 툴바 --}}
+<div x-show="picked.length" x-cloak class="mb-3 flex items-center gap-3 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3">
+    <span class="text-sm font-bold text-emerald-800">선택 <span x-text="picked.length"></span>건</span>
+    <form method="POST" action="{{ route('portal.attendance.bulk_approve') }}" onsubmit="return confirm('선택한 출퇴근 기록을 일괄 승인할까요?')">
+        @csrf
+        <template x-for="id in picked" :key="id"><input type="hidden" name="attendance_ids[]" :value="id"></template>
+        <button type="submit" class="rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-4 py-2 text-sm transition">✅ 선택 승인</button>
+    </form>
+    <button type="button" @click="picked = []" class="text-xs text-neutral-500 hover:underline">선택 해제</button>
+</div>
 
 {{-- 출퇴근 --}}
 <x-wms.panel class="mb-6">
@@ -12,6 +26,7 @@
     <table class="w-full text-sm">
         <thead class="bg-neutral-50 text-neutral-500">
             <tr>
+                <th class="px-4 py-3 w-10"><input type="checkbox" @change="picked = $event.target.checked ? [...allIds] : []" class="rounded border-neutral-300 text-emerald-500 focus:ring-emerald-400"></th>
                 <th class="text-left font-semibold px-5 py-3">직원</th>
                 <th class="text-left font-semibold px-5 py-3">근무일</th>
                 <th class="text-left font-semibold px-5 py-3">출근</th>
@@ -24,6 +39,11 @@
         <tbody class="divide-y divide-neutral-100">
             @forelse ($attendances as $a)
                 <tr class="hover:bg-neutral-50">
+                    <td class="px-4 py-3">
+                        @if ($a->status === 'pending' && $a->clock_out_at)
+                            <input type="checkbox" x-model.number="picked" value="{{ $a->id }}" class="rounded border-neutral-300 text-emerald-500 focus:ring-emerald-400">
+                        @endif
+                    </td>
                     <td class="px-5 py-3 font-bold text-neutral-900">{{ $a->user->name ?? '-' }}</td>
                     <td class="px-5 py-3 text-neutral-600">{{ $a->work_date->format('m.d (D)') }}</td>
                     <td class="px-5 py-3 text-neutral-600">{{ $a->clock_in_at->format('H:i') }}</td>
@@ -46,7 +66,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="7" class="px-5 py-10 text-center text-neutral-400">출퇴근 기록이 없습니다.</td></tr>
+                <tr><td colspan="8" class="px-5 py-10 text-center text-neutral-400">출퇴근 기록이 없습니다.</td></tr>
             @endforelse
         </tbody>
     </table>
@@ -91,4 +111,5 @@
         </tbody>
     </table>
 </x-wms.panel>
+</div>
 @endsection

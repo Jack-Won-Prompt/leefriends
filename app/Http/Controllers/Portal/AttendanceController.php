@@ -114,6 +114,35 @@ class AttendanceController extends Controller
         return back()->with('success', '반려했습니다.');
     }
 
+    /** 출퇴근 일괄 승인 — 퇴근 기록이 있는 대기 건만 */
+    public function bulkApprove(Request $request)
+    {
+        $me = Auth::user();
+        abort_if($me->isPartTime(), 403);
+
+        $data = $request->validate([
+            'attendance_ids' => ['required', 'array', 'min:1'],
+            'attendance_ids.*' => ['integer'],
+        ]);
+
+        $items = Attendance::forOrg($me)
+            ->whereIn('id', $data['attendance_ids'])
+            ->where('status', 'pending')
+            ->whereNotNull('clock_out_at')
+            ->get();
+
+        $ownerIds = [];
+        foreach ($items as $att) {
+            $att->update(['status' => 'approved', 'approved_by' => $me->id, 'approved_at' => now()]);
+            $ownerIds[] = $att->user_id;
+        }
+        foreach (array_unique($ownerIds) as $uid) {
+            $this->notifyOwner($uid, '✅ 출퇴근 승인', '출퇴근 기록이 승인되었습니다.');
+        }
+
+        return back()->with('success', count($items).'건을 일괄 승인했습니다.');
+    }
+
     private function authorizeOrg(Attendance $attendance): void
     {
         $me = Auth::user();
