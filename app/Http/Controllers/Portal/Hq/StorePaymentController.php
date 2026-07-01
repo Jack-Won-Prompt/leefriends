@@ -15,7 +15,14 @@ class StorePaymentController extends Controller
     public function index(Request $request)
     {
         $period = $request->query('period', 'all');
+        $year = (int) $request->query('year', now()->year);
+        $month = (int) $request->query('month');
         [$from, $to] = $this->dateRange($request);
+        if ($month >= 1 && $month <= 12) {
+            $from = sprintf('%04d-%02d-01', $year, $month);
+            $to = date('Y-m-t', strtotime($from));
+            $period = 'month_sel';
+        }
 
         $base = fn () => $this->apply(
             Order::query()->where('order_type', 'normal')->where('status', '!=', 'canceled'),
@@ -51,14 +58,21 @@ class StorePaymentController extends Controller
             ->orderByDesc('total')
             ->get();
 
-        return view('portal.hq.store_payments.index', compact('totals', 'byStore', 'period', 'from', 'to'));
+        return view('portal.hq.store_payments.index', compact('totals', 'byStore', 'period', 'from', 'to', 'year', 'month'));
     }
 
     /** 매장 드릴다운 — 미입금/입금완료 발주 목록 */
     public function show(Request $request, Store $store)
     {
         $period = $request->query('period', 'all');
+        $year = (int) $request->query('year', now()->year);
+        $month = (int) $request->query('month');
         [$from, $to] = $this->dateRange($request);
+        if ($month >= 1 && $month <= 12) {
+            $from = sprintf('%04d-%02d-01', $year, $month);
+            $to = date('Y-m-t', strtotime($from));
+            $period = 'month_sel';
+        }
 
         $orders = $this->apply(
             Order::where('store_id', $store->id)->where('order_type', 'normal')->where('status', '!=', 'canceled'),
@@ -71,6 +85,8 @@ class StorePaymentController extends Controller
             'period' => $period,
             'from' => $from,
             'to' => $to,
+            'year' => $year,
+            'month' => $month,
         ]);
     }
 

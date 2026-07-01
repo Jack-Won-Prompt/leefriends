@@ -10,7 +10,7 @@
 
 <x-wms.page-head :title="$store->name.' 입금현황'" :subtitle="($store->region ?: '').' · 발주별 입금 상태'" icon="🏪">
     <x-slot:actions>
-        <a href="{{ route('portal.hq.store_payments.index', ['period' => $period, 'from' => $from, 'to' => $to]) }}"
+        <a href="{{ route('portal.hq.store_payments.index', ['period' => $period, 'from' => $from, 'to' => $to, 'year' => $year, 'month' => $month]) }}"
            class="inline-flex items-center gap-1 rounded-xl border border-neutral-200 hover:bg-neutral-50 font-bold px-4 py-2 text-sm">← 목록</a>
     </x-slot:actions>
 </x-wms.page-head>

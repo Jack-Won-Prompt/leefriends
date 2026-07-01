@@ -3,7 +3,19 @@
 
 @section('content')
 <x-wms.page-head title="매장별 입금현황" subtitle="매장별 총 발주액 대비 입금완료·미입금 집계 (계좌 대사 기준)" icon="💳" />
-@include('portal.partials.period-tabs', ['routeName' => 'portal.hq.store_payments.index', 'period' => $period])
+
+{{-- 전체 + 월별(1~12월) 조회 --}}
+@php $btn = 'inline-flex items-center justify-center rounded-xl px-3.5 py-2 text-sm font-bold transition'; @endphp
+<div class="flex flex-wrap items-center gap-1.5 mb-6">
+    <a href="{{ route('portal.hq.store_payments.index') }}"
+       class="{{ $btn }} {{ ! $month ? 'bg-mango-500 text-white' : 'bg-white border border-neutral-200 text-neutral-600 hover:bg-neutral-50' }}">전체</a>
+    <span class="mx-1 text-neutral-300">|</span>
+    <span class="text-sm font-bold text-neutral-500 mr-1">{{ $year }}년</span>
+    @for ($m = 1; $m <= 12; $m++)
+        <a href="{{ route('portal.hq.store_payments.index', ['year' => $year, 'month' => $m]) }}"
+           class="{{ $btn }} {{ (int) $month === $m ? 'bg-mango-500 text-white' : 'bg-white border border-neutral-200 text-neutral-600 hover:bg-neutral-50' }}">{{ $m }}월</a>
+    @endfor
+</div>
 
 {{-- 요약 --}}
 <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
@@ -48,7 +60,7 @@
                     @foreach ($byStore as $s)
                         @php $unpaidAmt = (int) $s->total - (int) $s->paid; @endphp
                         <tr class="hover:bg-mango-50/40 transition cursor-pointer"
-                            onclick="location.href='{{ route('portal.hq.store_payments.show', ['store' => $s->id, 'period' => $period, 'from' => $from, 'to' => $to]) }}'">
+                            onclick="location.href='{{ route('portal.hq.store_payments.show', ['store' => $s->id, 'period' => $period, 'from' => $from, 'to' => $to, 'year' => $year, 'month' => $month]) }}'">
                             <td class="px-6 py-3.5 font-bold text-neutral-900">{{ $s->name }}<span class="block text-xs font-normal text-neutral-400">{{ $s->region }}</span></td>
                             <td class="px-6 py-3.5 text-right text-neutral-500">{{ number_format($s->cnt) }}</td>
                             <td class="px-6 py-3.5 text-right font-semibold tabular-nums">{{ number_format($s->total) }}</td>
