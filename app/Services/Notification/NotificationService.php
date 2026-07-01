@@ -59,20 +59,24 @@ class NotificationService
     /** @param \Illuminate\Support\Collection|User[] $users */
     public function notifyUsers($users, string $type, string $title, string $body, array $data = []): void
     {
-        $tokens = [];
-        foreach ($users as $user) {
-            AppNotification::create([
-                'user_id' => $user->id,
-                'type' => $type,
-                'title' => $title,
-                'body' => $body,
-                'data' => $data,
-            ]);
-            $tokens = array_merge($tokens, $user->deviceTokens()->pluck('token')->all());
-        }
+        // 인앱 알림 저장 + 브로드캐스트(Pusher) + FCM 푸시를 응답 이후로 미뤄
+        // 화면 동작(예: 출근 버튼)이 네트워크 전송을 기다리지 않도록 한다.
+        defer(function () use ($users, $type, $title, $body, $data) {
+            $tokens = [];
+            foreach ($users as $user) {
+                AppNotification::create([
+                    'user_id' => $user->id,
+                    'type' => $type,
+                    'title' => $title,
+                    'body' => $body,
+                    'data' => $data,
+                ]);
+                $tokens = array_merge($tokens, $user->deviceTokens()->pluck('token')->all());
+            }
 
-        if ($tokens) {
-            $this->fcm->sendToTokens($tokens, $title, $body, array_merge($data, ['type' => $type]));
-        }
+            if ($tokens) {
+                $this->fcm->sendToTokens($tokens, $title, $body, array_merge($data, ['type' => $type]));
+            }
+        });
     }
 }
