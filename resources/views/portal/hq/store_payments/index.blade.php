@@ -94,7 +94,7 @@
                             <td class="px-6 py-3.5 text-right" onclick="event.stopPropagation()">
                                 @if ($s->unpaid_cnt > 0)
                                     <form method="POST" action="{{ route('portal.hq.store_payments.request_unpaid', ['store' => $s->id, 'period' => $period, 'from' => $from, 'to' => $to, 'year' => $year, 'month' => $month]) }}"
-                                          onsubmit="return confirm('{{ $s->name }}에 미입금 {{ $s->unpaid_cnt }}건 · {{ number_format($unpaidAmt) }}원 안내 SMS를 전송합니다.\n진행하시겠습니까?')">
+                                          data-confirm="{{ $s->name }}에 미입금 {{ $s->unpaid_cnt }}건 · {{ number_format($unpaidAmt) }}원 안내 SMS를 전송합니다.\n진행하시겠습니까?">
                                         @csrf
                                         <button type="submit" class="inline-flex items-center gap-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-1.5 text-xs transition">💬 미입금 SMS</button>
                                     </form>

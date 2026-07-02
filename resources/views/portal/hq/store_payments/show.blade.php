@@ -50,7 +50,7 @@
                             <span class="text-xs text-emerald-600 font-bold">완료</span>
                         @else
                             <form method="POST" action="{{ route('portal.hq.orders.payment_request', $o) }}"
-                                  onsubmit="return confirm('{{ $store->name }}({{ $store->phone ?? '번호없음' }})에 입금요청 SMS를 전송합니다.\n발주금액 {{ number_format($o->order_total) }}원\n진행하시겠습니까?')">
+                                  data-confirm="{{ $store->name }}({{ $store->phone ?? '번호없음' }})에 입금요청 SMS를 전송합니다.\n발주금액 {{ number_format($o->order_total) }}원\n진행하시겠습니까?">
                                 @csrf
                                 <button type="submit" @unless ($store->phone) disabled @endunless
                                         class="inline-flex items-center gap-1 rounded-lg bg-mango-500 hover:bg-mango-600 disabled:opacity-40 text-white font-bold px-3 py-1.5 text-xs transition">💬 입금요청</button>

@@ -313,6 +313,42 @@
 <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 
+{{-- 전역 커스텀 확인 다이얼로그 — data-confirm="메시지" 폼에 적용 --}}
+<div x-data="confirmDialog()" x-init="init()">
+    <div x-show="open" x-cloak class="fixed inset-0 z-[90] grid place-items-center bg-black/40 p-4" @click.self="cancel()" @keydown.escape.window="cancel()">
+        <div class="w-full max-w-sm bg-white rounded-2xl shadow-xl overflow-hidden">
+            <div class="px-6 pt-6 pb-2 flex items-start gap-3">
+                <div class="w-10 h-10 rounded-xl bg-mango-100 text-mango-600 grid place-items-center text-lg shrink-0">💬</div>
+                <p class="text-sm text-neutral-700 font-medium whitespace-pre-line mt-1" x-text="msg"></p>
+            </div>
+            <div class="flex gap-2 px-6 py-4">
+                <button type="button" @click="ok()" class="flex-1 rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2.5 text-sm transition">확인</button>
+                <button type="button" @click="cancel()" class="rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-600 font-bold px-4 py-2.5 text-sm">취소</button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    function confirmDialog() {
+        return {
+            open: false, msg: '', _form: null,
+            init() {
+                document.addEventListener('submit', (e) => {
+                    const f = e.target;
+                    if (f && f.dataset && f.dataset.confirm && !f.dataset.confirmed) {
+                        e.preventDefault();
+                        this.msg = f.dataset.confirm.replace(/\\n/g, '\n');
+                        this._form = f;
+                        this.open = true;
+                    }
+                }, true);
+            },
+            ok() { const f = this._form; this.open = false; if (f) { f.dataset.confirmed = '1'; f.submit(); } },
+            cancel() { this.open = false; this._form = null; },
+        };
+    }
+</script>
+
 {{-- 실시간 토스트 알림 (Pusher) --}}
 <div id="toast-container" class="fixed bottom-5 right-5 z-[100] flex flex-col gap-2 w-80 max-w-[90vw] pointer-events-none"></div>
 @if (config('broadcasting.connections.pusher.key') && auth()->id())
