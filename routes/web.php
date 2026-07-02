@@ -194,6 +194,7 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::post('logistics/inventory/adjust', [Portal\Hq\HqInventoryController::class, 'adjust'])->name('logistics.inventory_adjust');
             Route::post('logistics/inventory/seed', [Portal\Hq\HqInventoryController::class, 'seedDefaults'])->name('logistics.inventory_seed');
             Route::post('logistics/inventory/{product}/seed', [Portal\Hq\HqInventoryController::class, 'seedOne'])->name('logistics.inventory_seed_one');
+            Route::post('logistics/inventory/{product}/notify-restock', [Portal\Hq\HqInventoryController::class, 'notifyRestock'])->name('logistics.inventory_notify');
 
             // 출고
             Route::get('shipments', [Portal\Hq\ShipmentController::class, 'index'])->name('shipments.index');

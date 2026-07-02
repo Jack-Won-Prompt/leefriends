@@ -67,6 +67,35 @@ class HqInventoryController extends Controller
         return back()->with('success', $targets->count()."개 품목에 기본재고 {$base}개를 설정했습니다.");
     }
 
+    /** 매장에 재고 입고 알림 (웹 토스트 + 앱 FCM + SMS) */
+    public function notifyRestock(
+        SupplyProduct $product,
+        \App\Services\Notification\NotificationService $notify,
+        \App\Services\Popbill\PopbillMessagingService $messaging
+    ) {
+        $title = '📦 재고 입고 안내';
+        $body = "본사 {$product->name} 품목 재고가 입고되었습니다.";
+
+        // 웹 알림 토스트 + 앱 FCM (모든 매장 사용자) — notifyUsers가 응답 후 처리(defer)
+        $storeUsers = \App\Models\User::where('role', 'store')->get();
+        $notify->notifyUsers($storeUsers, 'restock', $title, $body, ['product_id' => $product->id]);
+
+        // SMS (매장 전화번호) — 응답 이후 발송
+        $corp = preg_replace('/\D/', '', (string) config('popbill.sms.corp_num'));
+        $stores = \App\Models\Store::where('is_active', true)->whereNotNull('phone')->get();
+        defer(function () use ($messaging, $corp, $stores, $body) {
+            foreach ($stores as $s) {
+                try {
+                    $messaging->send($corp, $s->phone, '재고 입고 안내', $body, $s->name);
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::warning('재고입고 SMS 실패', ['store_id' => $s->id, 'error' => $e->getMessage()]);
+                }
+            }
+        });
+
+        return back()->with('success', "«{$product->name}» 재고 입고 알림을 전 매장에 전송했습니다. (웹·앱·SMS)");
+    }
+
     /** 단일 품목 기본재고 셋팅(기본 10개) */
     public function seedOne(SupplyProduct $product)
     {
