@@ -64,16 +64,17 @@ class OrderController extends Controller
     }
 
     /** 발주 거래명세서 PDF 다운로드/미리보기 */
-    public function statementPdf(Order $order)
+    public function statementPdf(Request $request, Order $order)
     {
         $order->load(['items', 'store']);
+        $statementDate = $this->statementDate($request->query('date'), $order);
 
-        return \Barryvdh\DomPDF\Facade\Pdf::loadView('portal.print.order-statement-pdf', compact('order'))
+        return \Barryvdh\DomPDF\Facade\Pdf::loadView('portal.print.order-statement-pdf', compact('order', 'statementDate'))
             ->setPaper('a4')->stream('거래명세서_'.$order->order_no.'.pdf');
     }
 
     /** 발주 거래명세서 PDF를 매장 이메일로 전송 + 전송상태 기록 */
-    public function statementEmail(Order $order)
+    public function statementEmail(Request $request, Order $order)
     {
         $order->load(['items', 'store']);
         $to = $order->store?->email;
@@ -81,7 +82,8 @@ class OrderController extends Controller
             return back()->withErrors(['statement' => '매장 이메일이 없습니다. 매장 관리에서 이메일을 먼저 등록하세요.']);
         }
 
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('portal.print.order-statement-pdf', compact('order'))->setPaper('a4');
+        $statementDate = $this->statementDate($request->input('statement_date'), $order);
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('portal.print.order-statement-pdf', compact('order', 'statementDate'))->setPaper('a4');
 
         \Illuminate\Support\Facades\Mail::to($to)->send(
             new \App\Mail\OrderStatementMail($order, $pdf->output(), '거래명세서_'.$order->order_no.'.pdf')
@@ -89,7 +91,17 @@ class OrderController extends Controller
 
         $order->update(['statement_emailed_at' => now(), 'statement_email_count' => $order->statement_email_count + 1]);
 
-        return back()->with('success', "거래명세서를 매장({$to})으로 전송했습니다.");
+        return back()->with('success', "거래명세서({$statementDate->format('Y.m.d')})를 매장({$to})으로 전송했습니다.");
+    }
+
+    /** 거래명세서 발행일자 파싱 (기본값: 발주일) */
+    private function statementDate($input, Order $order): \Illuminate\Support\Carbon
+    {
+        try {
+            return $input ? \Illuminate\Support\Carbon::parse($input)->startOfDay() : $order->created_at;
+        } catch (\Throwable $e) {
+            return $order->created_at;
+        }
     }
 
     /** 발주 품목 수정 — 공급가·출고가·수량 (매장/판매주문/정산 반영) */

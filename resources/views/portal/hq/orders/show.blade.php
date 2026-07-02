@@ -25,7 +25,7 @@
     </div>
 
     <div class="rounded-2xl bg-neutral-900 text-white p-7"
-         x-data="{ shipOpen: false, stmtOpen: false, box: {{ (int) ($order->shipping_box_count ?? 0) }}, unit: {{ (int) ($order->shipping_unit_price ?? 0) }}, get fee() { return (this.box || 0) * (this.unit || 0); } }">
+         x-data="{ shipOpen: false, stmtOpen: false, box: {{ (int) ($order->shipping_box_count ?? 0) }}, unit: {{ (int) ($order->shipping_unit_price ?? 0) }}, stmtDate: '{{ $order->created_at->format('Y-m-d') }}', get fee() { return (this.box || 0) * (this.unit || 0); }, get stmtDateLabel() { const p = (this.stmtDate || '').split('-'); return p.length === 3 ? `${p[0]}년 ${p[1]}월 ${p[2]}일` : this.stmtDate; } }">
         <h3 class="font-bold text-white/70 text-sm mb-4">정산 요약</h3>
         <div class="flex justify-between py-2 border-b border-white/10"><span class="text-white/70">매장 출고가 합계</span><span class="font-bold">{{ number_format($order->store_amount) }}원</span></div>
         <div class="flex justify-between py-2 border-b border-white/10">
@@ -90,6 +90,7 @@
                 <form method="POST" action="{{ route('portal.hq.orders.statement.email', $order) }}"
                       onsubmit="return confirm('거래명세서 PDF를 매장({{ $order->store->email }})으로 전송합니다.\n진행하시겠습니까?')">
                     @csrf
+                    <input type="hidden" name="statement_date" :value="stmtDate">
                     <button type="submit" @if (! $order->store?->email) disabled @endif
                             class="w-full rounded-xl bg-sky-500 hover:bg-sky-600 disabled:opacity-40 text-white font-bold py-2.5 text-sm transition">📧 {{ $order->statement_emailed_at ? '재전송' : '이메일 보내기' }}</button>
                 </form>
@@ -103,12 +104,18 @@
             {{-- 거래명세서 PDF 모달 팝업 --}}
             <div x-show="stmtOpen" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-black/50 p-4" @keydown.escape.window="stmtOpen = false">
                 <div class="relative mx-auto max-w-3xl my-8 text-neutral-800">
-                    <div class="flex items-center justify-end gap-2 mb-3">
-                        <a href="{{ route('portal.hq.orders.statement.pdf', $order) }}" target="_blank"
-                           class="rounded-xl bg-white/90 hover:bg-white text-neutral-700 font-bold px-4 py-2 text-sm shadow">⬇ PDF 다운로드</a>
-                        <button type="button" @click="stmtOpen = false" class="rounded-xl bg-white/90 hover:bg-white text-neutral-700 font-bold px-4 py-2 text-sm shadow">닫기 ✕</button>
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                        <label class="flex items-center gap-2 rounded-xl bg-white/90 px-3 py-2 text-sm shadow">
+                            <span class="font-bold text-neutral-600">발행일자</span>
+                            <input type="date" x-model="stmtDate" class="rounded-lg border-neutral-200 text-sm py-1">
+                        </label>
+                        <div class="flex items-center gap-2">
+                            <a :href="'{{ route('portal.hq.orders.statement.pdf', $order) }}?date=' + stmtDate" target="_blank"
+                               class="rounded-xl bg-white/90 hover:bg-white text-neutral-700 font-bold px-4 py-2 text-sm shadow">⬇ PDF 다운로드</a>
+                            <button type="button" @click="stmtOpen = false" class="rounded-xl bg-white/90 hover:bg-white text-neutral-700 font-bold px-4 py-2 text-sm shadow">닫기 ✕</button>
+                        </div>
                     </div>
-                    @include('portal.partials.store-order-statement-document', ['order' => $order])
+                    @include('portal.partials.store-order-statement-document', ['order' => $order, 'editableDate' => true])
                 </div>
             </div>
         </div>

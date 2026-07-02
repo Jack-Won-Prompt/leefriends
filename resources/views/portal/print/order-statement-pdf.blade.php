@@ -35,7 +35,7 @@
 @endphp
 <div class="title">
     <h1>거 래 명 세 서</h1>
-    <div class="no">발주번호 {{ $order->order_no }} · 발주일 {{ $order->created_at->format('Y년 m월 d일') }}</div>
+    <div class="no">발주번호 {{ $order->order_no }} · 발행일 {{ ($statementDate ?? $order->created_at)->format('Y년 m월 d일') }}</div>
 </div>
 
 <div class="wrap">

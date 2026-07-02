@@ -11,7 +11,7 @@
             <p class="text-white/80 text-sm mt-0.5">발주번호 {{ $order->order_no }}</p>
         </div>
         <div class="text-right text-sm">
-            <p>{{ $order->created_at->format('Y년 m월 d일') }}</p>
+            <p @if (! empty($editableDate)) x-text="stmtDateLabel" @endif>{{ ($statementDate ?? $order->created_at)->format('Y년 m월 d일') }}</p>
         </div>
     </div>
 
