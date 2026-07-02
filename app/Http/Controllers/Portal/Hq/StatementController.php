@@ -44,27 +44,28 @@ class StatementController extends Controller
     /** PDF 미리보기 (브라우저 인라인) */
     public function preview(Request $request)
     {
-        [$store, $lines, $total] = $this->build($request);
+        [$store, $lines, $total, $date] = $this->build($request);
 
-        return $this->buildPdf($store, $lines, $total)->stream('거래명세서.pdf');
+        return $this->buildPdf($store, $lines, $total, $date)->stream('거래명세서.pdf');
     }
 
     /** 매장 이메일로 PDF 전송 */
     public function send(Request $request)
     {
-        [$store, $lines, $total] = $this->build($request);
+        [$store, $lines, $total, $date] = $this->build($request);
 
         if (! $store->email) {
             return back()->withErrors(['email' => "«{$store->name}» 매장에 이메일이 없습니다. 매장 관리에서 이메일을 먼저 등록하세요."])->withInput();
         }
 
-        $this->mailStatement($store, $lines, $total);
+        $this->mailStatement($store, $lines, $total, null, $date);
 
         // 발송 이력 저장 (스냅샷)
         Statement::create([
             'store_id' => $store->id,
             'store_name' => $store->name,
             'email' => $store->email,
+            'statement_date' => $date->toDateString(),
             'item_count' => count($lines),
             'total' => $total,
             'items' => $lines,
@@ -81,7 +82,7 @@ class StatementController extends Controller
     {
         $store = $statement->storeForRender();
 
-        return $this->buildPdf($store, $statement->items, $statement->total)->stream('거래명세서.pdf');
+        return $this->buildPdf($store, $statement->items, $statement->total, $statement->issueDate())->stream('거래명세서.pdf');
     }
 
     /** 이력 재전송 */
@@ -93,7 +94,7 @@ class StatementController extends Controller
             return back()->withErrors(['email' => '수신 이메일이 없어 재전송할 수 없습니다.']);
         }
 
-        $this->mailStatement($store, $statement->items, $statement->total, $email);
+        $this->mailStatement($store, $statement->items, $statement->total, $email, $statement->issueDate());
         $statement->increment('resend_count');
         $statement->update(['sent_at' => now()]);
 
@@ -101,10 +102,10 @@ class StatementController extends Controller
     }
 
     /** PDF 생성 + 메일 발송 */
-    private function mailStatement(Store $store, array $lines, int $total, ?string $email = null): void
+    private function mailStatement(Store $store, array $lines, int $total, ?string $email = null, $date = null): void
     {
-        $pdf = $this->buildPdf($store, $lines, $total);
-        $fileName = '거래명세서_'.$store->name.'_'.now()->format('Ymd').'.pdf';
+        $pdf = $this->buildPdf($store, $lines, $total, $date);
+        $fileName = '거래명세서_'.$store->name.'_'.($date ?: now())->format('Ymd').'.pdf';
         Mail::to($email ?: $store->email)->send(new StatementMail($store, $lines, $total, $pdf->output(), $fileName));
     }
 
@@ -113,6 +114,7 @@ class StatementController extends Controller
     {
         $data = $request->validate([
             'store_id' => ['required', 'exists:stores,id'],
+            'statement_date' => ['nullable', 'date'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'exists:supply_products,id'],
             'items.*.qty' => ['required', 'integer', 'min:1', 'max:99999'],
@@ -120,6 +122,7 @@ class StatementController extends Controller
             'items.required' => '품목을 1개 이상 선택해 주세요.',
         ]);
 
+        $date = ! empty($data['statement_date']) ? \Illuminate\Support\Carbon::parse($data['statement_date'])->startOfDay() : now();
         $store = Store::findOrFail($data['store_id']);
         $products = SupplyProduct::with('units')
             ->whereIn('id', collect($data['items'])->pluck('product_id'))->get()->keyBy('id');
@@ -146,16 +149,16 @@ class StatementController extends Controller
             $total += $amount;
         }
 
-        return [$store, $lines, $total];
+        return [$store, $lines, $total, $date];
     }
 
-    private function buildPdf(Store $store, array $lines, int $total)
+    private function buildPdf(Store $store, array $lines, int $total, $date = null)
     {
         return Pdf::loadView('portal.hq.statements.pdf', [
             'store' => $store,
             'lines' => $lines,
             'total' => $total,
-            'date' => now(),
+            'date' => $date ?: now(),
         ])->setPaper('a4');
     }
 

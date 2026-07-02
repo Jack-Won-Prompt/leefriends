@@ -61,6 +61,11 @@
         {{-- 우: 선택 품목 + 합계 + 액션 --}}
         <div class="space-y-4">
             <div class="rounded-2xl bg-white shadow-sm border border-neutral-100 overflow-hidden sticky top-20">
+                <div class="px-5 py-3.5 border-b border-neutral-100">
+                    <label class="block text-xs font-semibold text-neutral-500 mb-1">거래명세서 발행일자</label>
+                    <input type="date" name="statement_date" value="{{ now()->format('Y-m-d') }}"
+                           class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm py-2">
+                </div>
                 <div class="px-5 py-3.5 bg-neutral-50 border-b border-neutral-100 flex items-center justify-between">
                     <span class="font-extrabold text-neutral-800">거래 품목 <span class="text-mango-600" x-text="'(' + lines.length + ')'"></span></span>
                     <button type="button" @click="lines = []" x-show="lines.length" class="text-xs font-semibold text-rose-600 hover:underline">비우기</button>

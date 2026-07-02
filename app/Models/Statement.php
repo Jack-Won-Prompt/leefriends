@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 class Statement extends Model
 {
     protected $fillable = [
-        'store_id', 'store_name', 'email', 'item_count', 'total', 'items', 'sent_by', 'sent_at', 'resend_count', 'tax_invoice_id',
+        'store_id', 'store_name', 'email', 'statement_date', 'item_count', 'total', 'items', 'sent_by', 'sent_at', 'resend_count', 'tax_invoice_id',
     ];
 
     protected $casts = [
@@ -19,7 +19,14 @@ class Statement extends Model
         'total' => 'integer',
         'resend_count' => 'integer',
         'sent_at' => 'datetime',
+        'statement_date' => 'date',
     ];
+
+    /** 표시용 발행일자 (미지정 시 작성일) */
+    public function issueDate(): \Illuminate\Support\Carbon
+    {
+        return $this->statement_date ?? $this->created_at;
+    }
 
     public function store()
     {
