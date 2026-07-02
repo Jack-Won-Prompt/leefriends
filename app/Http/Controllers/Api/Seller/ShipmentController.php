@@ -151,8 +151,32 @@ class ShipmentController extends Controller
             return response()->json(['message' => $e->getMessage() ?: '출고 확정에 실패했습니다.'], 400);
         }
 
+        app(\App\Services\Order\OrderStatusSms::class)->shipped($shipment->loadMissing('store'));
+
         return response()->json([
             'message' => '출고가 확정되었습니다. 매장에 배송시작 알림을 전송했습니다.',
+            'data' => $this->detail($shipment->fresh(['store', 'items'])),
+        ]);
+    }
+
+    /**
+     * PATCH /api/v1/seller/shipments/{shipment}/deliver
+     * 배송중 → 배송완료 (본사 처리).
+     */
+    public function deliver(Request $request, Shipment $shipment, ShipmentService $service): JsonResponse
+    {
+        $this->authorize($request, $shipment);
+
+        try {
+            $service->deliver($shipment);
+        } catch (\Throwable $e) {
+            return response()->json(['message' => $e->getMessage() ?: '배송완료 처리에 실패했습니다.'], 400);
+        }
+
+        app(\App\Services\Order\OrderStatusSms::class)->delivered($shipment->loadMissing('store'));
+
+        return response()->json([
+            'message' => '배송완료로 처리했습니다. 매장에 도착 알림을 전송했습니다.',
             'data' => $this->detail($shipment->fresh(['store', 'items'])),
         ]);
     }
@@ -188,6 +212,7 @@ class ShipmentController extends Controller
             'item_count' => (int) $s->item_count,
             'total_qty' => (int) $s->total_qty,
             'confirmed_at' => $s->confirmed_at?->format('Y-m-d H:i'),
+            'delivered_at' => $s->delivered_at?->format('Y-m-d H:i'),
             'created_at' => $s->created_at?->format('Y-m-d H:i'),
         ];
     }

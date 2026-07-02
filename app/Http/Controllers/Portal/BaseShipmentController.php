@@ -132,7 +132,26 @@ abstract class BaseShipmentController extends Controller
         ])->all();
         app(\App\Services\Inventory\HqStockService::class)->ship($lines, 'Shipment', $shipment->id, \Illuminate\Support\Facades\Auth::id());
 
-        return back()->with('success', '출고가 확정되었습니다. 매장에 배송시작 알림(FCM)을 전송했습니다.');
+        // 매장에 출고 안내 SMS
+        app(\App\Services\Order\OrderStatusSms::class)->shipped($shipment->loadMissing('store'));
+
+        return back()->with('success', '출고가 확정되었습니다. 매장에 배송시작 알림(FCM·SMS)을 전송했습니다.');
+    }
+
+    public function deliver(Shipment $shipment, ShipmentService $service)
+    {
+        $this->authorizeShipment($shipment);
+
+        try {
+            $service->deliver($shipment);
+        } catch (\Throwable $e) {
+            return back()->with('error', $e->getMessage() ?: '배송완료 처리에 실패했습니다.');
+        }
+
+        // 매장에 배송완료 안내 SMS
+        app(\App\Services\Order\OrderStatusSms::class)->delivered($shipment->loadMissing('store'));
+
+        return back()->with('success', '배송완료로 처리했습니다. 매장에 도착 알림(FCM·SMS)을 전송했습니다.');
     }
 
     public function statement(Shipment $shipment)

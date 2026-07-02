@@ -238,6 +238,7 @@ class OrderController extends Controller
         });
 
         $changes->record($order, 'canceled', $snapshot);
+        app(\App\Services\Order\OrderStatusSms::class)->canceled($order->loadMissing('store'));
 
         $order->load('items');
 

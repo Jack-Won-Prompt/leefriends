@@ -177,6 +177,7 @@ class OrderController extends Controller
         });
 
         $changes->record($order, 'canceled', $snapshot);
+        app(\App\Services\Order\OrderStatusSms::class)->canceled($order->loadMissing('store'));
 
         return redirect()->route('portal.store.orders.index')
             ->with('success', '발주가 취소되었습니다. 본사·공급처에 취소 알림이 전송되었습니다.');
