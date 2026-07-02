@@ -63,10 +63,10 @@ class HqStockService
         $this->apply($productId, $name, 'adjust', $delta, 0, 'manual', null, null, $userId, $note);
     }
 
-    /** 발주의 본사출고 품목 가용재고를 확인 후 예약. 부족 시 StockShortageException */
+    /** 발주 품목의 가용재고를 확인 후 예약. 부족 시 StockShortageException */
     public function reserveOrder(Order $order): void
     {
-        $lines = $this->hqLines($order);
+        $lines = $this->orderLines($order);
         $short = $this->shortages($lines);
         if (! empty($short)) {
             throw new StockShortageException($short);
@@ -77,16 +77,15 @@ class HqStockService
     /** 발주 예약 해제(취소·수정 시) */
     public function releaseOrder(Order $order): void
     {
-        $this->release($this->hqLines($order), 'Order', $order->id);
+        $this->release($this->orderLines($order), 'Order', $order->id);
     }
 
-    /** 발주에서 본사출고(supply_type=hq) 품목 라인 */
-    public function hqLines(Order $order): array
+    /** 발주의 전 품목 라인 (재고 레코드가 있는 품목만 실제 예약·차단됨) */
+    public function orderLines(Order $order): array
     {
         $order->loadMissing('items');
 
         return $order->items
-            ->where('supply_type', 'hq')
             ->map(fn ($it) => ['product_id' => (int) $it->supply_product_id, 'qty' => (int) $it->qty, 'name' => $it->product_name])
             ->values()->all();
     }

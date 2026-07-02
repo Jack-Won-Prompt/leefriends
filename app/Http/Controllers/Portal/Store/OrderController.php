@@ -214,11 +214,11 @@ class OrderController extends Controller
             ->catalogOrder()
             ->get();
 
-        // 본사 가용재고 부착 (본사출고 품목 + 재고 레코드 있을 때만; 아니면 null=미설정)
+        // 본사 가용재고 부착 (재고 레코드 있는 전 품목; 없으면 null=미설정)
         $inv = \App\Models\HqInventory::whereIn('supply_product_id', $products->pluck('id'))->get()->keyBy('supply_product_id');
         foreach ($products as $p) {
             $rec = $inv->get($p->id);
-            $p->stock_available = ($p->supply_type === 'hq' && $rec) ? $rec->available : null;
+            $p->stock_available = $rec ? $rec->available : null;
         }
 
         return $products->groupBy('category');
