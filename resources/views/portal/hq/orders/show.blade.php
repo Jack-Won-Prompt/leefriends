@@ -16,7 +16,11 @@
         <dl class="grid sm:grid-cols-2 gap-x-8 gap-y-3 mt-6 text-sm">
             <div class="flex justify-between border-b border-neutral-100 pb-2"><dt class="text-neutral-500 font-semibold">발주 매장</dt><dd class="font-bold">{{ $order->store->name ?? '-' }}</dd></div>
             <div class="flex justify-between border-b border-neutral-100 pb-2"><dt class="text-neutral-500 font-semibold">발주자</dt><dd>{{ $order->user->name ?? '-' }}</dd></div>
-            <div class="flex justify-between border-b border-neutral-100 pb-2"><dt class="text-neutral-500 font-semibold">배송지</dt><dd class="text-right">{{ $order->store ? ($order->store->postcode ? '('.$order->store->postcode.') ' : '').$order->store->full_delivery_address : '-' }}</dd></div>
+            @php $shipAddr = $order->store ? ($order->store->postcode ? '('.$order->store->postcode.') ' : '').$order->store->full_delivery_address : '-'; @endphp
+            <div class="flex items-center justify-between gap-4 border-b border-neutral-100 pb-2 sm:col-span-2">
+                <dt class="text-neutral-500 font-semibold shrink-0">배송지</dt>
+                <dd class="text-right truncate min-w-0" title="{{ $shipAddr }}">{{ $shipAddr }}</dd>
+            </div>
             <div class="flex justify-between border-b border-neutral-100 pb-2"><dt class="text-neutral-500 font-semibold">연락처</dt><dd>{{ $order->store->phone ?? '-' }}</dd></div>
         </dl>
         @if ($order->note)
