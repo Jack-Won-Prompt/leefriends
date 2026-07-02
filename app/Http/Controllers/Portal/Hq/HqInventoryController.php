@@ -73,6 +73,11 @@ class HqInventoryController extends Controller
         \App\Services\Notification\NotificationService $notify,
         \App\Services\Popbill\PopbillMessagingService $messaging
     ) {
+        $inv = HqInventory::where('supply_product_id', $product->id)->first();
+        if (! $inv || $inv->qty <= 0) {
+            return back()->with('error', '재고가 있는 품목만 입고 알림을 보낼 수 있습니다.');
+        }
+
         $title = '📦 재고 입고 안내';
         $body = "본사 {$product->name} 품목 재고가 입고되었습니다.";
 

@@ -70,8 +70,12 @@
                                 @endif
                                 <button type="button" @click="openEdit({ id: {{ $p->id }}, name: {{ \Illuminate\Support\Js::from($p->name) }}, unit: {{ \Illuminate\Support\Js::from($p->unit) }}, qty: {{ (int) ($p->qty ?? 0) }} })"
                                         class="text-mango-600 hover:underline text-xs font-bold">수량 수정</button>
-                                <button type="button" @click="ask('매장 재고 입고 알림', {{ \Illuminate\Support\Js::from('본사 '.$p->name.' 품목 재고가 입고되었습니다. 전 매장에 알림(웹·앱·SMS)을 전송합니다.') }}, '{{ route('portal.hq.logistics.inventory_notify', $p->id) }}', '📣')"
-                                        class="text-sky-600 hover:underline text-xs font-bold ml-2">매장 알림</button>
+                                @if ($managed && (int) $p->qty > 0)
+                                    <button type="button" @click="ask('매장 재고 입고 알림', {{ \Illuminate\Support\Js::from('본사 '.$p->name.' 품목 재고가 입고되었습니다. 전 매장에 알림(웹·앱·SMS)을 전송합니다.') }}, '{{ route('portal.hq.logistics.inventory_notify', $p->id) }}', '📣')"
+                                            class="text-sky-600 hover:underline text-xs font-bold ml-2">매장 알림</button>
+                                @else
+                                    <span class="text-neutral-300 text-xs font-bold ml-2 cursor-not-allowed" title="재고가 있어야 입고 알림을 보낼 수 있습니다">매장 알림</span>
+                                @endif
                             </td>
                         </tr>
                     @empty
