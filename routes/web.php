@@ -186,6 +186,13 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::get('sales-orders', [Portal\Hq\SalesOrderController::class, 'index'])->name('sales_orders.index');
             Route::patch('sales-orders/{salesOrder}/confirm', [Portal\Hq\SalesOrderController::class, 'confirm'])->name('sales_orders.confirm');
 
+            // 물류관리 · 입고관리 / 재고관리
+            Route::get('logistics/inbound', [Portal\Hq\LogisticsInboundController::class, 'index'])->name('logistics.inbound');
+            Route::post('logistics/inbound/manual', [Portal\Hq\LogisticsInboundController::class, 'manual'])->name('logistics.inbound_manual');
+            Route::post('logistics/inbound/{statement}/receive', [Portal\Hq\LogisticsInboundController::class, 'receive'])->name('logistics.inbound_receive');
+            Route::get('logistics/inventory', [Portal\Hq\HqInventoryController::class, 'index'])->name('logistics.inventory');
+            Route::post('logistics/inventory/adjust', [Portal\Hq\HqInventoryController::class, 'adjust'])->name('logistics.inventory_adjust');
+
             // 출고
             Route::get('shipments', [Portal\Hq\ShipmentController::class, 'index'])->name('shipments.index');
             Route::get('shipments/create', [Portal\Hq\ShipmentController::class, 'create'])->name('shipments.create');

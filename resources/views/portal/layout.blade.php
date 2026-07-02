@@ -31,8 +31,10 @@
                 ['portal.hq.supplier_orders.index', '공급사 발주 현황', []],
                 ['portal.order_changes.index', '매장 주문 변경', []],
             ]],
-            ['출고 · 배송', '🚚', [
-                ['portal.hq.shipments.index', '출고 관리', ['portal.hq.shipments.create','portal.hq.shipments.show']],
+            ['물류관리', '🚚', [
+                ['portal.hq.logistics.inbound', '입고관리', []],
+                ['portal.hq.logistics.inventory', '재고관리', []],
+                ['portal.hq.shipments.index', '출고관리', ['portal.hq.shipments.create','portal.hq.shipments.show']],
             ]],
             ['정산 · 현황', '📈', [
                 ['portal.hq.sales', '매출 현황', []],
