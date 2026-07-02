@@ -39,6 +39,11 @@ class OrderItem extends Model
         return $this->belongsTo(Supplier::class);
     }
 
+    public function supplyProduct()
+    {
+        return $this->belongsTo(SupplyProduct::class, 'supply_product_id');
+    }
+
     public function taxInvoice()
     {
         return $this->belongsTo(TaxInvoice::class);

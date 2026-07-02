@@ -61,9 +61,9 @@ class OrderController extends Controller
         if ($type === 'supplier') {
             $mine = fn ($q) => $q->where('supplier_id', $sid)->where('supply_type', 'supplier');
             abort_unless($order->items()->where($mine)->exists(), 403);
-            $order->load(['store', 'items' => $mine]);
+            $order->load(['store', 'items' => $mine, 'items.supplyProduct']);
         } else {
-            $order->load(['store', 'items']);
+            $order->load(['store', 'items', 'items.supplyProduct']);
         }
 
         return response()->json([
@@ -82,6 +82,7 @@ class OrderController extends Controller
                 'items' => $order->items->map(fn (OrderItem $it) => [
                     'id' => $it->id,
                     'product_name' => $it->product_name,
+                    'image' => $it->supplyProduct?->image ? asset($it->supplyProduct->image) : null,
                     'unit' => $it->unit,
                     'qty' => (int) $it->qty,
                     'supplier_name' => $it->supplier_name,

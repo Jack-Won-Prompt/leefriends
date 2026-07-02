@@ -352,12 +352,15 @@ class OrderController extends Controller
 
     private function detail(Order $o): array
     {
+        $o->loadMissing('items.supplyProduct');
+
         return array_merge($this->summary($o), [
             'note' => $o->note,
             'editable' => $this->isEditable($o),
             'items' => $o->items->map(fn (OrderItem $it) => [
                 'id' => $it->id,
                 'product_id' => $it->supply_product_id,
+                'image' => $it->supplyProduct?->image ? asset($it->supplyProduct->image) : null,
                 'unit_id' => $it->supply_product_unit_id,
                 'product_name' => $it->product_name,
                 'unit' => $it->unit,
