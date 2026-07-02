@@ -102,6 +102,13 @@ Route::prefix('v1')->group(function () {
             Route::patch('{leave}/approve', [\App\Http\Controllers\Api\LeaveController::class, 'approve'])->name('approve');
             Route::patch('{leave}/reject', [\App\Http\Controllers\Api\LeaveController::class, 'reject'])->name('reject');
         });
+        // 직원 관리 (정직원/아르바이트 계정 — 정직원만)
+        Route::prefix('staff')->name('api.staff.')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\StaffController::class, 'index'])->name('index');
+            Route::post('/', [\App\Http\Controllers\Api\StaffController::class, 'store'])->name('store');
+            Route::put('{user}', [\App\Http\Controllers\Api\StaffController::class, 'update'])->name('update');
+            Route::delete('{user}', [\App\Http\Controllers\Api\StaffController::class, 'destroy'])->name('destroy');
+        });
         Route::prefix('wages')->name('api.wages.')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\WageController::class, 'index'])->name('index');
             Route::post('pay', [\App\Http\Controllers\Api\WageController::class, 'pay'])->name('pay');
