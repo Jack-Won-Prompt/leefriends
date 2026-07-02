@@ -114,7 +114,7 @@
                 @foreach ($products as $category => $items)
                     <div x-show="search.trim() ? true : activeTab === '{{ $category }}'" class="divide-y divide-neutral-100">
                         @foreach ($items as $p)
-                            @php $defaultUnit = $p->units->firstWhere('is_default', true) ?? $p->units->first(); $out = ! is_null($p->stock_available) && $p->stock_available <= 0; @endphp
+                            @php $defaultUnit = $p->units->firstWhere('is_default', true) ?? $p->units->first(); $out = is_null($p->stock_available) || $p->stock_available <= 0; @endphp
                             <div class="flex items-center gap-3 px-5 py-4"
                                  x-show="!search.trim() || matchesSearch({{ $p->id }})" x-cloak
                                  :class="cart[{{ $p->id }}] ? 'bg-mango-50/50' : ''">
@@ -132,12 +132,10 @@
                                             @endif
                                         @endunless
                                         <span class="text-[11px] text-neutral-400">{{ $p->code }}</span>
-                                        @if (! is_null($p->stock_available))
-                                            @if ($p->stock_available <= 0)
-                                                <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-600">재고 없음</span>
-                                            @else
-                                                <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">가용 {{ number_format($p->stock_available) }}</span>
-                                            @endif
+                                        @if ($out)
+                                            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-600">재고 없음</span>
+                                        @else
+                                            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">가용 {{ number_format($p->stock_available) }}</span>
                                         @endif
                                         <template x-if="cart[{{ $p->id }}]">
                                             <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">적용됨</span>

@@ -38,8 +38,10 @@ class HqStockService
         $short = [];
         foreach ($need as $pid => $info) {
             $inv = $invs->get($pid);
-            if ($inv && $inv->available < $info['qty']) {
-                $short[] = ['name' => $inv->product_name, 'available' => $inv->available, 'requested' => $info['qty']];
+            // 재고 미등록 품목은 가용 0으로 간주(발주 차단)
+            $avail = $inv ? $inv->available : 0;
+            if ($avail < $info['qty']) {
+                $short[] = ['name' => $inv?->product_name ?? ($info['name'] ?: '품목'), 'available' => $avail, 'requested' => $info['qty']];
             }
         }
 
