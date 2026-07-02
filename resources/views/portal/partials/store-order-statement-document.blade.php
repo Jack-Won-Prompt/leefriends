@@ -32,6 +32,8 @@
                 <div class="bg-neutral-100 px-4 py-2 text-xs font-bold text-neutral-500">받는 곳 (매장)</div>
                 <table class="w-full text-sm">
                     <tr class="border-b border-neutral-100"><td class="px-4 py-2 text-neutral-400 w-20">매장</td><td class="px-4 py-2 font-bold">{{ $store->name ?? '-' }}</td></tr>
+                    <tr class="border-b border-neutral-100"><td class="px-4 py-2 text-neutral-400">대표자</td><td class="px-4 py-2">{{ $store->ceo ?: '-' }}</td></tr>
+                    <tr class="border-b border-neutral-100"><td class="px-4 py-2 text-neutral-400">등록번호</td><td class="px-4 py-2">{{ $store->biz_no ?: '-' }}</td></tr>
                     <tr><td class="px-4 py-2 text-neutral-400">주소</td><td class="px-4 py-2 text-neutral-600">{{ $store ? ($store->postcode ? '('.$store->postcode.') ' : '').$store->full_delivery_address : '-' }}</td></tr>
                 </table>
             </div>

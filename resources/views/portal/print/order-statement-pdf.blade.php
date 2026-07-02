@@ -47,13 +47,15 @@
                     <tr><td class="lbl">상호</td><td><b>주식회사 오다네트웍스</b></td></tr>
                     <tr><td class="lbl">대표자</td><td>이윤석</td></tr>
                     <tr><td class="lbl">등록번호</td><td>827-81-03115</td></tr>
+                    <tr><td class="lbl">주소</td><td>경기도 의정부시 천보로 14, 1113호(민락동)</td></tr>
                 </table>
             </td>
             <td style="width:50%; padding-left:8px;">
                 <table class="party box">
                     <tr><td class="head" colspan="2">받는 곳 (매장)</td></tr>
                     <tr><td class="lbl">매장</td><td><b>{{ $store->name ?? '-' }}</b></td></tr>
-                    <tr><td class="lbl">연락처</td><td>{{ $store->phone ?? '-' }}</td></tr>
+                    <tr><td class="lbl">대표자</td><td>{{ $store->ceo ?: '-' }}</td></tr>
+                    <tr><td class="lbl">등록번호</td><td>{{ $store->biz_no ?: '-' }}</td></tr>
                     <tr><td class="lbl">주소</td><td>{{ $store ? (($store->postcode ? '('.$store->postcode.') ' : '').$store->full_delivery_address) : '-' }}</td></tr>
                 </table>
             </td>
