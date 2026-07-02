@@ -25,6 +25,7 @@
                         <th class="text-right font-semibold px-6 py-3">품목</th>
                         <th class="text-right font-semibold px-6 py-3">합계</th>
                         <th class="text-left font-semibold px-6 py-3 hidden lg:table-cell">발송자</th>
+                        <th class="text-left font-semibold px-6 py-3">매장 확인</th>
                         <th class="text-left font-semibold px-6 py-3">세금계산서</th>
                         <th class="text-right font-semibold px-6 py-3 w-40">관리</th>
                     </tr>
@@ -43,6 +44,11 @@
                             <td class="px-6 py-3.5 text-right text-neutral-500">{{ number_format($s->item_count) }}건</td>
                             <td class="px-6 py-3.5 text-right font-black text-mango-700">{{ number_format($s->total) }}원</td>
                             <td class="px-6 py-3.5 hidden lg:table-cell text-neutral-500">{{ optional($s->sender)->name ?? '본사' }}</td>
+                            @php $rc = ['pending'=>'bg-neutral-100 text-neutral-400','viewed'=>'bg-amber-100 text-amber-700','confirmed'=>'bg-emerald-100 text-emerald-700'][$s->receiptStatus()]; @endphp
+                            <td class="px-6 py-3.5 whitespace-nowrap">
+                                <span class="text-xs font-bold px-2 py-0.5 rounded-full {{ $rc }}">{{ $s->receiptLabel() }}</span>
+                                @if ($s->confirmed_at)<span class="block text-[11px] text-neutral-400 mt-0.5">{{ $s->confirmed_at->format('m.d H:i') }}</span>@endif
+                            </td>
                             <td class="px-6 py-3.5 whitespace-nowrap">
                                 @if ($s->tax_invoice_id)
                                     <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">발행완료</span>

@@ -162,6 +162,7 @@ Route::prefix('portal')->name('portal.')->group(function () {
             // 본사가 발송한 거래명세서 수취
             Route::get('statements', [Portal\Store\StatementController::class, 'index'])->name('statements.index');
             Route::get('statements/{statement}/pdf', [Portal\Store\StatementController::class, 'pdf'])->name('statements.pdf');
+            Route::post('statements/{statement}/confirm', [Portal\Store\StatementController::class, 'confirm'])->name('statements.confirm');
         });
 
         // 본사

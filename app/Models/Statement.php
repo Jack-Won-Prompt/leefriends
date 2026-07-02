@@ -11,6 +11,7 @@ class Statement extends Model
 {
     protected $fillable = [
         'store_id', 'store_name', 'email', 'statement_date', 'item_count', 'total', 'items', 'sent_by', 'sent_at', 'resend_count', 'tax_invoice_id',
+        'viewed_at', 'confirmed_at', 'confirmed_by',
     ];
 
     protected $casts = [
@@ -20,7 +21,24 @@ class Statement extends Model
         'resend_count' => 'integer',
         'sent_at' => 'datetime',
         'statement_date' => 'date',
+        'viewed_at' => 'datetime',
+        'confirmed_at' => 'datetime',
     ];
+
+    /** 매장 수취 상태: pending(미열람) / viewed(열람) / confirmed(확인) */
+    public function receiptStatus(): string
+    {
+        if ($this->confirmed_at) {
+            return 'confirmed';
+        }
+
+        return $this->viewed_at ? 'viewed' : 'pending';
+    }
+
+    public function receiptLabel(): string
+    {
+        return ['pending' => '미열람', 'viewed' => '열람됨', 'confirmed' => '확인됨'][$this->receiptStatus()];
+    }
 
     /** 표시용 발행일자 (미지정 시 작성일) */
     public function issueDate(): \Illuminate\Support\Carbon
