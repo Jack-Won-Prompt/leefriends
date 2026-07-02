@@ -60,8 +60,8 @@ class StatementController extends Controller
 
         $this->mailStatement($store, $lines, $total, null, $date);
 
-        // 발송 이력 저장 (스냅샷)
-        Statement::create([
+        // 발송 이력 저장 (스냅샷) — 매장 수취 화면에 즉시 노출됨
+        $statement = Statement::create([
             'store_id' => $store->id,
             'store_name' => $store->name,
             'email' => $store->email,
@@ -72,6 +72,13 @@ class StatementController extends Controller
             'sent_by' => Auth::id(),
             'sent_at' => now(),
         ]);
+
+        // 매장에 알림 (웹 토스트 + 앱 FCM)
+        app(\App\Services\Notification\NotificationService::class)->notifyStore(
+            $store->id, 'statement', '🧾 거래명세서 도착',
+            "{$date->format('Y.m.d')} 거래명세서가 도착했습니다. (".number_format($total).'원)',
+            ['statement_id' => $statement->id]
+        );
 
         return redirect()->route('portal.hq.statements.index')
             ->with('success', "«{$store->name}»({$store->email})로 거래명세서를 전송했습니다.");

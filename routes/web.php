@@ -158,6 +158,10 @@ Route::prefix('portal')->name('portal.')->group(function () {
             // 본사가 매장 앞으로 발행한 세금계산서 확인
             Route::get('tax-invoices', [Portal\Store\TaxInvoiceController::class, 'index'])->name('tax_invoices.index');
             Route::get('tax-invoices/{invoice}', [Portal\Store\TaxInvoiceController::class, 'show'])->name('tax_invoices.show');
+
+            // 본사가 발송한 거래명세서 수취
+            Route::get('statements', [Portal\Store\StatementController::class, 'index'])->name('statements.index');
+            Route::get('statements/{statement}/pdf', [Portal\Store\StatementController::class, 'pdf'])->name('statements.pdf');
         });
 
         // 본사

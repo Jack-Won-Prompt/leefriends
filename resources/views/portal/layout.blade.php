@@ -77,6 +77,7 @@
             ]],
             ['현황', '📈', [
                 ['portal.store.purchases', '구매 현황', []],
+                ['portal.store.statements.index', '거래명세서(수취)', []],
                 ['portal.store.tax_invoices.index', '세금계산서', ['portal.store.tax_invoices.show']],
             ]],
             ['일정 관리', '📅', [['portal.schedules.index', '일정 관리', []]]],
