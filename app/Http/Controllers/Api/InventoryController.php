@@ -23,7 +23,7 @@ class InventoryController extends Controller
         $storeId = $this->storeId($request);
         $keyword = trim((string) $request->query('q', ''));
 
-        $query = StoreInventory::where('store_id', $storeId)->orderByDesc('qty');
+        $query = StoreInventory::with('supplyProduct')->where('store_id', $storeId)->orderByDesc('qty');
         if ($keyword !== '') {
             $query->where('product_name', 'like', "%{$keyword}%");
         }
@@ -33,6 +33,7 @@ class InventoryController extends Controller
             'product_id' => $inv->supply_product_id,
             'unit_id' => $inv->supply_product_unit_id,
             'product_name' => $inv->product_name,
+            'image' => $inv->supplyProduct?->image ? asset($inv->supplyProduct->image) : null,
             'unit_name' => $inv->unit_name,
             'qty' => (int) $inv->qty,
         ]);

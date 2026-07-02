@@ -49,7 +49,7 @@ class SalesOrderController extends Controller
     public function show(Request $request, SalesOrder $salesOrder): JsonResponse
     {
         $this->authorize($request, $salesOrder);
-        $salesOrder->load(['store', 'order', 'items']);
+        $salesOrder->load(['store', 'order', 'items', 'items.supplyProduct']);
 
         return response()->json(['data' => $this->detail($salesOrder)]);
     }
@@ -117,6 +117,7 @@ class SalesOrderController extends Controller
             'items' => $so->items->map(fn (OrderItem $it) => [
                 'id' => $it->id,
                 'product_name' => $it->product_name,
+                'image' => $it->supplyProduct?->image ? asset($it->supplyProduct->image) : null,
                 'unit' => $it->unit,
                 'qty' => (int) $it->qty,
                 'supply_unit_price' => (int) $it->supply_unit_price,

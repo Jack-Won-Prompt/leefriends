@@ -65,12 +65,13 @@ class SupplierOrderController extends Controller
         abort_unless($type === 'hq', 403, '본사 계정만 사용할 수 있습니다.');
         abort_unless($salesOrder->seller_type === 'supplier', 404);
 
-        $salesOrder->load(['supplier', 'store', 'order', 'items']);
+        $salesOrder->load(['supplier', 'store', 'order', 'items', 'items.supplyProduct']);
 
         return response()->json(['data' => array_merge($this->summary($salesOrder), [
             'items' => $salesOrder->items->map(fn (OrderItem $it) => [
                 'id' => $it->id,
                 'product_name' => $it->product_name,
+                'image' => $it->supplyProduct?->image ? asset($it->supplyProduct->image) : null,
                 'unit' => $it->unit,
                 'qty' => (int) $it->qty,
                 'supply_unit_price' => (int) $it->supply_unit_price,

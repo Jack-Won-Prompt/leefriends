@@ -56,7 +56,7 @@ class ShipmentController extends Controller
 
         $grouped = OrderItem::whereNull('shipment_id')
             ->whereHas('salesOrder', fn ($q) => $q->forSeller($type, $sid)->where('status', 'confirmed'))
-            ->with(['order', 'salesOrder'])
+            ->with(['order', 'salesOrder', 'supplyProduct'])
             ->get()
             ->groupBy(fn ($i) => $i->order->store_id);
 
@@ -68,6 +68,7 @@ class ShipmentController extends Controller
             'items' => $items->map(fn (OrderItem $it) => [
                 'id' => $it->id,
                 'product_name' => $it->product_name,
+                'image' => $it->supplyProduct?->image ? asset($it->supplyProduct->image) : null,
                 'unit' => $it->unit,
                 'qty' => (int) $it->qty,
                 'order_no' => $it->order?->order_no,
@@ -193,11 +194,14 @@ class ShipmentController extends Controller
 
     private function detail(Shipment $s): array
     {
+        $s->loadMissing('items.supplyProduct');
+
         return array_merge($this->summary($s), [
             'note' => $s->note,
             'items' => $s->items->map(fn (OrderItem $it) => [
                 'id' => $it->id,
                 'product_name' => $it->product_name,
+                'image' => $it->supplyProduct?->image ? asset($it->supplyProduct->image) : null,
                 'unit' => $it->unit,
                 'qty' => (int) $it->qty,
             ])->values(),

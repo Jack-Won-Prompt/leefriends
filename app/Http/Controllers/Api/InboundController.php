@@ -55,7 +55,7 @@ class InboundController extends Controller
     public function show(Request $request, Shipment $shipment): JsonResponse
     {
         abort_unless($shipment->store_id === $this->storeId($request), 403);
-        $shipment->load(['items', 'supplier']);
+        $shipment->load(['items', 'items.supplyProduct', 'supplier']);
 
         return response()->json([
             'data' => array_merge($this->shipmentSummary($shipment), [
@@ -64,6 +64,7 @@ class InboundController extends Controller
                 'items' => $shipment->items->map(fn ($it) => [
                     'id' => $it->id,
                     'product_name' => $it->product_name,
+                    'image' => $it->supplyProduct?->image ? asset($it->supplyProduct->image) : null,
                     'unit' => $it->unit,
                     'qty' => (int) $it->qty,
                 ])->values(),
