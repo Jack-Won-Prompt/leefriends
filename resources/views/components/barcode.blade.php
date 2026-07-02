@@ -13,6 +13,8 @@
                     ->getBarcode($code, \Picqer\Barcode\BarcodeGeneratorSVG::TYPE_CODE_128, (float) $width, (int) $height);
                 $pos = strpos($svg, '<svg'); // XML 선언 제거 → 인라인 삽입 안전
                 $out = $pos !== false ? substr($svg, $pos) : $svg;
+                // 전역 CSS가 svg 크기를 덮어써도 유지되도록 인라인 스타일 강제
+                $out = preg_replace('/<svg /', '<svg style="display:inline-block; height:'.((int) $height).'px; width:auto; max-width:none;" ', $out, 1);
             }
         } catch (\Throwable $e) {
             $out = '';
