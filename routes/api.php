@@ -211,6 +211,14 @@ Route::prefix('v1')->group(function () {
             Route::get('supplier-orders', [Seller\SupplierOrderController::class, 'index'])->name('supplier_orders.index');
             Route::get('supplier-orders/{salesOrder}', [Seller\SupplierOrderController::class, 'show'])->name('supplier_orders.show');
 
+            // 본사 재고/물류 관리 (본사 전용)
+            Route::get('hq-inventory', [Seller\HqInventoryController::class, 'index'])->name('hq_inventory.index');
+            Route::post('hq-inventory/adjust', [Seller\HqInventoryController::class, 'adjust'])->name('hq_inventory.adjust');
+            Route::post('hq-inventory/inbound', [Seller\HqInventoryController::class, 'inbound'])->name('hq_inventory.inbound');
+            Route::post('hq-inventory/seed', [Seller\HqInventoryController::class, 'seed'])->name('hq_inventory.seed');
+            Route::post('hq-inventory/{product}/seed', [Seller\HqInventoryController::class, 'seedOne'])->name('hq_inventory.seed_one');
+            Route::post('hq-inventory/{product}/notify-restock', [Seller\HqInventoryController::class, 'notifyRestock'])->name('hq_inventory.notify');
+
             // 매장별 입금현황 — 총 발주액 대비 입금완료/미입금 (본사 전용)
             Route::get('store-payments', [Seller\StorePaymentController::class, 'index'])->name('store_payments.index');
             Route::get('store-payments/{store}', [Seller\StorePaymentController::class, 'show'])->name('store_payments.show');
