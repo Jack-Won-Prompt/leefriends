@@ -8,6 +8,7 @@
         <div class="text-right text-sm">
             <p class="font-bold">{{ $statement->statement_no }}</p>
             <p class="text-white/80">작성일 {{ $statement->created_at->format('Y년 m월 d일') }}</p>
+            <div style="background:#fff;border-radius:6px;padding:4px 8px;display:inline-block;margin-top:6px;"><x-barcode :value="$statement->statement_no" :height="30" /></div>
         </div>
     </div>
 

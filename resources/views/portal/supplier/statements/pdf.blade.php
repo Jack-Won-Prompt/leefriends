@@ -31,6 +31,7 @@
 <div class="title">
     <h1>거 래 명 세 서</h1>
     <div class="no">명세서번호 {{ $statement->statement_no }} · 작성일 {{ $statement->created_at->format('Y년 m월 d일') }}</div>
+    <div style="margin-top:6px; text-align:center;"><x-barcode :value="$statement->statement_no" /></div>
 </div>
 
 <div class="wrap">

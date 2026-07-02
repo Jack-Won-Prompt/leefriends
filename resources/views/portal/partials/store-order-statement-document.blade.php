@@ -9,6 +9,7 @@
         <div>
             <h1 class="text-xl font-black tracking-wide">거 래 명 세 서</h1>
             <p class="text-white/80 text-sm mt-0.5">발주번호 {{ $order->order_no }}</p>
+            <div style="background:#fff;border-radius:6px;padding:4px 8px;display:inline-block;margin-top:6px;"><x-barcode :value="$order->order_no" :height="30" /></div>
         </div>
         <div class="text-right text-sm">
             <p @if (! empty($editableDate)) x-text="stmtDateLabel" @endif>{{ ($statementDate ?? $order->created_at)->format('Y년 m월 d일') }}</p>
