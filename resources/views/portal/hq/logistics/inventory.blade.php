@@ -6,14 +6,13 @@
         open: false,
         form: { id: null, name: '', unit: '', qty: 0 },
         openEdit(p) { this.form = { id: p.id, name: p.name, unit: p.unit || '', qty: p.qty }; this.open = true; },
+        confirmOpen: false, confirmMsg: '', confirmAction: '',
+        ask(msg, action) { this.confirmMsg = msg; this.confirmAction = action; this.confirmOpen = true; },
      }">
 <x-wms.page-head title="물류관리 · 재고관리" subtitle="품목별 본사 재고(실물·예약·가용)를 확인하고 실사 수량을 입력·수정합니다." icon="📊">
     <x-slot:actions>
-        <form method="POST" action="{{ route('portal.hq.logistics.inventory_seed') }}"
-              onsubmit="return confirm('재고가 없는 품목(미등록·실물 0)에 기본재고 10개를 설정합니다.\n이력이 기록됩니다. 진행할까요?')">
-            @csrf
-            <button type="submit" class="inline-flex items-center gap-1 rounded-xl bg-neutral-800 hover:bg-neutral-900 text-white font-bold px-4 py-2 text-sm transition">📦 기본재고 셋팅</button>
-        </form>
+        <button type="button" @click="ask('재고가 없는 품목(미등록·실물 0)에 기본재고 10개를 설정합니다. 이력이 기록됩니다.', '{{ route('portal.hq.logistics.inventory_seed') }}')"
+                class="inline-flex items-center gap-1 rounded-xl bg-neutral-800 hover:bg-neutral-900 text-white font-bold px-4 py-2 text-sm transition">📦 기본재고 셋팅</button>
     </x-slot:actions>
 </x-wms.page-head>
 
@@ -66,11 +65,8 @@
                             @endif
                             <td class="px-5 py-3 text-right whitespace-nowrap">
                                 @if (! $managed || (int) $p->qty <= 0)
-                                    <form method="POST" action="{{ route('portal.hq.logistics.inventory_seed_one', $p->id) }}" class="inline"
-                                          onsubmit="return confirm('{{ $p->name }} 기본재고 10개를 설정합니다. 진행할까요?')">
-                                        @csrf
-                                        <button class="text-emerald-600 hover:underline text-xs font-bold mr-2">기본재고 셋팅</button>
-                                    </form>
+                                    <button type="button" @click="ask({{ \Illuminate\Support\Js::from($p->name.' 기본재고 10개를 설정합니다.') }}, '{{ route('portal.hq.logistics.inventory_seed_one', $p->id) }}')"
+                                            class="text-emerald-600 hover:underline text-xs font-bold mr-2">기본재고 셋팅</button>
                                 @endif
                                 <button type="button" @click="openEdit({ id: {{ $p->id }}, name: {{ \Illuminate\Support\Js::from($p->name) }}, unit: {{ \Illuminate\Support\Js::from($p->unit) }}, qty: {{ (int) ($p->qty ?? 0) }} })"
                                         class="text-mango-600 hover:underline text-xs font-bold">수량 수정</button>
@@ -137,6 +133,27 @@
                 <button type="button" @click="open = false" class="rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-600 font-bold px-4 py-2.5 text-sm">취소</button>
             </div>
         </form>
+    </div>
+</div>
+
+{{-- 커스텀 확인 다이얼로그 --}}
+<div x-show="confirmOpen" x-cloak class="fixed inset-0 z-[60] grid place-items-center bg-black/40 p-4" @click.self="confirmOpen = false" @keydown.escape.window="confirmOpen = false">
+    <div class="w-full max-w-sm bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div class="px-6 pt-6 pb-2 flex items-start gap-3">
+            <div class="w-10 h-10 rounded-xl bg-mango-100 text-mango-600 grid place-items-center text-lg shrink-0">📦</div>
+            <div>
+                <h3 class="font-extrabold text-neutral-900">기본재고 셋팅</h3>
+                <p class="text-sm text-neutral-500 mt-1" x-text="confirmMsg"></p>
+                <p class="text-xs text-neutral-400 mt-1">진행하시겠습니까?</p>
+            </div>
+        </div>
+        <div class="flex gap-2 px-6 py-4">
+            <form method="POST" :action="confirmAction" class="flex-1">
+                @csrf
+                <button type="submit" class="w-full rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2.5 text-sm transition">확인</button>
+            </form>
+            <button type="button" @click="confirmOpen = false" class="rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-600 font-bold px-4 py-2.5 text-sm">취소</button>
+        </div>
     </div>
 </div>
 </div>
