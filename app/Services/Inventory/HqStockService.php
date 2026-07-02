@@ -2,8 +2,10 @@
 
 namespace App\Services\Inventory;
 
+use App\Exceptions\StockShortageException;
 use App\Models\HqInventory;
 use App\Models\HqInventoryMovement;
+use App\Models\Order;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -59,6 +61,34 @@ class HqStockService
         $inv = $this->firstOrNew($productId, $name);
         $delta = $newQty - (int) $inv->qty;
         $this->apply($productId, $name, 'adjust', $delta, 0, 'manual', null, null, $userId, $note);
+    }
+
+    /** 발주의 본사출고 품목 가용재고를 확인 후 예약. 부족 시 StockShortageException */
+    public function reserveOrder(Order $order): void
+    {
+        $lines = $this->hqLines($order);
+        $short = $this->shortages($lines);
+        if (! empty($short)) {
+            throw new StockShortageException($short);
+        }
+        $this->reserve($lines, 'Order', $order->id);
+    }
+
+    /** 발주 예약 해제(취소·수정 시) */
+    public function releaseOrder(Order $order): void
+    {
+        $this->release($this->hqLines($order), 'Order', $order->id);
+    }
+
+    /** 발주에서 본사출고(supply_type=hq) 품목 라인 */
+    public function hqLines(Order $order): array
+    {
+        $order->loadMissing('items');
+
+        return $order->items
+            ->where('supply_type', 'hq')
+            ->map(fn ($it) => ['product_id' => (int) $it->supply_product_id, 'qty' => (int) $it->qty, 'name' => $it->product_name])
+            ->values()->all();
     }
 
     /** 예약(출고예정 +) — 레코드 있는 품목만 */

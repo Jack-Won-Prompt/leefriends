@@ -123,6 +123,17 @@ abstract class BaseShipmentController extends Controller
 
         $service->confirm($shipment, $data['carrier'], $data['tracking_no'] ?? '');
 
+        // 본사 출고 확정 → 본사 재고 차감(실물·예약)
+        if ($shipment->seller_type === 'hq') {
+            $shipment->loadMissing('items');
+            $lines = $shipment->items->map(fn ($it) => [
+                'product_id' => $it->supply_product_id,
+                'qty' => (int) $it->qty,
+                'name' => $it->product_name,
+            ])->all();
+            app(\App\Services\Inventory\HqStockService::class)->ship($lines, 'Shipment', $shipment->id, \Illuminate\Support\Facades\Auth::id());
+        }
+
         return back()->with('success', '출고가 확정되었습니다. 매장에 배송시작 알림(FCM)을 전송했습니다.');
     }
 

@@ -73,20 +73,26 @@ class OrderController extends Controller
             return back()->withErrors(['qty' => '발주할 품목의 수량을 입력해 주세요.'])->withInput();
         }
 
-        $order = DB::transaction(function () use ($user, $selected, $data, $type) {
-            $order = Order::create([
-                'order_no' => $this->generateOrderNo($type),
-                'store_id' => $user->store_id,
-                'user_id' => $user->id,
-                'status' => 'pending',
-                'order_type' => $type,
-                'note' => $data['note'] ?? null,
-            ]);
-            $this->buildItems($order, $selected, collect($data['unit'] ?? []), $type === 'sample');
-            (new SalesOrderGenerator())->generate($order);
+        try {
+            $order = DB::transaction(function () use ($user, $selected, $data, $type) {
+                $order = Order::create([
+                    'order_no' => $this->generateOrderNo($type),
+                    'store_id' => $user->store_id,
+                    'user_id' => $user->id,
+                    'status' => 'pending',
+                    'order_type' => $type,
+                    'note' => $data['note'] ?? null,
+                ]);
+                $this->buildItems($order, $selected, collect($data['unit'] ?? []), $type === 'sample');
+                (new SalesOrderGenerator())->generate($order);
+                // 본사 가용재고 확인 후 출고예정 예약 (부족 시 발주 차단)
+                app(\App\Services\Inventory\HqStockService::class)->reserveOrder($order);
 
-            return $order;
-        });
+                return $order;
+            });
+        } catch (\App\Exceptions\StockShortageException $e) {
+            return back()->withErrors(['qty' => $e->summary()])->withInput();
+        }
 
         // 본사 + 해당 공급처에 새 발주 알림(FCM)
         $notifications->notifyNewOrder($order);
@@ -134,15 +140,22 @@ class OrderController extends Controller
 
         $oldItems = $order->items()->get();
 
-        DB::transaction(function () use ($order, $selected, $data) {
-            // 기존 판매주문/품목 제거 후 재생성 (미출고 상태에서만 허용)
-            SalesOrder::where('order_id', $order->id)->delete();
-            $order->items()->delete();
-            $order->update(['status' => 'pending', 'note' => $data['note'] ?? null]);
+        try {
+            DB::transaction(function () use ($order, $selected, $data) {
+                // 기존 예약 해제 후, 품목/판매주문 재생성
+                app(\App\Services\Inventory\HqStockService::class)->releaseOrder($order);
+                SalesOrder::where('order_id', $order->id)->delete();
+                $order->items()->delete();
+                $order->update(['status' => 'pending', 'note' => $data['note'] ?? null]);
 
-            $this->buildItems($order, $selected, collect($data['unit'] ?? []));
-            (new SalesOrderGenerator())->generate($order);
-        });
+                $this->buildItems($order, $selected, collect($data['unit'] ?? []));
+                (new SalesOrderGenerator())->generate($order);
+                // 재예약 (부족 시 발주 수정 차단)
+                app(\App\Services\Inventory\HqStockService::class)->reserveOrder($order->load('items'));
+            });
+        } catch (\App\Exceptions\StockShortageException $e) {
+            return back()->withErrors(['qty' => $e->summary()])->withInput();
+        }
 
         // 영향받는 본사/공급처에 변경 알림 + 미반영 기록
         $changes->record($order, 'updated', $oldItems);
@@ -158,6 +171,7 @@ class OrderController extends Controller
         $snapshot = $order->items()->get();
 
         DB::transaction(function () use ($order) {
+            app(\App\Services\Inventory\HqStockService::class)->releaseOrder($order);
             SalesOrder::where('order_id', $order->id)->update(['status' => 'canceled']);
             $order->update(['status' => 'canceled']);
         });
@@ -195,11 +209,19 @@ class OrderController extends Controller
 
     private function productList()
     {
-        return SupplyProduct::active()->approved()
+        $products = SupplyProduct::active()->approved()
             ->with(['supplier', 'units'])
             ->catalogOrder()
-            ->get()
-            ->groupBy('category');
+            ->get();
+
+        // 본사 가용재고 부착 (본사출고 품목 + 재고 레코드 있을 때만; 아니면 null=미설정)
+        $inv = \App\Models\HqInventory::whereIn('supply_product_id', $products->pluck('id'))->get()->keyBy('supply_product_id');
+        foreach ($products as $p) {
+            $rec = $inv->get($p->id);
+            $p->stock_available = ($p->supply_type === 'hq' && $rec) ? $rec->available : null;
+        }
+
+        return $products->groupBy('category');
     }
 
     /** 빠른 재발주용 최근 발주 이력 (취소 제외, 최신 10건) */

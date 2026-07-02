@@ -124,20 +124,25 @@ class OrderController extends Controller
 
         $user = $request->user();
 
-        $order = DB::transaction(function () use ($user, $storeId, $lines, $data, $type) {
-            $order = Order::create([
-                'order_no' => $this->generateOrderNo($type),
-                'store_id' => $storeId,
-                'user_id' => $user->id,
-                'status' => 'pending',
-                'order_type' => $type,
-                'note' => $data['note'] ?? null,
-            ]);
-            $this->buildItems($order, $lines, $type === 'sample');
-            (new SalesOrderGenerator())->generate($order);
+        try {
+            $order = DB::transaction(function () use ($user, $storeId, $lines, $data, $type) {
+                $order = Order::create([
+                    'order_no' => $this->generateOrderNo($type),
+                    'store_id' => $storeId,
+                    'user_id' => $user->id,
+                    'status' => 'pending',
+                    'order_type' => $type,
+                    'note' => $data['note'] ?? null,
+                ]);
+                $this->buildItems($order, $lines, $type === 'sample');
+                (new SalesOrderGenerator())->generate($order);
+                app(\App\Services\Inventory\HqStockService::class)->reserveOrder($order);
 
-            return $order;
-        });
+                return $order;
+            });
+        } catch (\App\Exceptions\StockShortageException $e) {
+            return response()->json(['message' => $e->summary(), 'shortages' => $e->shortages], 422);
+        }
 
         $order->load('items');
 
@@ -185,15 +190,20 @@ class OrderController extends Controller
 
         $oldItems = $order->items()->get();
 
-        DB::transaction(function () use ($order, $lines, $data) {
-            // 기존 판매주문/품목 제거 후 재생성 (미출고 상태에서만 허용)
-            SalesOrder::where('order_id', $order->id)->delete();
-            $order->items()->delete();
-            $order->update(['status' => 'pending', 'note' => $data['note'] ?? null]);
+        try {
+            DB::transaction(function () use ($order, $lines, $data) {
+                app(\App\Services\Inventory\HqStockService::class)->releaseOrder($order);
+                SalesOrder::where('order_id', $order->id)->delete();
+                $order->items()->delete();
+                $order->update(['status' => 'pending', 'note' => $data['note'] ?? null]);
 
-            $this->buildItems($order, $lines);
-            (new SalesOrderGenerator())->generate($order);
-        });
+                $this->buildItems($order, $lines);
+                (new SalesOrderGenerator())->generate($order);
+                app(\App\Services\Inventory\HqStockService::class)->reserveOrder($order->load('items'));
+            });
+        } catch (\App\Exceptions\StockShortageException $e) {
+            return response()->json(['message' => $e->summary(), 'shortages' => $e->shortages], 422);
+        }
 
         // 본사·공급처에 변경 알림 + 미반영 기록
         $changes->record($order, 'updated', $oldItems);
@@ -222,6 +232,7 @@ class OrderController extends Controller
         $snapshot = $order->items()->get();
 
         DB::transaction(function () use ($order) {
+            app(\App\Services\Inventory\HqStockService::class)->releaseOrder($order);
             SalesOrder::where('order_id', $order->id)->update(['status' => 'canceled']);
             $order->update(['status' => 'canceled']);
         });

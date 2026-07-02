@@ -114,7 +114,7 @@
                 @foreach ($products as $category => $items)
                     <div x-show="search.trim() ? true : activeTab === '{{ $category }}'" class="divide-y divide-neutral-100">
                         @foreach ($items as $p)
-                            @php $defaultUnit = $p->units->firstWhere('is_default', true) ?? $p->units->first(); @endphp
+                            @php $defaultUnit = $p->units->firstWhere('is_default', true) ?? $p->units->first(); $out = ! is_null($p->stock_available) && $p->stock_available <= 0; @endphp
                             <div class="flex items-center gap-3 px-5 py-4"
                                  x-show="!search.trim() || matchesSearch({{ $p->id }})" x-cloak
                                  :class="cart[{{ $p->id }}] ? 'bg-mango-50/50' : ''">
@@ -132,6 +132,13 @@
                                             @endif
                                         @endunless
                                         <span class="text-[11px] text-neutral-400">{{ $p->code }}</span>
+                                        @if (! is_null($p->stock_available))
+                                            @if ($p->stock_available <= 0)
+                                                <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-600">재고 없음</span>
+                                            @else
+                                                <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">가용 {{ number_format($p->stock_available) }}</span>
+                                            @endif
+                                        @endif
                                         <template x-if="cart[{{ $p->id }}]">
                                             <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">적용됨</span>
                                         </template>
@@ -153,17 +160,21 @@
 
                                 {{-- 수량 --}}
                                 <div class="flex items-center gap-1.5 shrink-0">
-                                    <button type="button" @click="dec({{ $p->id }})" class="w-9 h-9 rounded-lg bg-neutral-100 hover:bg-neutral-200 font-bold text-lg">−</button>
-                                    <input type="number" min="1" max="9999" x-model.number="qty[{{ $p->id }}]"
-                                           class="w-16 text-center rounded-lg border-neutral-200 focus:border-mango-400 focus:ring-mango-400">
-                                    <button type="button" @click="inc({{ $p->id }})" class="w-9 h-9 rounded-lg bg-neutral-100 hover:bg-neutral-200 font-bold text-lg">＋</button>
+                                    <button type="button" @click="dec({{ $p->id }})" @disabled($out) class="w-9 h-9 rounded-lg bg-neutral-100 hover:bg-neutral-200 disabled:opacity-40 font-bold text-lg">−</button>
+                                    <input type="number" min="1" max="9999" x-model.number="qty[{{ $p->id }}]" @disabled($out)
+                                           class="w-16 text-center rounded-lg border-neutral-200 focus:border-mango-400 focus:ring-mango-400 disabled:bg-neutral-100">
+                                    <button type="button" @click="inc({{ $p->id }})" @disabled($out) class="w-9 h-9 rounded-lg bg-neutral-100 hover:bg-neutral-200 disabled:opacity-40 font-bold text-lg">＋</button>
                                 </div>
 
                                 {{-- 적용 --}}
-                                <button type="button" @click="apply({{ $p->id }})"
-                                        class="shrink-0 rounded-lg px-4 py-2 text-sm font-bold transition"
-                                        :class="cart[{{ $p->id }}] ? 'bg-emerald-500 hover:bg-emerald-600 text-white' : 'bg-mango-500 hover:bg-mango-600 text-white'"
-                                        x-text="cart[{{ $p->id }}] ? '수정 적용' : '적용'"></button>
+                                @if ($out)
+                                    <span class="shrink-0 rounded-lg px-4 py-2 text-sm font-bold bg-neutral-100 text-rose-500">재고 없음</span>
+                                @else
+                                    <button type="button" @click="apply({{ $p->id }})"
+                                            class="shrink-0 rounded-lg px-4 py-2 text-sm font-bold transition"
+                                            :class="cart[{{ $p->id }}] ? 'bg-emerald-500 hover:bg-emerald-600 text-white' : 'bg-mango-500 hover:bg-mango-600 text-white'"
+                                            x-text="cart[{{ $p->id }}] ? '수정 적용' : '적용'"></button>
+                                @endif
                             </div>
                         @endforeach
                     </div>
