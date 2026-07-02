@@ -27,7 +27,7 @@ return [
     // 발주 입금요청 안내 계좌
     'deposit' => [
         'bank'    => env('DEPOSIT_BANK_NAME', '우리은행'),
-        'account' => env('DEPOSIT_ACCOUNT_NO', '1005-004-805764'),
+        'account' => env('DEPOSIT_ACCOUNT_NO', '1005004805764'),
         'holder'  => env('DEPOSIT_ACCOUNT_HOLDER', '주식회사 오다네트웍스'),
     ],
 
