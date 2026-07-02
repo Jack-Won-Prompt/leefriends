@@ -46,7 +46,7 @@ class PaymentRequestSms
         // 발신번호가 승인된 SMS 발송 사업자번호(발행 사업자번호와 분리)
         $corp = preg_replace('/\D/', '', (string) config('popbill.sms.corp_num'));
 
-        $content = "[리프렌즈] 발주 접수\n"
+        $content = "[망고정] 발주 접수\n"
             ."발주번호: {$order->order_no}\n"
             .'발주금액: '.number_format($amount)."원\n"
             ."입금계좌: {$bank} {$account}\n"
@@ -72,7 +72,7 @@ class PaymentRequestSms
         $holder = config('popbill.deposit.holder');
         $corp = preg_replace('/\D/', '', (string) config('popbill.sms.corp_num'));
 
-        $content = "[리프렌즈] 미입금 안내\n"
+        $content = "[망고정] 미입금 안내\n"
             .'미입금 '.number_format($unpaidCount).'건 · '.number_format($unpaidAmount)."원\n"
             ."입금계좌: {$bank} {$account}\n"
             ."예금주: {$holder}\n"

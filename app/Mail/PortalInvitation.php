@@ -26,7 +26,7 @@ class PortalInvitation extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: "[리프렌즈] {$this->roleLabel} 포털 초대 안내",
+            subject: "[망고정] {$this->roleLabel} 포털 초대 안내",
         );
     }
 

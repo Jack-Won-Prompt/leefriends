@@ -23,7 +23,7 @@ class OrderStatusSms
     {
         $carrier = $shipment->carrier ?: '택배';
         $tracking = $shipment->tracking_no;
-        $body = "[리프렌즈] 출고 안내\n"
+        $body = "[망고정] 출고 안내\n"
             ."발주 상품이 출고되었습니다.\n"
             ."택배사: {$carrier}\n"
             .($tracking ? "송장번호: {$tracking}\n" : "배송방식: 직접배송\n")
@@ -34,14 +34,14 @@ class OrderStatusSms
     /** 배송완료 → 완료 안내 */
     public function delivered(Shipment $shipment): void
     {
-        $body = "[리프렌즈] 배송완료\n발주 상품이 배송완료되었습니다. 수령 및 검수 부탁드립니다.";
+        $body = "[망고정] 배송완료\n발주 상품이 배송완료되었습니다. 수령 및 검수 부탁드립니다.";
         $this->toStore($shipment->store, '배송완료 안내', $body);
     }
 
     /** 발주 취소 → 취소 안내 */
     public function canceled(Order $order): void
     {
-        $body = "[리프렌즈] 발주 취소\n발주번호 {$order->order_no} 발주가 취소되었습니다.";
+        $body = "[망고정] 발주 취소\n발주번호 {$order->order_no} 발주가 취소되었습니다.";
         $this->toStore($order->store, '발주 취소 안내', $body);
     }
 
