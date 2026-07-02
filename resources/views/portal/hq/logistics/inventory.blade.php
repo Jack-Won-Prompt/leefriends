@@ -7,7 +7,15 @@
         form: { id: null, name: '', unit: '', qty: 0 },
         openEdit(p) { this.form = { id: p.id, name: p.name, unit: p.unit || '', qty: p.qty }; this.open = true; },
      }">
-<x-wms.page-head title="물류관리 · 재고관리" subtitle="품목별 본사 재고(실물·예약·가용)를 확인하고 실사 수량을 입력·수정합니다." icon="📊" />
+<x-wms.page-head title="물류관리 · 재고관리" subtitle="품목별 본사 재고(실물·예약·가용)를 확인하고 실사 수량을 입력·수정합니다." icon="📊">
+    <x-slot:actions>
+        <form method="POST" action="{{ route('portal.hq.logistics.inventory_seed') }}"
+              onsubmit="return confirm('재고가 없는 품목(미등록·실물 0)에 기본재고 10개를 설정합니다.\n이력이 기록됩니다. 진행할까요?')">
+            @csrf
+            <button type="submit" class="inline-flex items-center gap-1 rounded-xl bg-neutral-800 hover:bg-neutral-900 text-white font-bold px-4 py-2 text-sm transition">📦 기본재고 셋팅</button>
+        </form>
+    </x-slot:actions>
+</x-wms.page-head>
 
 {{-- 검색/필터 --}}
 <form method="GET" class="flex flex-wrap items-end gap-3 mb-5">

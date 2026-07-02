@@ -49,6 +49,24 @@ class HqInventoryController extends Controller
         return view('portal.hq.logistics.inventory', compact('rows', 'keyword', 'only', 'recent'));
     }
 
+    /** 기본재고 셋팅 — 재고 없는 품목(미등록/실물 0)에 기본 수량 설정 + 이력 */
+    public function seedDefaults(Request $request)
+    {
+        $base = 10;
+
+        $targets = SupplyProduct::where('is_active', true)
+            ->leftJoin('hq_inventories', 'hq_inventories.supply_product_id', '=', 'supply_products.id')
+            ->where(fn ($w) => $w->whereNull('hq_inventories.id')->orWhere('hq_inventories.qty', '<=', 0))
+            ->select('supply_products.id', 'supply_products.name')
+            ->get();
+
+        foreach ($targets as $p) {
+            $this->stock->adjust($p->id, $p->name, $base, Auth::id(), "기본재고 셋팅({$base})");
+        }
+
+        return back()->with('success', $targets->count()."개 품목에 기본재고 {$base}개를 설정했습니다.");
+    }
+
     /** 실사 수량 입력·수정 (실물 qty를 목표값으로 조정) */
     public function adjust(Request $request)
     {
