@@ -1,4 +1,4 @@
-@props(['action' => null, 'title' => '검색 조건', 'open' => true])
+@props(['action' => null, 'title' => '검색 조건', 'open' => true, 'cols' => 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'])
 
 {{-- fulfillment 스타일 «검색 조건» 카드 (GET 폼, 접기/펼치기) --}}
 <form method="GET" action="{{ $action }}" x-data="{ open: {{ $open ? 'true' : 'false' }} }"
@@ -17,7 +17,7 @@
         </div>
     </div>
     <div x-show="open" x-collapse>
-        <div class="p-5 grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-5 gap-y-4">
+        <div class="p-5 grid {{ $cols }} gap-x-5 gap-y-4">
             {{ $slot }}
         </div>
     </div>

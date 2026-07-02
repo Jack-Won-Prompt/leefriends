@@ -4,7 +4,7 @@
 @section('content')
 <x-wms.page-head title="매장 발주 주문" subtitle="매장이 접수한 구매주문을 조회합니다" icon="📦" />
 
-<x-wms.filter :action="route('portal.hq.orders.index')">
+<x-wms.filter :action="route('portal.hq.orders.index')" cols="grid-cols-2 md:grid-cols-4">
     <x-wms.field label="진행상태">
         <select name="status" class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
             <option value="all">전체</option>
@@ -28,11 +28,12 @@
             <option value="pending" @selected($tax === 'pending')>미발행</option>
         </select>
     </x-wms.field>
-    <x-wms.field label="접수일(시작)">
-        <input type="date" name="from" value="{{ $from }}" class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
-    </x-wms.field>
-    <x-wms.field label="접수일(종료)">
-        <input type="date" name="to" value="{{ $to }}" class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+    <x-wms.field label="접수일 기간">
+        <div class="flex items-center gap-1.5">
+            <input type="date" name="from" value="{{ $from }}" class="w-full min-w-0 rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+            <span class="text-neutral-400 shrink-0">~</span>
+            <input type="date" name="to" value="{{ $to }}" class="w-full min-w-0 rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+        </div>
     </x-wms.field>
 </x-wms.filter>
 
