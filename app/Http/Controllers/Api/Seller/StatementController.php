@@ -39,7 +39,7 @@ class StatementController extends Controller
                 'sub' => $s->email,
                 'item_count' => (int) $s->item_count,
                 'total' => (int) $s->total,
-                'date' => optional($s->sent_at)->toDateString(),
+                'date' => $s->issueDate()->toDateString(),
                 'resend_count' => (int) $s->resend_count,
                 'invoiced' => (bool) $s->tax_invoice_id,
             ]);
@@ -123,6 +123,7 @@ class StatementController extends Controller
     {
         $data = $request->validate([
             'store_id' => ['required', 'exists:stores,id'],
+            'statement_date' => ['nullable', 'date'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'exists:supply_products,id'],
             'items.*.qty' => ['required', 'integer', 'min:1', 'max:99999'],
@@ -138,12 +139,17 @@ class StatementController extends Controller
             return response()->json(['message' => '유효한 품목이 없습니다.'], 422);
         }
 
-        $this->mailHqStatement($store, $lines, $total);
+        $date = ! empty($data['statement_date'])
+            ? \Illuminate\Support\Carbon::parse($data['statement_date'])->startOfDay()
+            : now();
+
+        $this->mailHqStatement($store, $lines, $total, null, $date);
 
         Statement::create([
             'store_id' => $store->id,
             'store_name' => $store->name,
             'email' => $store->email,
+            'statement_date' => $date->toDateString(),
             'item_count' => count($lines),
             'total' => $total,
             'items' => $lines,
@@ -152,7 +158,7 @@ class StatementController extends Controller
         ]);
 
         return response()->json([
-            'message' => "«{$store->name}»({$store->email})로 거래명세서를 전송했습니다.",
+            'message' => "«{$store->name}»({$store->email})로 거래명세서를 전송했습니다. (발행일자 {$date->toDateString()})",
         ], 201);
     }
 
@@ -187,12 +193,13 @@ class StatementController extends Controller
         return [$lines, $total];
     }
 
-    private function mailHqStatement(Store $store, array $lines, int $total, ?string $email = null): void
+    private function mailHqStatement(Store $store, array $lines, int $total, ?string $email = null, ?\Illuminate\Support\Carbon $date = null): void
     {
+        $date ??= now();
         $pdf = Pdf::loadView('portal.hq.statements.pdf', [
-            'store' => $store, 'lines' => $lines, 'total' => $total, 'date' => now(),
+            'store' => $store, 'lines' => $lines, 'total' => $total, 'date' => $date,
         ])->setPaper('a4');
-        $fileName = '거래명세서_'.$store->name.'_'.now()->format('Ymd').'.pdf';
+        $fileName = '거래명세서_'.$store->name.'_'.$date->format('Ymd').'.pdf';
         Mail::to($email ?: $store->email)->send(new StatementMail($store, $lines, $total, $pdf->output(), $fileName));
     }
 
@@ -277,7 +284,7 @@ class StatementController extends Controller
                 'id' => $s->id,
                 'title' => $s->store_name,
                 'email' => $s->email,
-                'date' => optional($s->sent_at)->toDateString(),
+                'date' => $s->issueDate()->toDateString(),
                 'total' => (int) $s->total,
                 'invoiced' => (bool) $s->tax_invoice_id,
                 'can_resend' => true,
