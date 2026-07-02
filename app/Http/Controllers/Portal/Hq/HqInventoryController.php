@@ -67,6 +67,15 @@ class HqInventoryController extends Controller
         return back()->with('success', $targets->count()."개 품목에 기본재고 {$base}개를 설정했습니다.");
     }
 
+    /** 단일 품목 기본재고 셋팅(기본 10개) */
+    public function seedOne(SupplyProduct $product)
+    {
+        $base = 10;
+        $this->stock->adjust($product->id, $product->name, $base, Auth::id(), "기본재고 셋팅({$base})");
+
+        return back()->with('success', "{$product->name} 기본재고 {$base}개를 설정했습니다.");
+    }
+
     /** 실사 수량 입력·수정 (실물 qty를 목표값으로 조정) */
     public function adjust(Request $request)
     {

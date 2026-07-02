@@ -64,7 +64,14 @@
                             @else
                                 <td class="px-5 py-3 text-right text-neutral-300" colspan="3">재고 미설정</td>
                             @endif
-                            <td class="px-5 py-3 text-right">
+                            <td class="px-5 py-3 text-right whitespace-nowrap">
+                                @if (! $managed || (int) $p->qty <= 0)
+                                    <form method="POST" action="{{ route('portal.hq.logistics.inventory_seed_one', $p->id) }}" class="inline"
+                                          onsubmit="return confirm('{{ $p->name }} 기본재고 10개를 설정합니다. 진행할까요?')">
+                                        @csrf
+                                        <button class="text-emerald-600 hover:underline text-xs font-bold mr-2">기본재고 셋팅</button>
+                                    </form>
+                                @endif
                                 <button type="button" @click="openEdit({ id: {{ $p->id }}, name: {{ \Illuminate\Support\Js::from($p->name) }}, unit: {{ \Illuminate\Support\Js::from($p->unit) }}, qty: {{ (int) ($p->qty ?? 0) }} })"
                                         class="text-mango-600 hover:underline text-xs font-bold">수량 수정</button>
                             </td>
