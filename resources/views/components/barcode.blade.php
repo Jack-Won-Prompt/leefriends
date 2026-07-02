@@ -1,19 +1,27 @@
-@props(['value', 'height' => 38, 'width' => 1.4])
+@props(['value', 'height' => 38, 'width' => 1.4, 'format' => 'svg'])
 @php
+    // format: svg(웹/브라우저 기본) | html(DomPDF)
     $code = trim((string) $value);
-    $bars = '';
+    $out = '';
     if ($code !== '') {
         try {
-            $bars = (new \Picqer\Barcode\BarcodeGeneratorHTML())
-                ->getBarcode($code, \Picqer\Barcode\BarcodeGeneratorHTML::TYPE_CODE_128, (float) $width, (int) $height);
+            if ($format === 'html') {
+                $out = (new \Picqer\Barcode\BarcodeGeneratorHTML())
+                    ->getBarcode($code, \Picqer\Barcode\BarcodeGeneratorHTML::TYPE_CODE_128, (float) $width, (int) $height);
+            } else {
+                $svg = (new \Picqer\Barcode\BarcodeGeneratorSVG())
+                    ->getBarcode($code, \Picqer\Barcode\BarcodeGeneratorSVG::TYPE_CODE_128, (float) $width, (int) $height);
+                $pos = strpos($svg, '<svg'); // XML 선언 제거 → 인라인 삽입 안전
+                $out = $pos !== false ? substr($svg, $pos) : $svg;
+            }
         } catch (\Throwable $e) {
-            $bars = '';
+            $out = '';
         }
     }
 @endphp
-@if ($bars)
-    <div style="display:inline-block; text-align:center; line-height:0;">
-        {!! $bars !!}
-        <div style="font-family:monospace; font-size:10px; letter-spacing:2px; margin-top:3px; line-height:1; color:#333;">{{ $code }}</div>
+@if ($out)
+    <div style="display:inline-block; text-align:center;">
+        {!! $out !!}
+        <div style="font-family:monospace; font-size:10px; letter-spacing:2px; margin-top:3px; color:#333; line-height:1;">{{ $code }}</div>
     </div>
 @endif
