@@ -28,6 +28,12 @@
             <option value="pending" @selected($tax === 'pending')>미발행</option>
         </select>
     </x-wms.field>
+    <x-wms.field label="접수일(시작)">
+        <input type="date" name="from" value="{{ $from }}" class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+    </x-wms.field>
+    <x-wms.field label="접수일(종료)">
+        <input type="date" name="to" value="{{ $to }}" class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+    </x-wms.field>
 </x-wms.filter>
 
 <x-wms.toolbar :count="$orders->total()">

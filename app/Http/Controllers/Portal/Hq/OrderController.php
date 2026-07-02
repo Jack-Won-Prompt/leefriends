@@ -31,6 +31,11 @@ class OrderController extends Controller
         $status = $request->query('status', 'all');
         $store = $request->query('store', 'all');
         $tax = $request->query('tax', 'all');
+        $from = $request->query('from') ?: null;
+        $to = $request->query('to') ?: null;
+        if ($from && $to && $from > $to) {
+            [$from, $to] = [$to, $from];
+        }
 
         $query = Order::with('store')->withCount('items')->latest();
         if (array_key_exists($status, Order::STATUSES)) {
@@ -44,6 +49,12 @@ class OrderController extends Controller
         } elseif ($tax === 'pending') {
             $query->whereNull('tax_invoice_id');
         }
+        if ($from) {
+            $query->whereDate('created_at', '>=', $from);
+        }
+        if ($to) {
+            $query->whereDate('created_at', '<=', $to);
+        }
         $orders = $query->paginate(15)->withQueryString();
 
         return view('portal.hq.orders.index', [
@@ -53,6 +64,8 @@ class OrderController extends Controller
             'stores' => Store::orderBy('name')->get(),
             'store' => $store,
             'tax' => $tax,
+            'from' => $from,
+            'to' => $to,
         ]);
     }
 
