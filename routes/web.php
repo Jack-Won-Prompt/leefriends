@@ -207,6 +207,7 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::post('shipments', [Portal\Hq\ShipmentController::class, 'store'])->name('shipments.store');
             Route::get('shipments/{shipment}', [Portal\Hq\ShipmentController::class, 'show'])->name('shipments.show');
             Route::patch('shipments/{shipment}/confirm', [Portal\Hq\ShipmentController::class, 'confirm'])->name('shipments.confirm');
+            Route::patch('shipments/{shipment}/deliver', [Portal\Hq\ShipmentController::class, 'deliver'])->name('shipments.deliver');
             Route::get('shipments/{shipment}/statement', [Portal\Hq\ShipmentController::class, 'statement'])->name('shipments.statement');
             Route::resource('products', Portal\Hq\ProductController::class)->except(['show', 'create', 'edit']);
             // 공급처 등록 물품 승인/반려
@@ -307,6 +308,7 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::post('shipments', [Portal\Supplier\ShipmentController::class, 'store'])->name('shipments.store');
             Route::get('shipments/{shipment}', [Portal\Supplier\ShipmentController::class, 'show'])->name('shipments.show');
             Route::patch('shipments/{shipment}/confirm', [Portal\Supplier\ShipmentController::class, 'confirm'])->name('shipments.confirm');
+            Route::patch('shipments/{shipment}/deliver', [Portal\Supplier\ShipmentController::class, 'deliver'])->name('shipments.deliver');
             Route::get('shipments/{shipment}/statement', [Portal\Supplier\ShipmentController::class, 'statement'])->name('shipments.statement');
             Route::get('invoices', [Portal\Supplier\InvoiceController::class, 'index'])->name('invoices.index');
             Route::get('invoices/create', [Portal\Supplier\InvoiceController::class, 'create'])->name('invoices.create');

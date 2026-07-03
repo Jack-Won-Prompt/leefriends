@@ -64,6 +64,18 @@
                 <div class="text-4xl mb-2">🚚</div>
                 <p class="font-bold text-sky-700">배송중</p>
                 <p class="text-sm text-neutral-500 mt-1">{{ $shipment->confirmed_at?->format('Y.m.d H:i') }} 출고확정</p>
+                <p class="text-sm text-neutral-400 mt-1">배송이 완료되면 아래 버튼으로 처리하세요.</p>
+            </div>
+            <form method="POST" action="{{ route($routePrefix . '.shipments.deliver', $shipment) }}"
+                  onsubmit="return confirm('이 출고를 배송완료로 처리할까요? 매장에 도착 알림이 전송됩니다.');">
+                @csrf @method('PATCH')
+                <button class="w-full rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 transition">배송완료 처리 (매장 도착 알림)</button>
+            </form>
+        @elseif ($shipment->status === 'delivered')
+            <div class="text-center py-6">
+                <div class="text-4xl mb-2">📦</div>
+                <p class="font-bold text-emerald-700">배송완료</p>
+                <p class="text-sm text-neutral-500 mt-1">{{ $shipment->delivered_at?->format('Y.m.d H:i') }} 배송완료</p>
                 <p class="text-sm text-neutral-400 mt-1">매장 입고완료 대기</p>
             </div>
         @else

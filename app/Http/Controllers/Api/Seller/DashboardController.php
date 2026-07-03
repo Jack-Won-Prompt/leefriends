@@ -24,7 +24,9 @@ class DashboardController extends Controller
         [$type, $sid] = $this->seller($request);
 
         $pendingSalesOrders = SalesOrder::forSeller($type, $sid)->where('status', 'created')->count();
-        $confirmedSalesOrders = SalesOrder::forSeller($type, $sid)->where('status', 'confirmed')->count();
+        // 출고 대기 = 확정 주문 중 미출고 품목이 남은 판매주문 수. 출고 화면 «전체 N주문»과 일치.
+        $confirmedSalesOrders = SalesOrder::forSeller($type, $sid)->where('status', 'confirmed')
+            ->whereHas('items', fn ($q) => $q->whereNull('shipment_id'))->count();
         $shipmentsToConfirm = Shipment::forSeller($type, $sid)->where('status', 'created')->count();
         $inTransit = Shipment::forSeller($type, $sid)->where('status', 'confirmed')->count();
         $pendingChanges = \App\Models\OrderChange::forSeller($type, $sid)->pending()->count();

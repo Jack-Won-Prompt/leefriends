@@ -26,12 +26,21 @@ class ShipmentController extends Controller
     {
         [$type, $sid] = $this->seller($request);
         $status = $request->query('status', 'all');
+        $store = $request->query('store', 'all');
 
         $query = Shipment::forSeller($type, $sid)->with('store')->latest();
         if (array_key_exists($status, Shipment::STATUSES)) {
             $query->where('status', $status);
         }
+        if ($store !== 'all' && is_numeric($store)) {
+            $query->where('store_id', (int) $store);
+        }
         $shipments = $query->paginate(20);
+
+        // 이 판매자의 출고가 있는 매장 목록 (매장 필터 드롭다운용)
+        $stores = Store::whereIn('id', Shipment::forSeller($type, $sid)->distinct()->pluck('store_id'))
+            ->orderBy('name')->get(['id', 'name'])
+            ->map(fn ($s) => ['key' => (string) $s->id, 'label' => $s->name])->values();
 
         return response()->json([
             'data' => $shipments->getCollection()->map(fn (Shipment $s) => $this->summary($s))->values(),
@@ -39,6 +48,8 @@ class ShipmentController extends Controller
                 'status' => $status,
                 'statuses' => collect(Shipment::STATUSES)
                     ->map(fn ($l, $k) => ['key' => $k, 'label' => $l])->values(),
+                'store' => $store,
+                'stores' => $stores,
                 'current_page' => $shipments->currentPage(),
                 'last_page' => $shipments->lastPage(),
                 'total' => $shipments->total(),

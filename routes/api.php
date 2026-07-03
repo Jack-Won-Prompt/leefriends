@@ -198,6 +198,7 @@ Route::prefix('v1')->group(function () {
             Route::post('shipments', [Seller\ShipmentController::class, 'store'])->name('shipments.store');
             Route::get('shipments/{shipment}', [Seller\ShipmentController::class, 'show'])->name('shipments.show');
             Route::patch('shipments/{shipment}/confirm', [Seller\ShipmentController::class, 'confirm'])->name('shipments.confirm');
+            Route::patch('shipments/{shipment}/deliver', [Seller\ShipmentController::class, 'deliver'])->name('shipments.deliver');
 
             // 전자세금계산서 — 발행 대상 조회 / 발행 / 취소 / 이력
             Route::get('tax-invoices', [Seller\TaxInvoiceController::class, 'index'])->name('tax_invoices.index');

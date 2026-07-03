@@ -66,9 +66,16 @@ class OrderController extends Controller
             $order->load(['store', 'items', 'items.supplyProduct']);
         }
 
+        // 이 발주에 대한 이 판매자(본사/공급사)의 판매주문 — 상세에서 바로 발주확인용
+        $sellerSo = \App\Models\SalesOrder::where('order_id', $order->id)
+            ->forSeller($type, $sid)->first();
+
         return response()->json([
             'data' => array_merge($this->summary($order, $type), [
                 'note' => $order->note,
+                'sales_order_id' => $sellerSo?->id,
+                'sales_order_status' => $sellerSo?->status,
+                'can_confirm' => $sellerSo?->status === 'created',
                 'store_email' => $order->store?->email,
                 'is_sample' => ($order->order_type ?? 'normal') === 'sample',
                 'tax_invoiced' => (bool) $order->tax_invoice_id,

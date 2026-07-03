@@ -37,7 +37,7 @@ class InboundController extends Controller
             ]);
 
         $inTransit = Shipment::where('store_id', $storeId)
-            ->where('status', 'confirmed')
+            ->whereIn('status', ['confirmed', 'delivered'])
             ->with('supplier')
             ->latest('confirmed_at')
             ->get()
@@ -100,6 +100,7 @@ class InboundController extends Controller
             'item_count' => (int) $s->item_count,
             'total_qty' => (int) $s->total_qty,
             'confirmed_at' => $s->confirmed_at?->format('Y-m-d H:i'),
+            'delivered_at' => $s->delivered_at?->format('Y-m-d H:i'),
         ];
     }
 

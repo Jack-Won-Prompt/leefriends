@@ -14,7 +14,7 @@ class InventoryService
      */
     public function receiveShipment(Shipment $shipment, ?int $userId = null): void
     {
-        abort_unless($shipment->status === 'confirmed', 400, '배송중(출고확정) 상태의 출고만 입고할 수 있습니다.');
+        abort_unless(in_array($shipment->status, ['confirmed', 'delivered'], true), 400, '배송중·배송완료 상태의 출고만 입고할 수 있습니다.');
 
         DB::transaction(function () use ($shipment, $userId) {
             foreach ($shipment->items()->get() as $item) {

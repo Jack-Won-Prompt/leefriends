@@ -94,6 +94,29 @@ class ShipmentService
         );
     }
 
+    /** 배송완료 처리 (배송중 → 배송완료). 매장에 도착 알림. */
+    public function deliver(Shipment $shipment): void
+    {
+        abort_unless($shipment->status === 'confirmed', 400, '배송중 상태의 출고만 배송완료 처리할 수 있습니다.');
+
+        $shipment->update([
+            'status' => 'delivered',
+            'delivered_at' => now(),
+        ]);
+
+        // 매장 알림 (배송완료 → 입고 처리 안내)
+        $this->notifications->notifyStore(
+            $shipment->store_id,
+            'shipment_delivered',
+            '📦 상품이 도착했습니다',
+            "{$shipment->seller_name} 출고 {$shipment->shipment_no} 배송완료 · 입고 처리해 주세요.",
+            [
+                'shipment_id' => $shipment->id,
+                'shipment_no' => $shipment->shipment_no,
+            ]
+        );
+    }
+
     private function generateNo(string $sellerType): string
     {
         $prefix = $sellerType === 'supplier' ? 'SP' : 'HQ';
