@@ -57,30 +57,100 @@
     </div>
 </section>
 
-{{-- revenue / profitability --}}
-<section class="py-24 bg-neutral-900 text-white overflow-hidden">
+{{-- revenue / profitability (data visualization) --}}
+<section id="revenue" class="py-24 bg-neutral-900 text-white overflow-hidden">
+    <style>
+        .fr-bar{transform:scaleY(0);transform-origin:bottom;transition:transform 1.1s cubic-bezier(.2,.7,.2,1)}
+        .reveal.in .fr-bar{transform:scaleY(1)}
+        .fr-gauge-fill{stroke-dasharray:339.29;stroke-dashoffset:339.29;transition:stroke-dashoffset 1.4s cubic-bezier(.2,.7,.2,1)}
+        .reveal.in .fr-gauge-fill{stroke-dashoffset:var(--off)}
+    </style>
     <div class="max-w-7xl mx-auto px-5 lg:px-8">
         <div class="text-center mb-14 reveal">
             <p class="text-mango-400 font-bold tracking-widest text-sm mb-3">REVENUE</p>
-            <h2 class="text-3xl md:text-5xl font-black">검증된 수익 구조</h2>
+            <h2 class="text-3xl md:text-5xl font-black">데이터로 검증된 수익성</h2>
             <p class="text-white/60 mt-4">사계절 안정적인 매출과 높은 수익률로 빠른 투자 회수를 목표로 합니다.</p>
         </div>
-        <div class="grid sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
+
+        {{-- count-up 핵심 지표 --}}
+        <div class="grid sm:grid-cols-3 gap-6 max-w-4xl mx-auto reveal">
             @foreach ([
-                ['월 평균 매출','3,000만원+','매장 평균 월매출'],
-                ['판매 순이익','30%','홀 · 배달 판매 기준'],
-                ['영업 마진','28%','평균 영업 마진율'],
-            ] as [$label,$value,$desc])
-                <div class="reveal rounded-3xl bg-white/5 border border-white/10 p-8 text-center">
+                ['월 평균 매출','3000','만원+','매장 평균 월매출'],
+                ['판매 순이익','30','%','홀 · 배달 판매 기준'],
+                ['영업 마진','28','%','평균 영업 마진율'],
+            ] as [$label,$num,$suffix,$desc])
+                <div class="rounded-3xl bg-white/5 border border-white/10 p-8 text-center">
                     <p class="text-sm font-bold text-white/60">{{ $label }}</p>
-                    <p class="mt-2 text-4xl md:text-5xl font-black text-mango-300">{{ $value }}</p>
+                    <p class="mt-2 text-4xl md:text-5xl font-black text-mango-300"><span data-countup="{{ $num }}" data-suffix="{{ $suffix }}">0{{ $suffix }}</span></p>
                     <p class="mt-2 text-xs text-white/50">{{ $desc }}</p>
                 </div>
             @endforeach
         </div>
+
+        <div class="mt-16 grid lg:grid-cols-2 gap-8">
+            {{-- 막대 차트: 모델 매장 월 매출 --}}
+            <div class="reveal rounded-3xl bg-white/5 border border-white/10 p-8">
+                <h3 class="font-extrabold text-lg mb-1">모델 매장 월 매출</h3>
+                <p class="text-xs text-white/50 mb-8">단위: 만원</p>
+                <div class="flex items-end justify-around gap-4 h-56">
+                    @foreach ([['1호점',3800],['2호점',3500],['3호점',3200],['4호점',3000]] as [$store,$sales])
+                        <div class="flex-1 flex flex-col items-center justify-end h-full">
+                            <span class="text-sm font-black text-mango-300 mb-2">{{ number_format($sales) }}</span>
+                            <div class="fr-bar w-full max-w-[64px] rounded-t-xl bg-gradient-to-t from-mango-600 to-mango-400" style="height: {{ round($sales / 4000 * 100) }}%"></div>
+                            <span class="mt-3 text-xs text-white/60 font-bold">{{ $store }}</span>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+
+            {{-- 도넛 게이지: 수익률 --}}
+            <div class="reveal rounded-3xl bg-white/5 border border-white/10 p-8">
+                <h3 class="font-extrabold text-lg mb-1">수익률</h3>
+                <p class="text-xs text-white/50 mb-6">홀·배달 순이익 / 영업 마진</p>
+                <div class="grid grid-cols-2 gap-6 place-items-center">
+                    @foreach ([['판매 순이익',30,'237.5'],['영업 마진',28,'244.3']] as [$gl,$gv,$off])
+                        <div class="text-center">
+                            <div class="relative w-36 h-36">
+                                <svg viewBox="0 0 128 128" class="w-full h-full -rotate-90">
+                                    <circle cx="64" cy="64" r="54" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="12"/>
+                                    <circle cx="64" cy="64" r="54" fill="none" stroke="url(#g{{ $loop->index }})" stroke-width="12" stroke-linecap="round" class="fr-gauge-fill" style="--off: {{ $off }}"/>
+                                    <defs><linearGradient id="g{{ $loop->index }}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#FFD37A"/><stop offset="1" stop-color="#FF8A3D"/></linearGradient></defs>
+                                </svg>
+                                <div class="absolute inset-0 grid place-items-center">
+                                    <span class="text-3xl font-black text-mango-300"><span data-countup="{{ $gv }}" data-suffix="%">0%</span></span>
+                                </div>
+                            </div>
+                            <p class="mt-3 text-sm font-bold text-white/70">{{ $gl }}</p>
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+
         <p class="text-center text-xs text-white/40 mt-8">* 상기 수치는 운영 매장 평균 기준이며, 상권·입지·운영 방식에 따라 달라질 수 있습니다.</p>
     </div>
 </section>
+
+@push('scripts')
+<script>
+(function(){
+    var fmt = function(n){ return n.toLocaleString('ko-KR'); };
+    var io = new IntersectionObserver(function(entries){
+        entries.forEach(function(e){
+            if(!e.isIntersecting) return;
+            var el = e.target, target = +el.dataset.countup, suffix = el.dataset.suffix || '', dur = 1300, t0 = performance.now();
+            (function step(t){
+                var p = Math.min((t - t0) / dur, 1);
+                el.textContent = fmt(Math.floor(p * target)) + suffix;
+                if(p < 1) requestAnimationFrame(step);
+            })(t0);
+            io.unobserve(el);
+        });
+    }, { threshold: 0.4 });
+    document.querySelectorAll('[data-countup]').forEach(function(el){ io.observe(el); });
+})();
+</script>
+@endpush
 
 {{-- support --}}
 <section class="py-24">
