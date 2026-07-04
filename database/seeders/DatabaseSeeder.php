@@ -2,7 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\Menu;
 use App\Models\Notice;
 use App\Models\Store;
 use App\Models\User;
@@ -23,37 +22,8 @@ class DatabaseSeeder extends Seeder
             ]
         );
 
-        // ---- Menus ----
-        $menus = [
-            ['signature', '망고치즈빙수', 'Mango Cheese Bingsu', '농익은 애플망고와 부드러운 크림치즈가 어우러진 시그니처 빙수', 15900, 'mango-cheese-bingsu', 'best', 1],
-            ['signature', '애플망고빙수', 'Apple Mango Bingsu', '한 통 가득 올린 애플망고, 리프렌즈의 자존심', 16900, 'apple-mango-bingsu', 'best', 2],
-            ['bingsu', '망고요거트빙수', 'Mango Yogurt Bingsu', '상큼한 요거트 빙수 위 생망고 토핑', 13900, 'mango-yogurt-bingsu', null, 3],
-            ['bingsu', '트로피컬망고빙수', 'Tropical Mango Bingsu', '망고·파인애플·패션후르츠가 가득한 열대 빙수', 14900, 'tropical-mango-bingsu', 'new', 4],
-            ['bingsu', '망고팥빙수', 'Mango Patbingsu', '국산 팥과 망고의 전통과 트렌드의 만남', 12900, 'mango-patbingsu', null, 5],
-            ['bingsu', '망고초코빙수', 'Mango Choco Bingsu', '진한 벨기에 초코와 망고의 달콤한 조화', 13900, 'mango-choco-bingsu', null, 6],
-            ['drink', '망고에이드', 'Mango Ade', '톡 쏘는 청량감과 생망고의 만남', 5900, 'mango-ade', null, 7],
-            ['drink', '망고스무디', 'Mango Smoothie', '생망고를 통째로 갈아 만든 진한 스무디', 6900, 'mango-smoothie', 'best', 8],
-            ['drink', '망고요거트스무디', 'Mango Yogurt Smoothie', '요거트와 망고의 부드러운 블렌딩', 7200, 'mango-yogurt-smoothie', null, 9],
-            ['drink', '망고주스', 'Mango Juice', '100% 망고 과즙의 순수한 한 잔', 6200, 'mango-juice', null, 10],
-            ['dessert', '망고크림케이크', 'Mango Cream Cake', '생크림과 생망고가 층층이 쌓인 케이크', 7900, 'mango-cream-cake', null, 11],
-            ['dessert', '망고타르트', 'Mango Tart', '바삭한 타르트 위 향긋한 망고', 6900, 'mango-tart', 'new', 12],
-            ['dessert', '망고푸딩', 'Mango Pudding', '입에서 녹는 부드러운 망고 푸딩', 5500, 'mango-pudding', null, 13],
-        ];
-        foreach ($menus as [$cat, $name, $en, $desc, $price, $img, $badge, $order]) {
-            Menu::updateOrCreate(
-                ['name' => $name],
-                [
-                    'category' => $cat,
-                    'name_en' => $en,
-                    'description' => $desc,
-                    'price' => $price,
-                    'image' => "images/menu/$img.svg",
-                    'badge' => $badge,
-                    'sort_order' => $order,
-                    'is_active' => true,
-                ]
-            );
-        }
+        // ---- Menus (망고정 실메뉴 카탈로그) ----
+        $this->call(MenuSeeder::class);
 
         // ---- Stores ----
         $stores = [
