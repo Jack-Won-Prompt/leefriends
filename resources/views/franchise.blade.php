@@ -93,7 +93,7 @@
                 <h3 class="font-extrabold text-lg mb-1">모델 매장 월 매출</h3>
                 <p class="text-xs text-white/50 mb-8">단위: 만원</p>
                 <div class="flex items-end justify-around gap-4 h-56">
-                    @foreach ([['1호점',3800],['2호점',3500],['3호점',3200],['4호점',3000]] as [$store,$sales])
+                    @foreach ([['다산점',3800],['고암점',3500],['공릉점',3200],['월계점',3000]] as [$store,$sales])
                         <div class="flex-1 flex flex-col items-center justify-end h-full">
                             <span class="text-sm font-black text-mango-300 mb-2">{{ number_format($sales) }}</span>
                             <div class="fr-bar w-full max-w-[64px] rounded-t-xl bg-gradient-to-t from-mango-600 to-mango-400" style="height: {{ round($sales / 4000 * 100) }}%"></div>
