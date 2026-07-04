@@ -1,5 +1,5 @@
 @extends('portal.layout')
-@section('title', '근태 승인')
+@section('title', '출근 승인')
 
 @section('content')
 @php
@@ -7,7 +7,7 @@
     $approvable = collect($attendances->items())->where('status','pending')->filter(fn($a)=>$a->clock_out_at)->pluck('id')->values();
 @endphp
 <div x-data="{ picked: [], allIds: {{ \Illuminate\Support\Js::from($approvable) }} }">
-<x-wms.page-head title="근태 승인" subtitle="출근·퇴근 시간을 확인하고 승인합니다. 여러 건을 한 번에 승인할 수 있습니다." icon="✅" />
+<x-wms.page-head title="출근 승인" subtitle="출근·퇴근 시간을 확인하고 승인합니다. 여러 건을 한 번에 승인할 수 있습니다." icon="✅" />
 
 {{-- 필터 --}}
 <form method="GET" action="{{ route('portal.attendance.approvals') }}" class="flex flex-wrap items-end gap-3 mb-5">

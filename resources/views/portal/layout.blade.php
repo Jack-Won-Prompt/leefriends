@@ -120,7 +120,7 @@
         ],
     ];
     $nav = $menus[$role] ?? $menus['hq'];
-    // 근태관리 — 아르바이트는 근태관리만, 정직원은 기존 메뉴 + 근태 승인/급여
+    // 출근관리 — 아르바이트는 출근관리만, 정직원은 기존 메뉴 + 출근 승인/급여
     if ($user->isPartTime()) {
         $nav = [
             ['출근관리', '🕐', [
@@ -130,7 +130,7 @@
         ];
     } else {
         $nav[] = ['출근관리', '🕐', [
-            ['portal.attendance.approvals', '근태 승인', []],
+            ['portal.attendance.approvals', '출근 승인', []],
             ['portal.wages.index', '아르바이트 급여', []],
         ]];
     }
