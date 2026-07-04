@@ -81,7 +81,7 @@
             ] as [$label,$num,$suffix,$desc])
                 <div class="rounded-3xl bg-white/5 border border-white/10 p-8 text-center">
                     <p class="text-sm font-bold text-white/60">{{ $label }}</p>
-                    <p class="mt-2 text-4xl md:text-5xl font-black text-mango-300"><span data-countup="{{ $num }}" data-suffix="{{ $suffix }}">0{{ $suffix }}</span></p>
+                    <p class="mt-2 text-4xl md:text-5xl font-black text-mango-300 whitespace-nowrap"><span data-countup="{{ $num }}" data-suffix="{{ $suffix }}">0{{ $suffix }}</span></p>
                     <p class="mt-2 text-xs text-white/50">{{ $desc }}</p>
                 </div>
             @endforeach
@@ -252,9 +252,9 @@
         </div>
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             @foreach ([
-                ['본사에서 원물과 레시피를 다 챙겨줘서, 요식업이 처음인데도 어렵지 않게 시작했어요.','김○○ 점주','성수점'],
-                ['여름엔 빙수, 겨울엔 디저트로 사계절 매출이 꾸준한 게 가장 큰 장점입니다.','이○○ 점주','판교점'],
-                ['오픈 준비부터 운영까지 밀착 지원을 받아 안정적으로 자리 잡을 수 있었습니다.','박○○ 점주','해운대점'],
+                ['본사에서 원물과 레시피를 다 챙겨줘서, 요식업이 처음인데도 어렵지 않게 시작했어요.','김○○ 점주','망고정 다산점'],
+                ['여름엔 빙수, 겨울엔 디저트로 사계절 매출이 꾸준한 게 가장 큰 장점입니다.','이○○ 점주','망고정 고암점'],
+                ['오픈 준비부터 운영까지 밀착 지원을 받아 안정적으로 자리 잡을 수 있었습니다.','박○○ 점주','망고정 공릉점'],
             ] as [$quote,$name,$store])
                 <div class="reveal rounded-3xl bg-white shadow-card p-8 flex flex-col">
                     <div class="text-mango-400 text-5xl font-black leading-none mb-3">“</div>
