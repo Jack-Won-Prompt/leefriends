@@ -34,6 +34,31 @@
     </div>
 </section>
 
+{{-- revenue / profitability --}}
+<section class="py-24 bg-neutral-900 text-white overflow-hidden">
+    <div class="max-w-7xl mx-auto px-5 lg:px-8">
+        <div class="text-center mb-14 reveal">
+            <p class="text-mango-400 font-bold tracking-widest text-sm mb-3">REVENUE</p>
+            <h2 class="text-3xl md:text-5xl font-black">검증된 수익 구조</h2>
+            <p class="text-white/60 mt-4">사계절 안정적인 매출과 높은 수익률로 빠른 투자 회수를 목표로 합니다.</p>
+        </div>
+        <div class="grid sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
+            @foreach ([
+                ['월 평균 매출','3,000만원+','매장 평균 월매출'],
+                ['판매 순이익','30%','홀 · 배달 판매 기준'],
+                ['영업 마진','28%','평균 영업 마진율'],
+            ] as [$label,$value,$desc])
+                <div class="reveal rounded-3xl bg-white/5 border border-white/10 p-8 text-center">
+                    <p class="text-sm font-bold text-white/60">{{ $label }}</p>
+                    <p class="mt-2 text-4xl md:text-5xl font-black text-mango-300">{{ $value }}</p>
+                    <p class="mt-2 text-xs text-white/50">{{ $desc }}</p>
+                </div>
+            @endforeach
+        </div>
+        <p class="text-center text-xs text-white/40 mt-8">* 상기 수치는 운영 매장 평균 기준이며, 상권·입지·운영 방식에 따라 달라질 수 있습니다.</p>
+    </div>
+</section>
+
 {{-- process --}}
 <section class="py-24 bg-mango-50">
     <div class="max-w-7xl mx-auto px-5 lg:px-8">
@@ -65,17 +90,20 @@
         <div class="text-center mb-12 reveal">
             <p class="text-mango-600 font-bold tracking-widest text-sm mb-3">COST</p>
             <h2 class="text-3xl md:text-5xl font-black text-neutral-900">창업 비용 안내</h2>
-            <p class="text-neutral-500 mt-4">기준: 전용 50㎡ (15평) / VAT 별도 · 점포 임차료 제외</p>
+            <p class="text-neutral-500 mt-4">VAT 별도 · 보증금 / 냉난방기 / 상가 임대비 별도</p>
         </div>
         <div class="reveal rounded-3xl overflow-hidden shadow-card border border-neutral-100">
             <table class="w-full text-left">
                 <tbody class="divide-y divide-neutral-100">
                     @foreach ([
-                        ['가맹비','1,000만원','브랜드 사용권 및 영업권'],
-                        ['교육비','300만원','운영·조리 표준 교육'],
-                        ['인테리어','3,500만원','평당 약 230만원 기준'],
-                        ['기기·집기','2,200만원','빙수기·쇼케이스 등 주방설비'],
-                        ['초도물품','500만원','오픈 초도 식자재'],
+                        ['인테리어 공사','2,500만원','목공·도장·전기·조명·타일·설비·마감'],
+                        ['냉장·냉동 설비','200만원','냉장고·냉동고 (중고)'],
+                        ['눈꽃빙수기','450만원','스노우반 프리미엄 눈꽃빙수기'],
+                        ['POS·키오스크','별도','토스포스 신청 (POS·프린터·카드단말기)'],
+                        ['간판·사인','300만원','전면 간판·실내 사인물'],
+                        ['테이블·의자','150만원','홀 집기'],
+                        ['초도 비품','200만원','식기·유니폼·소모품'],
+                        ['교육·오픈 지원','350만원','운영·레시피 교육, 오픈지원, 상표권 사용료'],
                     ] as [$item,$cost,$desc])
                         <tr class="hover:bg-mango-50/50 transition">
                             <td class="px-6 py-5 font-extrabold text-neutral-900 w-40">{{ $item }}</td>
@@ -85,12 +113,12 @@
                     @endforeach
                     <tr class="bg-neutral-900 text-white">
                         <td class="px-6 py-6 font-black text-lg">합계</td>
-                        <td class="px-6 py-6 font-black text-mango-300 text-2xl whitespace-nowrap" colspan="2">약 7,500만원</td>
+                        <td class="px-6 py-6 font-black text-mango-300 text-2xl whitespace-nowrap" colspan="2">4,150만원</td>
                     </tr>
                 </tbody>
             </table>
         </div>
-        <p class="text-center text-xs text-neutral-400 mt-4">* 상기 비용은 참고용이며, 점포 면적·지역·현장 여건에 따라 달라질 수 있습니다.</p>
+        <p class="text-center text-xs text-neutral-400 mt-4">* POS·키오스크는 토스포스 신청 건으로 합계에서 제외됩니다. 보증금·냉난방기·상가 임대비는 별도이며, 점포 면적·지역·현장 여건에 따라 달라질 수 있습니다.</p>
     </div>
 </section>
 
