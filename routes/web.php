@@ -145,6 +145,9 @@ Route::prefix('portal')->name('portal.')->group(function () {
 
         // 매장
         Route::middleware('role:store')->prefix('store')->name('store.')->group(function () {
+            // 본사가 공유한 과일 보관 가이드 (읽기 전용)
+            Route::get('fruit-storages', [Portal\Store\FruitStorageController::class, 'index'])->name('fruit_storages.index');
+
             Route::get('orders', [Portal\Store\OrderController::class, 'index'])->name('orders.index');
             Route::get('orders/create', [Portal\Store\OrderController::class, 'create'])->name('orders.create');
             Route::post('orders', [Portal\Store\OrderController::class, 'store'])->name('orders.store');
@@ -260,6 +263,13 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::post('clips', [Portal\Hq\ClipController::class, 'store'])->name('clips.store');
             Route::patch('clips/{clip}', [Portal\Hq\ClipController::class, 'update'])->name('clips.update');
             Route::delete('clips/{clip}', [Portal\Hq\ClipController::class, 'destroy'])->name('clips.destroy');
+
+            // 과일 보관 관리 (냉장/냉동 가이드 · 매장 공유)
+            Route::get('fruit-storages', [Portal\Hq\FruitStorageController::class, 'index'])->name('fruit_storages.index');
+            Route::post('fruit-storages', [Portal\Hq\FruitStorageController::class, 'store'])->name('fruit_storages.store');
+            Route::patch('fruit-storages/{fruit}', [Portal\Hq\FruitStorageController::class, 'update'])->name('fruit_storages.update');
+            Route::post('fruit-storages/{fruit}/toggle-share', [Portal\Hq\FruitStorageController::class, 'toggleShare'])->name('fruit_storages.toggle_share');
+            Route::delete('fruit-storages/{fruit}', [Portal\Hq\FruitStorageController::class, 'destroy'])->name('fruit_storages.destroy');
 
             Route::get('invoices', [Portal\Hq\InvoiceController::class, 'index'])->name('invoices.index');
             Route::get('invoices/{invoice}/print', [Portal\Hq\InvoiceController::class, 'print'])->name('invoices.print');

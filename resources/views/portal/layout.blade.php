@@ -57,6 +57,7 @@
                 ['portal.hq.suppliers.index', '공급처 관리', []],
                 ['portal.hq.stores.index', '매장 관리', []],
                 ['portal.hq.couriers.index', '택배사 관리', []],
+                ['portal.hq.fruit_storages.index', '과일 보관 관리', []],
             ]],
             ['홈페이지', '🏠', [
                 ['portal.hq.menus.index', '메뉴 관리', []],
@@ -89,6 +90,7 @@
                 ['portal.store.statements.index', '거래명세서(수취)', []],
                 ['portal.store.tax_invoices.index', '세금계산서', ['portal.store.tax_invoices.show']],
             ]],
+            ['보관 가이드', '🧊', [['portal.store.fruit_storages.index', '과일 보관 가이드', []]]],
             ['일정 관리', '📅', [['portal.schedules.index', '일정 관리', []]]],
             ['직원 관리', '👥', [['portal.staff.index', '직원 관리', []]]],
         ],

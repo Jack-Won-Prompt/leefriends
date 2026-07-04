@@ -25,6 +25,9 @@ class DatabaseSeeder extends Seeder
         // ---- Menus (망고정 실메뉴 카탈로그) ----
         $this->call(MenuSeeder::class);
 
+        // ---- 과일 보관 가이드라인 (ZIM) ----
+        $this->call(FruitStorageSeeder::class);
+
         // ---- Stores ----
         $stores = [
             ['리프렌즈 강남본점', '서울', '서울특별시 강남구 테헤란로 123 망고빌딩 1층', '02-1234-5678', '매일 11:00 - 22:00', 37.4979, 127.0276],
