@@ -54,6 +54,11 @@
                 ['portal.hq.stores.index', '매장 관리', []],
                 ['portal.hq.couriers.index', '택배사 관리', []],
             ]],
+            ['홈페이지', '🏠', [
+                ['portal.hq.menus.index', '메뉴 관리', []],
+                ['portal.hq.blog.index', '블로그', []],
+                ['portal.hq.clips.index', '네이버 클립', []],
+            ]],
             ['일정 관리', '📅', [['portal.schedules.index', '일정 관리', []]]],
             ['직원 관리', '👥', [['portal.staff.index', '직원 관리', []]]],
             ['공지사항', '📢', [['portal.hq.notices.index', '공지사항', []]]],

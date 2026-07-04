@@ -246,6 +246,21 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::post('stores/{store}/reinvite', [Portal\Hq\StoreController::class, 'reinvite'])->name('stores.reinvite');
             Route::patch('stores/{store}', [Portal\Hq\StoreController::class, 'update'])->name('stores.update');
             Route::delete('stores/{store}', [Portal\Hq\StoreController::class, 'destroy'])->name('stores.destroy');
+
+            // 홈페이지 콘텐츠 (메뉴 / 블로그 / 네이버 클립)
+            Route::get('menus', [Portal\Hq\MenuController::class, 'index'])->name('menus.index');
+            Route::post('menus', [Portal\Hq\MenuController::class, 'store'])->name('menus.store');
+            Route::patch('menus/{menu}', [Portal\Hq\MenuController::class, 'update'])->name('menus.update');
+            Route::delete('menus/{menu}', [Portal\Hq\MenuController::class, 'destroy'])->name('menus.destroy');
+            Route::get('blog', [Portal\Hq\BlogController::class, 'index'])->name('blog.index');
+            Route::post('blog/sync', [Portal\Hq\BlogController::class, 'sync'])->name('blog.sync');
+            Route::patch('blog/{blog}', [Portal\Hq\BlogController::class, 'update'])->name('blog.update');
+            Route::delete('blog/{blog}', [Portal\Hq\BlogController::class, 'destroy'])->name('blog.destroy');
+            Route::get('clips', [Portal\Hq\ClipController::class, 'index'])->name('clips.index');
+            Route::post('clips', [Portal\Hq\ClipController::class, 'store'])->name('clips.store');
+            Route::patch('clips/{clip}', [Portal\Hq\ClipController::class, 'update'])->name('clips.update');
+            Route::delete('clips/{clip}', [Portal\Hq\ClipController::class, 'destroy'])->name('clips.destroy');
+
             Route::get('invoices', [Portal\Hq\InvoiceController::class, 'index'])->name('invoices.index');
             Route::get('invoices/{invoice}/print', [Portal\Hq\InvoiceController::class, 'print'])->name('invoices.print');
 
