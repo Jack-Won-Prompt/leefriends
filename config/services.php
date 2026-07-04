@@ -35,6 +35,11 @@ return [
         ],
     ],
 
+    // 네이버 콘텐츠 (welcome 페이지 블로그 자동수집)
+    'naver' => [
+        'blog_id' => env('NAVER_BLOG_ID', 'mangojung_official'),  // 공식 네이버 블로그 아이디
+    ],
+
     // FCM (Firebase Cloud Messaging) - 모바일 앱 푸시
     'fcm' => [
         'credentials' => env('FCM_CREDENTIALS'),        // 서비스계정 JSON 경로 (예: storage/app/firebase/sa.json)

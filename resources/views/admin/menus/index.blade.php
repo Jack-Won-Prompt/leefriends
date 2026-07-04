@@ -3,7 +3,8 @@
 
 @section('content')
 @php
-    $images = collect(glob(public_path('images/menu/*.svg')))->map(fn ($p) => 'images/menu/' . basename($p))->values();
+    $images = collect(glob(public_path('images/menu/*.{jpg,jpeg,png,webp,svg}'), GLOB_BRACE))
+        ->map(fn ($p) => 'images/menu/' . basename($p))->sort()->values();
     $hasErr = $errors->any();
     $initForm = $hasErr ? array_merge(['is_active' => (bool) old('is_active')], old())
         : ['is_active' => true, 'category' => 'bingsu', 'badge' => '', 'image' => $images->first(), 'sort_order' => 0, 'price' => 0];
@@ -14,10 +15,11 @@
         action: '{{ $hasErr ? old('_action') : '' }}',
         method: '{{ $hasErr && old('_mode') === 'edit' ? 'PUT' : 'POST' }}',
         assetBase: '{{ $assetBase }}',
+        filePreview: '',
      })">
 
 <div class="flex justify-end mb-5">
-    <button type="button" @click="openCreate('{{ route('admin.menus.store') }}', { is_active: true, category: 'bingsu', badge: '', image: '{{ $images->first() }}', sort_order: 0, price: 0 })"
+    <button type="button" @click="filePreview=''; openCreate('{{ route('admin.menus.store') }}', { is_active: true, category: 'bingsu', badge: '', image: '{{ $images->first() }}', sort_order: 0, price: 0 })"
             class="rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-5 py-2.5 transition">+ 새 메뉴 추가</button>
 </div>
 
@@ -51,7 +53,7 @@
                         <td class="px-6 py-3">
                             <div class="flex justify-end gap-2">
                                 <button type="button"
-                                        @click="openEdit('{{ route('admin.menus.update', $m) }}', {{ Illuminate\Support\Js::from([
+                                        @click="filePreview=''; openEdit('{{ route('admin.menus.update', $m) }}', {{ Illuminate\Support\Js::from([
                                             'category' => $m->category, 'badge' => $m->badge ?? '', 'name' => $m->name, 'name_en' => $m->name_en,
                                             'price' => $m->price, 'sort_order' => $m->sort_order, 'description' => $m->description,
                                             'image' => $m->image, 'is_active' => (bool) $m->is_active,
@@ -80,21 +82,26 @@
             <h2 class="text-lg font-extrabold text-neutral-900" x-text="mode === 'edit' ? '메뉴 수정' : '새 메뉴 추가'"></h2>
             <button type="button" @click="open=false" class="w-8 h-8 grid place-items-center rounded-lg hover:bg-neutral-100 text-neutral-500">✕</button>
         </div>
-        <form :action="action" method="POST" class="p-6 space-y-5">
+        <form :action="action" method="POST" enctype="multipart/form-data" class="p-6 space-y-5" @reset="filePreview=''">
             @csrf
             <input type="hidden" name="_method" :value="method">
             <input type="hidden" name="_mode" :value="mode">
             <input type="hidden" name="_action" :value="action">
 
             <div class="flex gap-5 items-start">
-                <img :src="assetBase + form.image" class="w-24 h-24 rounded-2xl object-cover bg-mango-50 shrink-0" alt="">
-                <div class="flex-1">
+                <img :src="filePreview || (assetBase + form.image)" class="w-24 h-24 rounded-2xl object-cover bg-mango-50 shrink-0" alt="">
+                <div class="flex-1 space-y-2">
                     <label class="block text-sm font-bold text-neutral-700 mb-1.5">대표 이미지</label>
                     <select name="image" x-model="form.image" class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400">
                         @foreach ($images as $img)
                             <option value="{{ $img }}">{{ basename($img) }}</option>
                         @endforeach
                     </select>
+                    <input type="file" name="image_file" accept=".jpg,.jpeg,.png,.webp,.svg"
+                           @change="filePreview = $event.target.files[0] ? URL.createObjectURL($event.target.files[0]) : ''"
+                           class="w-full text-sm text-neutral-600 file:mr-3 file:rounded-lg file:border-0 file:bg-mango-100 file:text-mango-700 file:font-bold file:px-3 file:py-1.5 hover:file:bg-mango-200">
+                    <p class="text-xs text-neutral-400">파일을 올리면 위 목록 선택보다 우선 적용되고, 새 사진으로 저장됩니다.</p>
+                    @error('image_file')<p class="text-xs text-rose-600 font-semibold">{{ $message }}</p>@enderror
                 </div>
             </div>
 

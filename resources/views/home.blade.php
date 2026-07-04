@@ -134,6 +134,71 @@
     </div>
 </section>
 
+{{-- ===================== NAVER BLOG ===================== --}}
+@if ($blogPosts->isNotEmpty())
+<section class="py-24 bg-gradient-to-b from-white to-mango-50/60">
+    <div class="max-w-7xl mx-auto px-5 lg:px-8">
+        <div class="flex items-end justify-between mb-12 reveal">
+            <div>
+                <p class="text-mango-600 font-bold tracking-widest text-sm mb-3">NAVER BLOG</p>
+                <h2 class="text-3xl md:text-5xl font-black text-neutral-900">망고정 블로그</h2>
+            </div>
+            <a href="https://blog.naver.com/{{ config('services.naver.blog_id') }}" target="_blank" rel="noopener"
+               class="hidden md:inline-flex items-center gap-2 font-bold text-neutral-700 hover:text-mango-600 transition">
+                블로그 바로가기 <span>→</span>
+            </a>
+        </div>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 reveal">
+            @foreach ($blogPosts as $p)
+                <a href="{{ $p->url }}" target="_blank" rel="noopener"
+                   class="group rounded-3xl bg-white border border-neutral-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition overflow-hidden flex flex-col">
+                    <div class="aspect-[16/10] bg-mango-50 overflow-hidden">
+                        @if ($p->thumbnail)
+                            <img src="{{ $p->thumbnail_url }}" alt="{{ $p->title }}" referrerpolicy="no-referrer" class="w-full h-full object-cover group-hover:scale-105 transition">
+                        @else
+                            <div class="w-full h-full grid place-items-center text-4xl">📝</div>
+                        @endif
+                    </div>
+                    <div class="p-6 flex-1 flex flex-col">
+                        <h3 class="font-black text-neutral-900 line-clamp-2 group-hover:text-mango-600 transition">{{ $p->title }}</h3>
+                        @if ($p->summary)<p class="mt-2 text-sm text-neutral-500 line-clamp-2 leading-relaxed">{{ $p->summary }}</p>@endif
+                        <p class="mt-auto pt-4 text-xs text-neutral-400">{{ $p->posted_at?->format('Y.m.d') }}</p>
+                    </div>
+                </a>
+            @endforeach
+        </div>
+    </div>
+</section>
+@endif
+
+{{-- ===================== NAVER CLIP ===================== --}}
+@if ($clips->isNotEmpty())
+<section class="py-24">
+    <div class="max-w-7xl mx-auto px-5 lg:px-8">
+        <div class="text-center mb-12 reveal">
+            <p class="text-mango-600 font-bold tracking-widest text-sm mb-3">NAVER CLIP</p>
+            <h2 class="text-3xl md:text-5xl font-black text-neutral-900">망고정 클립</h2>
+            <p class="mt-3 text-neutral-400">영상으로 즐기는 망고정</p>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-5 reveal">
+            @foreach ($clips as $c)
+                <a href="{{ $c->url }}" target="_blank" rel="noopener"
+                   class="group relative rounded-3xl overflow-hidden bg-neutral-900 shadow-sm hover:shadow-xl transition aspect-[9/12]">
+                    @if ($c->thumbnail)
+                        <img src="{{ $c->thumbnail_url }}" alt="{{ $c->title }}" referrerpolicy="no-referrer" class="absolute inset-0 w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition">
+                    @endif
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent"></div>
+                    <div class="absolute inset-0 grid place-items-center">
+                        <span class="w-12 h-12 rounded-full bg-white/25 backdrop-blur grid place-items-center text-white text-xl group-hover:bg-mango-500 transition">▶</span>
+                    </div>
+                    <p class="absolute bottom-0 inset-x-0 p-3 text-white font-bold text-xs line-clamp-2">{{ $c->title }}</p>
+                </a>
+            @endforeach
+        </div>
+    </div>
+</section>
+@endif
+
 {{-- ===================== FRANCHISE CTA ===================== --}}
 <section class="relative py-28 overflow-hidden bg-neutral-900">
     <img src="{{ asset('images/hero/slide3.svg') }}" class="absolute inset-0 w-full h-full object-cover opacity-40" alt="">

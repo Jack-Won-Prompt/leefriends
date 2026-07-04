@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Route;
 |--------------------------------------------------------------------------
 */
 Route::get('/', [PageController::class, 'home'])->name('home');
+Route::redirect('/welcome', '/')->name('welcome'); // 별도 페이지 없이 홈으로 통합
 Route::get('/brand', [PageController::class, 'brand'])->name('brand');
 Route::get('/privacy', [PageController::class, 'privacy'])->name('privacy');
 Route::get('/account-deletion', [PageController::class, 'accountDeletion'])->name('account.deletion');
@@ -50,6 +51,18 @@ Route::prefix('admin')->name('admin.')->group(function () {
         Route::resource('notices', Admin\NoticeController::class)->except(['show', 'create', 'edit']);
         Route::resource('menus', Admin\MenuController::class)->except(['show', 'create', 'edit']);
         Route::resource('stores', Admin\StoreController::class)->except(['show', 'create', 'edit']);
+
+        // 블로그 (공식 네이버 블로그 RSS 자동수집)
+        Route::get('blog', [Admin\BlogPostController::class, 'index'])->name('blog.index');
+        Route::post('blog/sync', [Admin\BlogPostController::class, 'sync'])->name('blog.sync');
+        Route::patch('blog/{blog}', [Admin\BlogPostController::class, 'update'])->name('blog.update');
+        Route::delete('blog/{blog}', [Admin\BlogPostController::class, 'destroy'])->name('blog.destroy');
+
+        // 네이버 클립 (수동 등록)
+        Route::get('clips', [Admin\NaverClipController::class, 'index'])->name('clips.index');
+        Route::post('clips', [Admin\NaverClipController::class, 'store'])->name('clips.store');
+        Route::patch('clips/{clip}', [Admin\NaverClipController::class, 'update'])->name('clips.update');
+        Route::delete('clips/{clip}', [Admin\NaverClipController::class, 'destroy'])->name('clips.destroy');
     });
 });
 
