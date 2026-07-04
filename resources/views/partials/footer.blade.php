@@ -30,7 +30,7 @@
 
             <div>
                 <h4 class="text-white font-bold mb-4 text-sm">창업 문의</h4>
-                <p class="text-3xl font-black text-white">1600-0000</p>
+                <p class="text-3xl font-black text-white">031-853-1944</p>
                 <p class="text-sm mt-2">평일 09:00 - 18:00 (주말·공휴일 휴무)</p>
                 <a href="{{ route('franchise') }}#inquiry"
                    class="inline-flex mt-5 items-center gap-1.5 rounded-full bg-mango-500 hover:bg-mango-600 px-5 py-2.5 text-sm font-bold text-white transition">

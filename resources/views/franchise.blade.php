@@ -18,7 +18,7 @@
         {{-- CTA --}}
         <div class="mt-8 flex flex-wrap items-center justify-center gap-3 animate-fadeup">
             <a href="#inquiry" class="rounded-2xl bg-neutral-900 hover:bg-neutral-800 text-white font-black px-8 py-4 shadow-soft transition">창업 문의하기</a>
-            <a href="tel:1600-0000" class="rounded-2xl bg-white/15 hover:bg-white/25 backdrop-blur text-white font-bold px-8 py-4 transition">📞 전화 상담</a>
+            <a href="tel:031-853-1944" class="rounded-2xl bg-white/15 hover:bg-white/25 backdrop-blur text-white font-bold px-8 py-4 transition">📞 전화 상담</a>
         </div>
 
         {{-- key stats --}}
@@ -180,6 +180,7 @@
             <h2 class="text-3xl md:text-5xl font-black text-neutral-900">가맹점주 이야기</h2>
             <p class="text-neutral-500 mt-4">먼저 시작한 점주님들의 생생한 경험을 들어보세요.</p>
         </div>
+        <p class="text-center text-xs text-neutral-400 mb-8 -mt-8">※ 아래 후기는 예시이며, 실제 가맹점주 후기로 업데이트될 예정입니다.</p>
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             @foreach ([
                 ['본사에서 원물과 레시피를 다 챙겨줘서, 요식업이 처음인데도 어렵지 않게 시작했어요.','김○○ 점주','성수점'],
@@ -275,16 +276,16 @@
         </div>
 
         <p class="text-center text-white/90 mt-8 reveal">
-            전화 문의 <a href="tel:1600-0000" class="font-black underline underline-offset-4">1600-0000</a> &nbsp;|&nbsp; 평일 09:00 - 18:00
+            전화 문의 <a href="tel:031-853-1944" class="font-black underline underline-offset-4">031-853-1944</a> &nbsp;|&nbsp; 평일 09:00 - 18:00
         </p>
     </div>
 </section>
 
 {{-- floating consultation CTA --}}
 <div class="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-2.5">
-    <a href="tel:1600-0000" class="group flex items-center gap-2 rounded-full bg-neutral-900 text-white font-bold pl-4 pr-5 py-3 shadow-soft hover:bg-neutral-800 transition">
+    <a href="tel:031-853-1944" class="group flex items-center gap-2 rounded-full bg-neutral-900 text-white font-bold pl-4 pr-5 py-3 shadow-soft hover:bg-neutral-800 transition">
         <span class="text-lg">📞</span>
-        <span class="text-sm leading-tight">가맹문의<br><span class="font-black">1600-0000</span></span>
+        <span class="text-sm leading-tight">가맹문의<br><span class="font-black">031-853-1944</span></span>
     </a>
     <a href="#inquiry" class="rounded-full bg-mango-500 hover:bg-mango-600 text-white font-black px-6 py-3.5 shadow-soft transition text-sm">창업 문의하기</a>
 </div>
