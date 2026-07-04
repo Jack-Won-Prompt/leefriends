@@ -199,19 +199,50 @@
 </section>
 @endif
 
-{{-- ===================== FRANCHISE CTA ===================== --}}
+{{-- ===================== FRANCHISE HIGHLIGHT ===================== --}}
 <section class="relative py-28 overflow-hidden bg-neutral-900">
     <img src="{{ asset('images/hero/slide3.svg') }}" class="absolute inset-0 w-full h-full object-cover opacity-40" alt="">
     <div class="absolute inset-0 bg-gradient-to-t from-neutral-900 via-neutral-900/70 to-neutral-900/40"></div>
-    <div class="relative z-10 max-w-4xl mx-auto px-5 lg:px-8 text-center text-white reveal">
-        <p class="text-mango-300 font-bold tracking-widest text-sm mb-5">FRANCHISE</p>
-        <h2 class="text-3xl md:text-5xl font-black leading-tight mb-6 text-balance">
-            사계절 잘 팔리는 디저트 카페<br>LEEFRIENDS와 시작하세요
-        </h2>
-        <p class="text-white/80 text-lg mb-10">검증된 레시피, 체계적인 본사 지원, 차별화된 브랜드 경쟁력</p>
-        <div class="flex flex-wrap justify-center gap-3">
+    <div class="relative z-10 max-w-6xl mx-auto px-5 lg:px-8 text-white">
+        <div class="text-center reveal">
+            <p class="text-mango-300 font-bold tracking-widest text-sm mb-5">FRANCHISE</p>
+            <h2 class="text-3xl md:text-5xl font-black leading-tight mb-5 text-balance">
+                사계절 잘 팔리는 디저트 카페<br>망고정과 시작하세요
+            </h2>
+            <p class="text-white/80 text-lg">낮은 창업비 · 높은 수익률 · 본사 토탈 지원</p>
+        </div>
+
+        {{-- 핵심 수치 (카운트업) --}}
+        <div class="mt-12 grid grid-cols-1 sm:grid-cols-3 gap-5 max-w-4xl mx-auto stagger">
+            @foreach ([
+                ['월 평균 매출','3000','만원+','매장 평균 월매출'],
+                ['영업 마진','28','%','평균 영업 마진율'],
+                ['창업 비용','4150','만원~','점포·상권에 따라 상이'],
+            ] as [$label,$num,$suffix,$desc])
+                <div class="reveal rv-scale rounded-3xl bg-white/5 border border-white/10 px-4 py-8 text-center">
+                    <p class="text-sm font-bold text-white/60">{{ $label }}</p>
+                    <p class="mt-2 text-3xl md:text-4xl font-black text-mango-300 whitespace-nowrap"><span data-countup="{{ $num }}" data-suffix="{{ $suffix }}">0{{ $suffix }}</span></p>
+                    <p class="mt-2 text-xs text-white/50">{{ $desc }}</p>
+                </div>
+            @endforeach
+        </div>
+
+        {{-- 강점 요약 --}}
+        <div class="mt-8 grid grid-cols-2 lg:grid-cols-4 gap-3 max-w-4xl mx-auto stagger">
+            @foreach ([
+                ['🍧','차별화 경쟁력'],['📈','사계절 안정 매출'],['🤝','본사 토탈 지원'],['💡','간편한 운영'],
+            ] as [$ico,$t])
+                <div class="reveal rounded-2xl bg-white/5 border border-white/10 px-4 py-4 flex items-center gap-2.5">
+                    <span class="text-xl">{{ $ico }}</span>
+                    <span class="text-sm font-bold text-white/85">{{ $t }}</span>
+                </div>
+            @endforeach
+        </div>
+
+        {{-- CTA --}}
+        <div class="mt-12 flex flex-wrap justify-center gap-3 reveal">
             <a href="{{ route('franchise') }}#inquiry" class="rounded-full bg-mango-500 hover:bg-mango-600 px-8 py-4 font-bold shadow-soft hover:scale-105 transition">온라인 창업문의</a>
-            <a href="{{ route('franchise') }}" class="rounded-full bg-white/10 hover:bg-white/20 border border-white/30 px-8 py-4 font-bold transition">창업 안내 보기</a>
+            <a href="{{ route('franchise') }}" class="rounded-full bg-white text-neutral-900 hover:bg-neutral-100 px-8 py-4 font-black shadow-soft hover:scale-105 transition">창업 안내 자세히 보기 →</a>
         </div>
     </div>
 </section>

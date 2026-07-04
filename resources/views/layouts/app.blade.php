@@ -94,6 +94,22 @@
         }, { threshold: 0.12 });
         document.querySelectorAll('.reveal').forEach(el => io.observe(el));
 
+        // count-up numbers on scroll (data-countup + data-suffix)
+        const cfmt = (n) => n.toLocaleString('ko-KR');
+        const cio = new IntersectionObserver((entries) => {
+            entries.forEach(e => {
+                if (!e.isIntersecting) return;
+                const el = e.target, target = +el.dataset.countup, suffix = el.dataset.suffix || '', dur = 1300, t0 = performance.now();
+                (function step(t) {
+                    const p = Math.min((t - t0) / dur, 1);
+                    el.textContent = cfmt(Math.floor(p * target)) + suffix;
+                    if (p < 1) requestAnimationFrame(step);
+                })(t0);
+                cio.unobserve(el);
+            });
+        }, { threshold: 0.4 });
+        document.querySelectorAll('[data-countup]').forEach(el => cio.observe(el));
+
         // header solidify on scroll
         const header = document.getElementById('site-header');
         const onScroll = () => {

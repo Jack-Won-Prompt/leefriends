@@ -131,26 +131,6 @@
     </div>
 </section>
 
-@push('scripts')
-<script>
-(function(){
-    var fmt = function(n){ return n.toLocaleString('ko-KR'); };
-    var io = new IntersectionObserver(function(entries){
-        entries.forEach(function(e){
-            if(!e.isIntersecting) return;
-            var el = e.target, target = +el.dataset.countup, suffix = el.dataset.suffix || '', dur = 1300, t0 = performance.now();
-            (function step(t){
-                var p = Math.min((t - t0) / dur, 1);
-                el.textContent = fmt(Math.floor(p * target)) + suffix;
-                if(p < 1) requestAnimationFrame(step);
-            })(t0);
-            io.unobserve(el);
-        });
-    }, { threshold: 0.4 });
-    document.querySelectorAll('[data-countup]').forEach(function(el){ io.observe(el); });
-})();
-</script>
-@endpush
 
 {{-- support --}}
 <section class="py-24">
