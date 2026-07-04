@@ -28,13 +28,13 @@
 <x-wms.panel>
     <table class="w-full text-sm">
         <thead class="bg-neutral-50 text-neutral-500">
-            <tr>
+            <tr class="whitespace-nowrap">
                 <th class="text-left font-semibold px-6 py-3 w-20">이미지</th>
                 <th class="text-left font-semibold px-6 py-3">메뉴명</th>
-                <th class="text-left font-semibold px-6 py-3 hidden md:table-cell w-24">분류</th>
-                <th class="text-left font-semibold px-6 py-3 w-28">가격</th>
-                <th class="text-left font-semibold px-6 py-3 hidden md:table-cell w-20">노출</th>
-                <th class="text-right font-semibold px-6 py-3 w-32">관리</th>
+                <th class="text-left font-semibold px-6 py-3 hidden md:table-cell">분류</th>
+                <th class="text-left font-semibold px-6 py-3">가격</th>
+                <th class="text-left font-semibold px-6 py-3 hidden md:table-cell">노출</th>
+                <th class="text-right font-semibold px-6 py-3 w-36">관리</th>
             </tr>
         </thead>
         <tbody class="divide-y divide-neutral-100">
@@ -44,12 +44,12 @@
                     <td class="px-6 py-3 font-bold text-neutral-900">{{ $m->name }}
                         @if ($m->badge)<span class="ml-1 text-[10px] font-bold text-mango-600">[{{ strtoupper($m->badge) }}]</span>@endif
                     </td>
-                    <td class="px-6 py-3 hidden md:table-cell text-neutral-500">{{ $m->category_label }}</td>
-                    <td class="px-6 py-3 font-bold text-mango-700">{{ number_format($m->price) }}원</td>
-                    <td class="px-6 py-3 hidden md:table-cell">
-                        <span class="text-xs font-bold px-2 py-1 rounded-full {{ $m->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-neutral-100 text-neutral-400' }}">{{ $m->is_active ? '노출' : '숨김' }}</span>
+                    <td class="px-6 py-3 hidden md:table-cell text-neutral-500 whitespace-nowrap">{{ $m->category_label }}</td>
+                    <td class="px-6 py-3 font-bold text-mango-700 whitespace-nowrap">{{ number_format($m->price) }}원</td>
+                    <td class="px-6 py-3 hidden md:table-cell whitespace-nowrap">
+                        <span class="inline-block text-xs font-bold px-2 py-1 rounded-full whitespace-nowrap {{ $m->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-neutral-100 text-neutral-400' }}">{{ $m->is_active ? '노출' : '숨김' }}</span>
                     </td>
-                    <td class="px-6 py-3">
+                    <td class="px-6 py-3 whitespace-nowrap">
                         <div class="flex justify-end gap-2">
                             <button type="button"
                                     @click="filePreview=''; openEdit('{{ route('portal.hq.menus.update', $m) }}', {{ Illuminate\Support\Js::from([
@@ -57,10 +57,10 @@
                                         'price' => $m->price, 'sort_order' => $m->sort_order, 'description' => $m->description,
                                         'image' => $m->image, 'is_active' => (bool) $m->is_active,
                                     ]) }})"
-                                    class="rounded-lg bg-neutral-100 hover:bg-neutral-200 px-3 py-1.5 font-semibold">수정</button>
+                                    class="rounded-lg bg-neutral-100 hover:bg-neutral-200 px-3 py-1.5 font-semibold whitespace-nowrap">수정</button>
                             <form method="POST" action="{{ route('portal.hq.menus.destroy', $m) }}" onsubmit="return confirm('삭제하시겠습니까?')">
                                 @csrf @method('DELETE')
-                                <button class="rounded-lg text-rose-600 hover:bg-rose-50 px-3 py-1.5 font-semibold">삭제</button>
+                                <button class="rounded-lg text-rose-600 hover:bg-rose-50 px-3 py-1.5 font-semibold whitespace-nowrap">삭제</button>
                             </form>
                         </div>
                     </td>
