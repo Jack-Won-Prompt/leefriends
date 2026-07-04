@@ -4,11 +4,34 @@
 
 @section('content')
 
-@include('partials.page-hero', [
-    'eyebrow' => 'FRANCHISE',
-    'title' => '리프렌즈 창업 안내',
-    'subtitle' => '검증된 브랜드와 함께하는 디저트 카페 창업',
-])
+{{-- hero --}}
+<section class="relative pt-[72px] bg-gradient-to-br from-mango-400 via-mango-500 to-mango-600 overflow-hidden">
+    <div class="absolute -top-10 right-6 text-[13rem] opacity-20 select-none animate-floaty">🥭</div>
+    <div class="absolute bottom-0 left-1/4 w-80 h-80 rounded-full bg-white/10 blur-3xl"></div>
+    <div class="relative max-w-7xl mx-auto px-5 lg:px-8 py-20 lg:py-28 text-center text-white">
+        <p class="font-bold tracking-[0.25em] text-sm text-white/85 mb-4 animate-fadeup">MANGOJEONG FRANCHISE</p>
+        <h1 class="text-4xl md:text-6xl font-black leading-tight animate-fadeup">
+            사계절 프리미엄 망고빙수<br>검증된 프랜차이즈, <span class="text-neutral-900">망고정</span>
+        </h1>
+        <p class="mt-5 text-lg md:text-xl text-white/90 animate-fadeup">낮은 창업비 · 높은 수익률 · 본사 토탈 지원으로 안정적인 창업을 시작하세요.</p>
+
+        {{-- CTA --}}
+        <div class="mt-8 flex flex-wrap items-center justify-center gap-3 animate-fadeup">
+            <a href="#inquiry" class="rounded-2xl bg-neutral-900 hover:bg-neutral-800 text-white font-black px-8 py-4 shadow-soft transition">창업 문의하기</a>
+            <a href="tel:1600-0000" class="rounded-2xl bg-white/15 hover:bg-white/25 backdrop-blur text-white font-bold px-8 py-4 transition">📞 전화 상담</a>
+        </div>
+
+        {{-- key stats --}}
+        <div class="mt-12 grid grid-cols-3 gap-3 max-w-2xl mx-auto animate-fadeup">
+            @foreach ([['월 평균 매출','3,000만원+'],['영업 마진','28%'],['창업 비용','4,150만원~']] as [$l,$v])
+                <div class="rounded-2xl bg-white/10 border border-white/15 py-5 px-2">
+                    <p class="text-xs text-white/70 font-bold">{{ $l }}</p>
+                    <p class="mt-1 text-xl md:text-2xl font-black">{{ $v }}</p>
+                </div>
+            @endforeach
+        </div>
+    </div>
+</section>
 
 {{-- why --}}
 <section class="py-24">
@@ -56,6 +79,33 @@
             @endforeach
         </div>
         <p class="text-center text-xs text-white/40 mt-8">* 상기 수치는 운영 매장 평균 기준이며, 상권·입지·운영 방식에 따라 달라질 수 있습니다.</p>
+    </div>
+</section>
+
+{{-- support --}}
+<section class="py-24">
+    <div class="max-w-7xl mx-auto px-5 lg:px-8">
+        <div class="text-center mb-14 reveal">
+            <p class="text-mango-600 font-bold tracking-widest text-sm mb-3">SUPPORT</p>
+            <h2 class="text-3xl md:text-5xl font-black text-neutral-900">본사 토탈 지원 시스템</h2>
+            <p class="text-neutral-500 mt-4">창업부터 운영까지, 초보 점주도 안심하고 시작할 수 있습니다.</p>
+        </div>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            @foreach ([
+                ['🥭','원물·식자재 공급','검증된 애플망고와 표준 식자재를 본사에서 안정적으로 공급'],
+                ['🚚','물류·배송 시스템','발주부터 입고까지 체계적으로 관리되는 통합 물류'],
+                ['📖','레시피·운영 매뉴얼','표준화된 레시피로 누구나 동일한 맛과 품질 구현'],
+                ['🎓','교육·오픈 지원','운영·조리 교육과 오픈 현장 밀착 지원'],
+                ['📣','브랜드 마케팅','SNS·프로모션 등 본사 주도 브랜드 마케팅'],
+                ['🛠️','상시 슈퍼바이징','QSC 관리와 지속적인 매장 운영 컨설팅'],
+            ] as [$ico,$t,$d])
+                <div class="reveal rounded-3xl bg-white shadow-card p-7 hover:shadow-soft hover:-translate-y-1 transition">
+                    <div class="text-4xl mb-4">{{ $ico }}</div>
+                    <h3 class="text-lg font-extrabold text-neutral-900 mb-2">{{ $t }}</h3>
+                    <p class="text-neutral-500 text-sm leading-relaxed">{{ $d }}</p>
+                </div>
+            @endforeach
+        </div>
     </div>
 </section>
 
@@ -119,6 +169,33 @@
             </table>
         </div>
         <p class="text-center text-xs text-neutral-400 mt-4">* POS·키오스크는 토스포스 신청 건으로 합계에서 제외됩니다. 보증금·냉난방기·상가 임대비는 별도이며, 점포 면적·지역·현장 여건에 따라 달라질 수 있습니다.</p>
+    </div>
+</section>
+
+{{-- testimonials --}}
+<section class="py-24 bg-mango-50">
+    <div class="max-w-7xl mx-auto px-5 lg:px-8">
+        <div class="text-center mb-14 reveal">
+            <p class="text-mango-600 font-bold tracking-widest text-sm mb-3">STORY</p>
+            <h2 class="text-3xl md:text-5xl font-black text-neutral-900">가맹점주 이야기</h2>
+            <p class="text-neutral-500 mt-4">먼저 시작한 점주님들의 생생한 경험을 들어보세요.</p>
+        </div>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            @foreach ([
+                ['본사에서 원물과 레시피를 다 챙겨줘서, 요식업이 처음인데도 어렵지 않게 시작했어요.','김○○ 점주','성수점'],
+                ['여름엔 빙수, 겨울엔 디저트로 사계절 매출이 꾸준한 게 가장 큰 장점입니다.','이○○ 점주','판교점'],
+                ['오픈 준비부터 운영까지 밀착 지원을 받아 안정적으로 자리 잡을 수 있었습니다.','박○○ 점주','해운대점'],
+            ] as [$quote,$name,$store])
+                <div class="reveal rounded-3xl bg-white shadow-card p-8 flex flex-col">
+                    <div class="text-mango-400 text-5xl font-black leading-none mb-3">“</div>
+                    <p class="text-neutral-700 leading-relaxed flex-1">{{ $quote }}</p>
+                    <div class="mt-6 pt-5 border-t border-neutral-100">
+                        <p class="font-extrabold text-neutral-900">{{ $name }}</p>
+                        <p class="text-sm text-mango-600 font-bold">{{ $store }}</p>
+                    </div>
+                </div>
+            @endforeach
+        </div>
     </div>
 </section>
 
@@ -202,5 +279,14 @@
         </p>
     </div>
 </section>
+
+{{-- floating consultation CTA --}}
+<div class="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-2.5">
+    <a href="tel:1600-0000" class="group flex items-center gap-2 rounded-full bg-neutral-900 text-white font-bold pl-4 pr-5 py-3 shadow-soft hover:bg-neutral-800 transition">
+        <span class="text-lg">📞</span>
+        <span class="text-sm leading-tight">가맹문의<br><span class="font-black">1600-0000</span></span>
+    </a>
+    <a href="#inquiry" class="rounded-full bg-mango-500 hover:bg-mango-600 text-white font-black px-6 py-3.5 shadow-soft transition text-sm">창업 문의하기</a>
+</div>
 
 @endsection
