@@ -79,9 +79,9 @@
                 ['판매 순이익','30','%','홀 · 배달 판매 기준'],
                 ['영업 마진','28','%','평균 영업 마진율'],
             ] as [$label,$num,$suffix,$desc])
-                <div class="reveal rv-scale rounded-3xl bg-white/5 border border-white/10 p-8 text-center">
+                <div class="reveal rv-scale rounded-3xl bg-white/5 border border-white/10 px-4 py-8 text-center">
                     <p class="text-sm font-bold text-white/60">{{ $label }}</p>
-                    <p class="mt-2 text-4xl md:text-5xl font-black text-mango-300 whitespace-nowrap"><span data-countup="{{ $num }}" data-suffix="{{ $suffix }}">0{{ $suffix }}</span></p>
+                    <p class="mt-2 text-3xl md:text-4xl font-black text-mango-300 whitespace-nowrap"><span data-countup="{{ $num }}" data-suffix="{{ $suffix }}">0{{ $suffix }}</span></p>
                     <p class="mt-2 text-xs text-white/50">{{ $desc }}</p>
                 </div>
             @endforeach
