@@ -15,7 +15,11 @@
             }},
         }
     </script>
-    <style>[x-cloak]{display:none!important}</style>
+    <style>
+        [x-cloak]{display:none!important}
+        /* 좁은 열에서 헤더·액션 버튼·상태 뱃지 텍스트가 세로로 줄바꿈되지 않도록 */
+        table th, table td button, table td .rounded-full { white-space: nowrap; }
+    </style>
 </head>
 <body class="font-sans bg-neutral-100 text-neutral-800" x-data="{ sidebar: false }">
 @php

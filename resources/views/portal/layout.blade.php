@@ -14,7 +14,11 @@
             colors: { mango: { 50:'#FFF9ED',100:'#FFF1D2',400:'#FFB23D',500:'#FF9F1C',600:'#F2784B',700:'#D45A1F' } },
         }}}
     </script>
-    <style>[x-cloak]{display:none!important}</style>
+    <style>
+        [x-cloak]{display:none!important}
+        /* 좁은 열에서 헤더·액션 버튼·상태 뱃지 텍스트가 세로로 줄바꿈되지 않도록 */
+        table th, table td button, table td .rounded-full { white-space: nowrap; }
+    </style>
 </head>
 @php
     $user = auth()->user();
