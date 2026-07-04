@@ -46,5 +46,8 @@ class MenuSeeder extends Seeder
                 ]
             );
         }
+
+        // 옛 플레이스홀더 메뉴(SVG 이미지) 정리 — 실메뉴는 전부 .jpg 사용
+        Menu::where('image', 'like', '%.svg')->delete();
     }
 }
