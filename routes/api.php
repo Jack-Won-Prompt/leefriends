@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ChatController;
+use App\Http\Controllers\Api\ContentFeedController;
 use App\Http\Controllers\Api\DeviceTokenController;
 use App\Http\Controllers\Api\InboundController;
 use App\Http\Controllers\Api\InventoryController;
@@ -31,6 +32,10 @@ Route::prefix('v1')->group(function () {
     Route::get('notices', [NoticeController::class, 'index'])->name('api.notices.index');
     Route::get('notices/{notice}', [NoticeController::class, 'show'])->name('api.notices.show');
     Route::get('stores', [StoreLocatorController::class, 'index'])->name('api.stores.index');
+
+    // 공개: 네이버 블로그 / 클립 (메인화면 피드)
+    Route::get('blog-posts', [ContentFeedController::class, 'blogPosts'])->name('api.blog_posts.index');
+    Route::get('naver-clips', [ContentFeedController::class, 'clips'])->name('api.naver_clips.index');
 
     // 인증 (매장/포털 계정)
     Route::post('auth/login', [AuthController::class, 'login'])->name('api.auth.login');
