@@ -40,7 +40,7 @@
             <p class="text-mango-600 font-bold tracking-widest text-sm mb-3">WHY LEEFRIENDS</p>
             <h2 class="text-3xl md:text-5xl font-black text-neutral-900">리프렌즈를 선택하는 이유</h2>
         </div>
-        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 stagger">
             @foreach ([
                 ['🍧','차별화된 경쟁력','애플망고 특화 메뉴로 명확한 브랜드 정체성'],
                 ['📈','사계절 안정 매출','여름 빙수 + 겨울 디저트로 비수기 없는 운영'],
@@ -73,13 +73,13 @@
         </div>
 
         {{-- count-up 핵심 지표 --}}
-        <div class="grid sm:grid-cols-3 gap-6 max-w-4xl mx-auto reveal">
+        <div class="grid sm:grid-cols-3 gap-6 max-w-4xl mx-auto stagger">
             @foreach ([
                 ['월 평균 매출','3000','만원+','매장 평균 월매출'],
                 ['판매 순이익','30','%','홀 · 배달 판매 기준'],
                 ['영업 마진','28','%','평균 영업 마진율'],
             ] as [$label,$num,$suffix,$desc])
-                <div class="rounded-3xl bg-white/5 border border-white/10 p-8 text-center">
+                <div class="reveal rv-scale rounded-3xl bg-white/5 border border-white/10 p-8 text-center">
                     <p class="text-sm font-bold text-white/60">{{ $label }}</p>
                     <p class="mt-2 text-4xl md:text-5xl font-black text-mango-300 whitespace-nowrap"><span data-countup="{{ $num }}" data-suffix="{{ $suffix }}">0{{ $suffix }}</span></p>
                     <p class="mt-2 text-xs text-white/50">{{ $desc }}</p>
@@ -89,7 +89,7 @@
 
         <div class="mt-16 grid lg:grid-cols-2 gap-8">
             {{-- 막대 차트: 모델 매장 월 매출 --}}
-            <div class="reveal rounded-3xl bg-white/5 border border-white/10 p-8">
+            <div class="reveal rv-left rounded-3xl bg-white/5 border border-white/10 p-8">
                 <h3 class="font-extrabold text-lg mb-1">모델 매장 월 매출</h3>
                 <p class="text-xs text-white/50 mb-8">단위: 만원</p>
                 <div class="flex items-end justify-around gap-4 h-56">
@@ -104,7 +104,7 @@
             </div>
 
             {{-- 도넛 게이지: 수익률 --}}
-            <div class="reveal rounded-3xl bg-white/5 border border-white/10 p-8">
+            <div class="reveal rv-right rounded-3xl bg-white/5 border border-white/10 p-8">
                 <h3 class="font-extrabold text-lg mb-1">수익률</h3>
                 <p class="text-xs text-white/50 mb-6">홀·배달 순이익 / 영업 마진</p>
                 <div class="grid grid-cols-2 gap-6 place-items-center">
@@ -160,7 +160,7 @@
             <h2 class="text-3xl md:text-5xl font-black text-neutral-900">본사 토탈 지원 시스템</h2>
             <p class="text-neutral-500 mt-4">창업부터 운영까지, 초보 점주도 안심하고 시작할 수 있습니다.</p>
         </div>
-        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 stagger">
             @foreach ([
                 ['🥭','원물·식자재 공급','검증된 애플망고와 표준 식자재를 본사에서 안정적으로 공급'],
                 ['🚚','물류·배송 시스템','발주부터 입고까지 체계적으로 관리되는 통합 물류'],
@@ -186,7 +186,7 @@
             <p class="text-mango-600 font-bold tracking-widest text-sm mb-3">PROCESS</p>
             <h2 class="text-3xl md:text-5xl font-black text-neutral-900">창업 진행 절차</h2>
         </div>
-        <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div class="grid sm:grid-cols-2 lg:grid-cols-5 gap-4 stagger">
             @foreach ([
                 ['01','창업 상담','온라인/전화 문의 및 1:1 상담'],
                 ['02','상권 분석','입지 조사 및 수익성 분석'],
@@ -250,7 +250,7 @@
             <h2 class="text-3xl md:text-5xl font-black text-neutral-900">가맹점주 이야기</h2>
             <p class="text-neutral-500 mt-4">먼저 시작한 점주님들의 생생한 경험을 들어보세요.</p>
         </div>
-        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 stagger">
             @foreach ([
                 ['본사에서 원물과 레시피를 다 챙겨줘서, 요식업이 처음인데도 어렵지 않게 시작했어요.','김○○ 점주','망고정 다산점'],
                 ['여름엔 빙수, 겨울엔 디저트로 사계절 매출이 꾸준한 게 가장 큰 장점입니다.','이○○ 점주','망고정 고암점'],
@@ -351,12 +351,15 @@
 </section>
 
 {{-- floating consultation CTA --}}
-<div class="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-2.5">
-    <a href="tel:031-853-1944" class="group flex items-center gap-2 rounded-full bg-neutral-900 text-white font-bold pl-4 pr-5 py-3 shadow-soft hover:bg-neutral-800 transition">
-        <span class="text-lg">📞</span>
+<div class="fixed bottom-5 right-5 z-40 flex flex-col items-end gap-2.5 animate-fadeup">
+    <a href="tel:031-853-1944" class="group flex items-center gap-2 rounded-full bg-neutral-900 text-white font-bold pl-4 pr-5 py-3 shadow-soft hover:bg-neutral-800 hover:scale-105 transition">
+        <span class="text-lg animate-floaty">📞</span>
         <span class="text-sm leading-tight">가맹문의<br><span class="font-black">031-853-1944</span></span>
     </a>
-    <a href="#inquiry" class="rounded-full bg-mango-500 hover:bg-mango-600 text-white font-black px-6 py-3.5 shadow-soft transition text-sm">창업 문의하기</a>
+    <a href="#inquiry" class="relative rounded-full bg-mango-500 hover:bg-mango-600 text-white font-black px-6 py-3.5 shadow-soft hover:scale-105 transition text-sm">
+        <span class="absolute inset-0 rounded-full bg-mango-400 opacity-60 animate-ping"></span>
+        <span class="relative">창업 문의하기</span>
+    </a>
 </div>
 
 @endsection

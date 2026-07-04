@@ -59,8 +59,18 @@
         body { -webkit-font-smoothing: antialiased; }
         .text-balance { text-wrap: balance; }
         [x-cloak] { display: none !important; }
-        .reveal { opacity: 0; transform: translateY(28px); transition: all .7s cubic-bezier(.2,.7,.2,1); }
+        html { scroll-behavior: smooth; }
+        .reveal { opacity: 0; transform: translateY(28px); transition: opacity .7s cubic-bezier(.2,.7,.2,1), transform .7s cubic-bezier(.2,.7,.2,1); transition-delay: var(--rd, 0s); }
+        .reveal.rv-left  { transform: translateX(-42px); }
+        .reveal.rv-right { transform: translateX(42px); }
+        .reveal.rv-scale { transform: scale(.9); }
+        .reveal.rv-up-lg { transform: translateY(56px); }
         .reveal.in { opacity: 1; transform: none; }
+        /* 순차 등장 (stagger) */
+        .stagger > *:nth-child(1){--rd:0s}   .stagger > *:nth-child(2){--rd:.08s}
+        .stagger > *:nth-child(3){--rd:.16s} .stagger > *:nth-child(4){--rd:.24s}
+        .stagger > *:nth-child(5){--rd:.32s} .stagger > *:nth-child(6){--rd:.40s}
+        @media (prefers-reduced-motion: reduce){ html{scroll-behavior:auto} .reveal{transition:none;opacity:1;transform:none} }
         .nav-underline { position: relative; }
         .nav-underline::after { content: ''; position: absolute; left: 0; bottom: -6px; height: 2px; width: 0; background: #FF9F1C; transition: width .25s; }
         .nav-underline:hover::after { width: 100%; }
