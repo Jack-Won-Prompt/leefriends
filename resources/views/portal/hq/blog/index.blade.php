@@ -29,7 +29,7 @@
             @forelse ($posts as $p)
                 <tr class="hover:bg-mango-50/40 transition">
                     <td class="px-5 py-3">
-                        @if ($p->thumbnail)
+                        @if ($p->thumbnail_url)
                             <img src="{{ $p->thumbnail_url }}" class="w-14 h-14 rounded-lg object-cover bg-neutral-100" alt="" referrerpolicy="no-referrer">
                         @else
                             <div class="w-14 h-14 rounded-lg bg-neutral-100 grid place-items-center text-neutral-300">📝</div>

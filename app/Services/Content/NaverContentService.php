@@ -69,6 +69,15 @@ class NaverContentService
                 if ($downloaded) {
                     $thumb = $downloaded;
                     $images++;
+                } elseif (! $this->isLocalThumb($thumb)) {
+                    // 다운로드 실패(권한 등) 시, 배포된 images/blog/{external_id}.* 파일이 있으면 사용
+                    foreach (['jpg', 'png', 'jpeg', 'webp'] as $ext) {
+                        $rel = self::THUMB_DIR . '/' . $externalId . '.' . $ext;
+                        if (is_file(public_path($rel))) {
+                            $thumb = $rel;
+                            break;
+                        }
+                    }
                 }
             }
 

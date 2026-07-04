@@ -71,7 +71,7 @@
                 <a href="{{ $p->url }}" target="_blank" rel="noopener"
                    class="group rounded-3xl bg-white border border-neutral-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition overflow-hidden flex flex-col">
                     <div class="aspect-[16/10] bg-amber-50 overflow-hidden">
-                        @if ($p->thumbnail)
+                        @if ($p->thumbnail_url)
                             <img src="{{ $p->thumbnail_url }}" alt="{{ $p->title }}" referrerpolicy="no-referrer" class="w-full h-full object-cover group-hover:scale-105 transition">
                         @else
                             <div class="w-full h-full grid place-items-center text-4xl">📝</div>
