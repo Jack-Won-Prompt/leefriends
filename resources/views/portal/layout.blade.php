@@ -123,13 +123,13 @@
     // 근태관리 — 아르바이트는 근태관리만, 정직원은 기존 메뉴 + 근태 승인/급여
     if ($user->isPartTime()) {
         $nav = [
-            ['근태관리', '🕐', [
+            ['출근관리', '🕐', [
                 ['portal.attendance.index', '출퇴근 관리', []],
                 ['portal.leaves.index', '휴무 관리', []],
             ]],
         ];
     } else {
-        $nav[] = ['근태관리', '🕐', [
+        $nav[] = ['출근관리', '🕐', [
             ['portal.attendance.approvals', '근태 승인', []],
             ['portal.wages.index', '아르바이트 급여', []],
         ]];

@@ -111,7 +111,7 @@
                 <input type="number" name="hourly_wage" x-model.number="form.hourly_wage" min="0" max="1000000" step="10"
                        :required="form.employment_type === 'part_time'"
                        class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm" placeholder="예: 10030">
-                <p class="text-[11px] text-neutral-400 mt-1">아르바이트는 로그인 시 근태관리(출퇴근·휴무)만 이용합니다.</p>
+                <p class="text-[11px] text-neutral-400 mt-1">아르바이트는 로그인 시 출근관리(출퇴근·휴무)만 이용합니다.</p>
             </div>
             <div class="flex gap-2 pt-1">
                 <button type="submit" class="flex-1 rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2.5 text-sm transition" x-text="mode === 'create' ? '등록' : '저장'"></button>
