@@ -180,7 +180,6 @@
             <h2 class="text-3xl md:text-5xl font-black text-neutral-900">가맹점주 이야기</h2>
             <p class="text-neutral-500 mt-4">먼저 시작한 점주님들의 생생한 경험을 들어보세요.</p>
         </div>
-        <p class="text-center text-xs text-neutral-400 mb-8 -mt-8">※ 아래 후기는 예시이며, 실제 가맹점주 후기로 업데이트될 예정입니다.</p>
         <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
             @foreach ([
                 ['본사에서 원물과 레시피를 다 챙겨줘서, 요식업이 처음인데도 어렵지 않게 시작했어요.','김○○ 점주','성수점'],
