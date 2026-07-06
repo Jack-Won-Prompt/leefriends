@@ -21,18 +21,20 @@
                         <th class="text-center font-semibold px-4 py-2.5">구분</th>
                         <th class="text-right font-semibold px-4 py-2.5">단가</th>
                         <th class="text-right font-semibold px-4 py-2.5">수량</th>
-                        <th class="text-right font-semibold px-4 py-2.5">금액</th>
+                        <th class="text-right font-semibold px-4 py-2.5">공급가액</th>
+                        <th class="text-right font-semibold px-4 py-2.5">부가세</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-neutral-100">
                     @foreach ($statement->items ?? [] as $l)
+                        @php $tt = $l['tax_type'] ?? 'inc'; [$sup, $ltax] = \App\Models\SupplyProduct::taxBreakdown($tt, (int) ($l['amount'] ?? 0)); @endphp
                         <tr>
                             <td class="px-4 py-2.5">
                                 <span class="font-semibold text-neutral-800">{{ $l['name'] ?? '-' }}</span>
                                 @if (! empty($l['code']))<span class="text-xs text-neutral-400 ml-1">{{ $l['code'] }}</span>@endif
                             </td>
                             <td class="px-4 py-2.5 text-center">
-                                @if (($l['tax_type'] ?? 'inc') === 'exempt')
+                                @if ($tt === 'exempt')
                                     <span class="text-[11px] font-bold px-1.5 py-0.5 rounded bg-sky-100 text-sky-700">면세</span>
                                 @else
                                     <span class="text-[11px] font-bold px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-500">과세</span>
@@ -40,27 +42,28 @@
                             </td>
                             <td class="px-4 py-2.5 text-right">{{ number_format($l['price'] ?? 0) }}원</td>
                             <td class="px-4 py-2.5 text-right">{{ number_format($l['qty'] ?? 0) }}{{ $l['unit'] ?? '' }}</td>
-                            <td class="px-4 py-2.5 text-right font-semibold">{{ number_format($l['amount'] ?? 0) }}원</td>
+                            <td class="px-4 py-2.5 text-right font-semibold">{{ number_format($sup) }}원</td>
+                            <td class="px-4 py-2.5 text-right text-neutral-500">{{ $tt === 'exempt' ? '면세' : number_format($ltax).'원' }}</td>
                         </tr>
                     @endforeach
                 </tbody>
                 <tfoot class="bg-neutral-50">
                     <tr>
-                        <td class="px-4 py-2 text-neutral-500" colspan="4">과세 공급가액</td>
+                        <td class="px-4 py-2 text-neutral-500" colspan="5">과세 공급가액</td>
                         <td class="px-4 py-2 text-right font-semibold">{{ number_format($tax['taxable']) }}원</td>
                     </tr>
                     <tr>
-                        <td class="px-4 py-2 text-neutral-500" colspan="4">부가세 (VAT)</td>
+                        <td class="px-4 py-2 text-neutral-500" colspan="5">부가세 (VAT)</td>
                         <td class="px-4 py-2 text-right font-semibold">{{ number_format($tax['vat']) }}원</td>
                     </tr>
                     @if ($tax['exempt'] > 0)
                         <tr>
-                            <td class="px-4 py-2 text-neutral-500" colspan="4">면세 공급가액</td>
+                            <td class="px-4 py-2 text-neutral-500" colspan="5">면세 공급가액</td>
                             <td class="px-4 py-2 text-right font-semibold">{{ number_format($tax['exempt']) }}원</td>
                         </tr>
                     @endif
                     <tr class="font-black border-t border-neutral-200">
-                        <td class="px-4 py-3" colspan="4">합계금액 (부가세 포함)</td>
+                        <td class="px-4 py-3" colspan="5">합계금액 (부가세 포함)</td>
                         <td class="px-4 py-3 text-right text-mango-700">{{ number_format($statement->total) }}원</td>
                     </tr>
                 </tfoot>

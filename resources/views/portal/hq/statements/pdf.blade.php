@@ -62,43 +62,46 @@
     <table class="items">
         <thead>
             <tr>
-                <th style="width:14%;">코드</th>
+                <th style="width:12%;">코드</th>
                 <th>품목</th>
-                <th style="width:12%;">단위</th>
-                <th class="r" style="width:10%;">수량</th>
-                <th class="r" style="width:16%;">단가</th>
-                <th class="r" style="width:18%;">금액</th>
+                <th style="width:10%;">단위</th>
+                <th class="r" style="width:8%;">수량</th>
+                <th class="r" style="width:14%;">단가</th>
+                <th class="r" style="width:15%;">공급가액</th>
+                <th class="r" style="width:13%;">부가세</th>
             </tr>
         </thead>
         <tbody>
             @php $tax = \App\Support\TaxSummary::fromLines($lines); @endphp
             @foreach ($lines as $l)
+                @php $tt = $l['tax_type'] ?? 'inc'; [$sup, $ltax] = \App\Models\SupplyProduct::taxBreakdown($tt, (int) $l['amount']); @endphp
                 <tr>
                     <td>{{ $l['code'] }}</td>
-                    <td><b>{{ $l['name'] }}</b>@if (($l['tax_type'] ?? 'inc') === 'exempt') <span style="font-size:9px; color:#0369a1;">(면세)</span>@endif</td>
+                    <td><b>{{ $l['name'] }}</b>@if ($tt === 'exempt') <span style="font-size:9px; color:#0369a1;">(면세)</span>@endif</td>
                     <td>{{ $l['unit'] }}</td>
                     <td class="r">{{ number_format($l['qty']) }}</td>
                     <td class="r">{{ number_format($l['price']) }}원</td>
-                    <td class="r">{{ number_format($l['amount']) }}원</td>
+                    <td class="r">{{ number_format($sup) }}원</td>
+                    <td class="r">{{ $tt === 'exempt' ? '면세' : number_format($ltax).'원' }}</td>
                 </tr>
             @endforeach
             {{-- 합계는 본문 마지막 행으로 두어 마지막 페이지에 한 번만 출력 --}}
             <tr>
-                <td colspan="5" class="r">과세 공급가액</td>
+                <td colspan="6" class="r">과세 공급가액</td>
                 <td class="r">{{ number_format($tax['taxable']) }}원</td>
             </tr>
             <tr>
-                <td colspan="5" class="r">부가세 (VAT)</td>
+                <td colspan="6" class="r">부가세 (VAT)</td>
                 <td class="r">{{ number_format($tax['vat']) }}원</td>
             </tr>
             @if ($tax['exempt'] > 0)
                 <tr>
-                    <td colspan="5" class="r">면세 공급가액</td>
+                    <td colspan="6" class="r">면세 공급가액</td>
                     <td class="r">{{ number_format($tax['exempt']) }}원</td>
                 </tr>
             @endif
             <tr class="tfoot">
-                <td colspan="5" class="r">합계 (부가세 포함)</td>
+                <td colspan="6" class="r">합계 (부가세 포함)</td>
                 <td class="r total">{{ number_format($total) }}원</td>
             </tr>
         </tbody>
