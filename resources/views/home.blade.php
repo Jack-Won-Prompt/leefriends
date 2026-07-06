@@ -7,16 +7,16 @@
 {{-- ===================== HERO SLIDER ===================== --}}
 <section class="relative h-screen min-h-[640px] overflow-hidden"
          x-data="{ active: 0, slides: [
-            { img: '{{ asset('images/hero/slide1.svg') }}', kicker: 'PREMIUM MANGO DESSERT', title: '농익은 애플망고,<br>그대로 담다', sub: '한 입에 퍼지는 진짜 망고의 계절' },
-            { img: '{{ asset('images/hero/slide2.svg') }}', kicker: 'SIGNATURE BINGSU', title: '망고치즈빙수', sub: '부드러운 우유빙수 위 가득한 생망고' },
-            { img: '{{ asset('images/hero/slide3.svg') }}', kicker: 'FRANCHISE', title: 'LEEFRIENDS<br>창업', sub: '사계절 디저트 카페, 함께 시작하세요' },
+            { img: '{{ asset('images/hero/slide1_mango_farm.jpg') }}', fb: '{{ asset('images/hero/slide1.svg') }}', kicker: 'PREMIUM MANGO DESSERT', title: '농익은 애플망고,<br>그대로 담다', sub: '한 입에 퍼지는 진짜 망고의 계절' },
+            { img: '{{ asset('images/hero/slide2_mango_bingsu.jpg') }}', fb: '{{ asset('images/hero/slide2.svg') }}', kicker: 'SIGNATURE BINGSU', title: '망고치즈빙수', sub: '부드러운 우유빙수 위 가득한 생망고' },
+            { img: '{{ asset('images/hero/slide3_cafe_interior.jpg') }}', fb: '{{ asset('images/hero/slide3.svg') }}', kicker: 'FRANCHISE', title: '망고정<br>창업', sub: '사계절 디저트 카페, 함께 시작하세요' },
          ] }"
          x-init="setInterval(() => active = (active + 1) % slides.length, 5000)">
 
     <template x-for="(s, i) in slides" :key="i">
         <div class="absolute inset-0 transition-opacity duration-1000"
              :class="active === i ? 'opacity-100' : 'opacity-0 pointer-events-none'">
-            <img :src="s.img" class="absolute inset-0 w-full h-full object-cover" alt="">
+            <img :src="s.img" :data-fb="s.fb" onerror="this.onerror=null;this.src=this.dataset.fb" class="absolute inset-0 w-full h-full object-cover" alt="">
             <div class="absolute inset-0 bg-gradient-to-r from-black/45 via-black/20 to-transparent"></div>
             <div class="relative z-10 h-full max-w-7xl mx-auto px-5 lg:px-8 flex flex-col justify-center">
                 <p class="text-white/90 font-bold tracking-[0.25em] text-sm mb-5" x-text="s.kicker"
@@ -85,7 +85,7 @@
         </div>
         <div class="reveal relative">
             <div class="aspect-[4/5] rounded-[2.5rem] overflow-hidden shadow-soft">
-                <img src="{{ asset('images/brand/story.svg') }}" alt="브랜드 스토리" class="w-full h-full object-cover">
+                <img src="{{ asset('images/brand/brand_story_mango.jpg') }}" onerror="this.onerror=null;this.src='{{ asset('images/brand/story.svg') }}'" alt="브랜드 스토리" class="w-full h-full object-cover">
             </div>
             <div class="absolute -bottom-6 -left-6 bg-white rounded-2xl shadow-card p-5 w-44 animate-floaty">
                 <p class="text-4xl font-black text-mango-500">SINCE</p>
@@ -201,7 +201,7 @@
 
 {{-- ===================== FRANCHISE HIGHLIGHT ===================== --}}
 <section class="relative py-28 overflow-hidden bg-neutral-900">
-    <img src="{{ asset('images/hero/slide3.svg') }}" class="absolute inset-0 w-full h-full object-cover opacity-40" alt="">
+    <img src="{{ asset('images/hero/franchise_cafe_v3.png') }}" onerror="this.onerror=null;this.src='{{ asset('images/hero/slide3.svg') }}'" class="absolute inset-0 w-full h-full object-cover opacity-40" alt="">
     <div class="absolute inset-0 bg-gradient-to-t from-neutral-900 via-neutral-900/70 to-neutral-900/40"></div>
     <div class="relative z-10 max-w-6xl mx-auto px-5 lg:px-8 text-white">
         <div class="text-center reveal">
