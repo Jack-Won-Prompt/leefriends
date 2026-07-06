@@ -25,6 +25,9 @@
             <h2 class="text-xl font-extrabold text-neutral-900 mb-1 text-center">발주포털 로그인</h2>
             <p class="text-center text-sm text-neutral-400 mb-6">본사 · 매장 · 공급처 통합 로그인</p>
 
+            @if (session('status'))
+                <div class="mb-5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-3 text-sm">{{ session('status') }}</div>
+            @endif
             @if ($errors->any())
                 <div class="mb-5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 px-4 py-3 text-sm">{{ $errors->first() }}</div>
             @endif
@@ -41,9 +44,12 @@
                     <input type="password" name="password" required
                            class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400" placeholder="••••••••">
                 </div>
-                <label class="flex items-center gap-2 text-sm text-neutral-600">
-                    <input type="checkbox" name="remember" class="rounded text-mango-500 focus:ring-mango-400"> 로그인 상태 유지
-                </label>
+                <div class="flex items-center justify-between">
+                    <label class="flex items-center gap-2 text-sm text-neutral-600">
+                        <input type="checkbox" name="remember" class="rounded text-mango-500 focus:ring-mango-400"> 로그인 상태 유지
+                    </label>
+                    <a href="{{ route('portal.password.request') }}" class="text-sm font-semibold text-mango-600 hover:text-mango-700">비밀번호 찾기</a>
+                </div>
                 <button class="w-full rounded-xl bg-gradient-to-r from-mango-500 to-mango-600 text-white font-bold py-3.5 hover:brightness-105 active:scale-[0.99] transition">로그인</button>
             </form>
         </div>

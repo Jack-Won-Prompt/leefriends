@@ -76,6 +76,12 @@ Route::prefix('portal')->name('portal.')->group(function () {
     Route::post('login', [Portal\AuthController::class, 'login'])->name('login.attempt');
     Route::post('logout', [Portal\AuthController::class, 'logout'])->name('logout');
 
+    // 비밀번호 찾기 (이메일 재설정) — 비로그인 접근
+    Route::get('forgot-password', [Portal\PasswordResetController::class, 'request'])->name('password.request');
+    Route::post('forgot-password', [Portal\PasswordResetController::class, 'email'])->name('password.email');
+    Route::get('reset-password/{token}', [Portal\PasswordResetController::class, 'reset'])->name('password.reset');
+    Route::post('reset-password', [Portal\PasswordResetController::class, 'update'])->name('password.update');
+
     // 공급처 초대 수락 (비밀번호 설정) — 비로그인 접근
     Route::get('invite/{token}', [Portal\InvitationController::class, 'show'])->name('invite.show');
     Route::post('invite/{token}', [Portal\InvitationController::class, 'accept'])->name('invite.accept');
