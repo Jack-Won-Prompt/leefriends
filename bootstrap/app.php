@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // 아르바이트 직원은 근태관리만 접근 (포털 전역 적용)
         $middleware->web(append: [
             \App\Http\Middleware\RestrictPartTime::class,
+            \App\Http\Middleware\LogPageVisit::class, // 공개 페이지 방문 로깅
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

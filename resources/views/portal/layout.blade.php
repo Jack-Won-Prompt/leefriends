@@ -63,6 +63,7 @@
                 ['portal.hq.menus.index', '메뉴 관리', []],
                 ['portal.hq.blog.index', '블로그', []],
                 ['portal.hq.clips.index', '네이버 클립', []],
+                ['portal.hq.analytics.index', '방문 분석', []],
             ]],
             ['일정 관리', '📅', [['portal.schedules.index', '일정 관리', []]]],
             ['직원 관리', '👥', [['portal.staff.index', '직원 관리', []]]],

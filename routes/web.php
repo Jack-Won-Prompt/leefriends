@@ -264,6 +264,9 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::patch('clips/{clip}', [Portal\Hq\ClipController::class, 'update'])->name('clips.update');
             Route::delete('clips/{clip}', [Portal\Hq\ClipController::class, 'destroy'])->name('clips.destroy');
 
+            // 사이트 방문 분석
+            Route::get('analytics', [Portal\Hq\VisitAnalyticsController::class, 'index'])->name('analytics.index');
+
             // 과일 보관 관리 (냉장/냉동 가이드 · 매장 공유)
             Route::get('fruit-storages', [Portal\Hq\FruitStorageController::class, 'index'])->name('fruit_storages.index');
             Route::post('fruit-storages', [Portal\Hq\FruitStorageController::class, 'store'])->name('fruit_storages.store');
