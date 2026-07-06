@@ -39,6 +39,7 @@
                             </td>
                             <td class="px-6 py-3.5 font-bold text-mango-700">
                                 <button type="button" @click="open = {{ $s->id }}" class="hover:underline">{{ $s->store_name }}</button>
+                                @if ($s->order)<span class="block text-[11px] text-sky-600 font-bold mt-0.5">발주 {{ $s->order->order_no }}</span>@endif
                             </td>
                             <td class="px-6 py-3.5 hidden md:table-cell text-neutral-500">{{ $s->email ?: '-' }}</td>
                             <td class="px-6 py-3.5 text-right text-neutral-500">{{ number_format($s->item_count) }}건</td>

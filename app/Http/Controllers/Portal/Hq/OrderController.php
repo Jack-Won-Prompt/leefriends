@@ -89,7 +89,7 @@ class OrderController extends Controller
     /** 발주 거래명세서 PDF를 매장 이메일로 전송 + 전송상태 기록 */
     public function statementEmail(Request $request, Order $order)
     {
-        $order->load(['items', 'store']);
+        $order->load(['items.supplyProduct', 'store']);
         $to = $order->store?->email;
         if (! $to) {
             return back()->withErrors(['statement' => '매장 이메일이 없습니다. 매장 관리에서 이메일을 먼저 등록하세요.']);
@@ -100,6 +100,53 @@ class OrderController extends Controller
 
         \Illuminate\Support\Facades\Mail::to($to)->send(
             new \App\Mail\OrderStatementMail($order, $pdf->output(), '거래명세서_'.$order->order_no.'.pdf')
+        );
+
+        // 거래명세서 이력(Statement) 기록 — 발주 상세 전송도 «거래명세서 이력» 화면과 매장 수취 화면에 노출
+        $lines = $order->items->map(fn ($it) => [
+            'code' => $it->supplyProduct?->code ?? '',
+            'name' => $it->product_name,
+            'unit' => $it->unit,
+            'qty' => (int) $it->qty,
+            'price' => (int) $it->store_unit_price,
+            'amount' => (int) $it->store_line_amount,
+        ])->values()->all();
+        if ((int) $order->shipping_box_count > 0) {
+            $lines[] = [
+                'code' => '', 'name' => '택배비', 'unit' => '박스',
+                'qty' => (int) $order->shipping_box_count,
+                'price' => (int) $order->shipping_unit_price,
+                'amount' => (int) $order->shipping_box_count * (int) $order->shipping_unit_price,
+            ];
+        }
+
+        $statement = \App\Models\Statement::updateOrCreate(
+            ['order_id' => $order->id],
+            [
+                'store_id' => $order->store_id,
+                'store_name' => $order->store->name,
+                'email' => $to,
+                'statement_date' => $statementDate->toDateString(),
+                'item_count' => $order->items->count(),
+                'total' => (int) $order->order_total,
+                'items' => $lines,
+                'sent_by' => auth()->id(),
+                'sent_at' => now(),
+                // 재전송 시 매장 수취 상태 초기화 (새 명세서로 재안내)
+                'viewed_at' => null,
+                'confirmed_at' => null,
+                'confirmed_by' => null,
+            ]
+        );
+        if (! $statement->wasRecentlyCreated) {
+            $statement->increment('resend_count');
+        }
+
+        // 매장 알림 (웹 토스트 + 앱 FCM)
+        app(\App\Services\Notification\NotificationService::class)->notifyStore(
+            $order->store_id, 'statement', '🧾 거래명세서 도착',
+            "{$statementDate->format('Y.m.d')} 거래명세서가 도착했습니다. (".number_format($order->order_total).'원)',
+            ['statement_id' => $statement->id]
         );
 
         $order->update(['statement_emailed_at' => now(), 'statement_email_count' => $order->statement_email_count + 1]);

@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 class Statement extends Model
 {
     protected $fillable = [
-        'store_id', 'store_name', 'email', 'statement_date', 'item_count', 'total', 'items', 'sent_by', 'sent_at', 'resend_count', 'tax_invoice_id',
+        'order_id', 'store_id', 'store_name', 'email', 'statement_date', 'item_count', 'total', 'items', 'sent_by', 'sent_at', 'resend_count', 'tax_invoice_id',
         'viewed_at', 'confirmed_at', 'confirmed_by',
     ];
 
@@ -44,6 +44,11 @@ class Statement extends Model
     public function issueDate(): \Illuminate\Support\Carbon
     {
         return $this->statement_date ?? $this->created_at;
+    }
+
+    public function order()
+    {
+        return $this->belongsTo(Order::class);
     }
 
     public function store()

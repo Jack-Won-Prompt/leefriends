@@ -21,7 +21,7 @@ class StatementController extends Controller
     public function index()
     {
         return view('portal.hq.statements.index', [
-            'statements' => Statement::with(['store', 'sender', 'taxInvoice'])->latest('sent_at')->paginate(20),
+            'statements' => Statement::with(['store', 'sender', 'taxInvoice', 'order'])->latest('sent_at')->paginate(20),
         ]);
     }
 
