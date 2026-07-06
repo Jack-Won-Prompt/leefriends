@@ -217,7 +217,7 @@
             @foreach ([
                 ['월 평균 매출','3000','만원+','매장 평균 월매출'],
                 ['영업 마진','28','%','평균 영업 마진율'],
-                ['창업 비용','4150','만원~','점포·상권에 따라 상이'],
+                ['창업 비용','4225','만원~','점포·상권에 따라 상이'],
             ] as [$label,$num,$suffix,$desc])
                 <div class="reveal rv-scale rounded-3xl bg-white/5 border border-white/10 px-4 py-8 text-center">
                     <p class="text-sm font-bold text-white/60">{{ $label }}</p>

@@ -23,7 +23,7 @@
 
         {{-- key stats --}}
         <div class="mt-12 grid grid-cols-3 gap-3 max-w-2xl mx-auto animate-fadeup">
-            @foreach ([['월 평균 매출','3,000만원+'],['영업 마진','28%'],['창업 비용','4,150만원~']] as [$l,$v])
+            @foreach ([['월 평균 매출','3,000만원+'],['영업 마진','28%'],['창업 비용','4,225만원~']] as [$l,$v])
                 <div class="rounded-2xl bg-white/10 border border-white/15 py-5 px-2">
                     <p class="text-xs text-white/70 font-bold">{{ $l }}</p>
                     <p class="mt-1 text-xl md:text-2xl font-black">{{ $v }}</p>
@@ -184,43 +184,101 @@
     </div>
 </section>
 
-{{-- cost table --}}
+{{-- packages --}}
+@php
+    $packages = [
+        ['size' => '8~10평', 'total' => '4,225만원', 'items' => [
+            ['인테리어', '1,500만원'], ['눈꽃빙수기 (스노우반) 1대', '430만원 (VAT별도)'],
+            ['커피머신 1대', '450만원'], ['그라인더', '120만원'], ['디스펜서', '120만원'],
+            ['쇼케이스 냉장고', '150만원'], ['냉장고 2대', '70만원'], ['아이스크림 냉동고 2대', '300만원'],
+            ['제빙기 (카이저 IMK-3051·50kg)', '85만원'], ['POS', '토스포스 렌탈'],
+            ['간판', '350만원'], ['주방집기 일체', '250만원'], ['초기 식자재·물품비', '250만원'], ['의자·테이블', '150만원'],
+        ]],
+        ['size' => '15평', 'total' => '5,325만원', 'items' => [
+            ['인테리어', '2,500만원'], ['눈꽃빙수기 (스노우반) 1대', '430만원 (VAT별도)'],
+            ['커피머신 1대', '450만원'], ['그라인더', '120만원'], ['디스펜서', '120만원'],
+            ['쇼케이스 냉장고', '150만원'], ['냉장고 2대', '70만원'], ['아이스크림 냉동고 2대', '300만원'],
+            ['제빙기 (카이저 IMK-3051·50kg)', '85만원'], ['POS', '토스포스 렌탈'],
+            ['간판', '350만원'], ['주방집기 일체', '250만원'], ['초기 식자재·물품비', '250만원'], ['의자·테이블', '250만원'],
+        ]],
+        ['size' => '30평', 'total' => '13,180만원', 'items' => [
+            ['인테리어', '6,000만원'], ['눈꽃빙수기 (스노우반) 2대', '860만원 (VAT별도)'],
+            ['커피머신 1대 (3그룹)', '800만원'], ['그라인더 2대', '240만원'], ['디스펜서 2대', '240만원'],
+            ['쇼케이스 냉장고 2대', '300만원'], ['냉장고 4대', '140만원'], ['아이스크림 냉동고 4대', '600만원'],
+            ['제빙기 (카이저·100kg)', '200만원'], ['POS', '토스포스 렌탈'],
+            ['간판', '1,000만원'], ['초기 식자재·물품비', '500만원'], ['의자·테이블', '1,500만원'], ['주방집기 및 소도구', '800만원'],
+        ]],
+    ];
+@endphp
 <section class="py-24">
-    <div class="max-w-4xl mx-auto px-5 lg:px-8">
+    <div class="max-w-5xl mx-auto px-5 lg:px-8">
         <div class="text-center mb-12 reveal">
-            <p class="text-mango-600 font-bold tracking-widest text-sm mb-3">COST</p>
-            <h2 class="text-3xl md:text-5xl font-black text-neutral-900">창업 비용 안내</h2>
-            <p class="text-neutral-500 mt-4">VAT 별도 · 보증금 / 냉난방기 / 상가 임대비 별도</p>
+            <p class="text-mango-600 font-bold tracking-widest text-sm mb-3">PACKAGE</p>
+            <h2 class="text-3xl md:text-5xl font-black text-neutral-900">추천 창업 패키지 <span class="text-neutral-400 text-2xl">(예시)</span></h2>
+            <p class="text-neutral-500 mt-4">점포 규모에 맞춘 창업 패키지 · VAT 별도 · 아래 «별도 비용» 제외</p>
         </div>
-        <div class="reveal rounded-3xl overflow-hidden shadow-card border border-neutral-100">
-            <table class="w-full text-left">
-                <tbody class="divide-y divide-neutral-100">
-                    @foreach ([
-                        ['인테리어 공사','2,500만원','목공·도장·전기·조명·타일·설비·마감'],
-                        ['냉장·냉동 설비','200만원','냉장고·냉동고 (중고)'],
-                        ['눈꽃빙수기','450만원','스노우반 프리미엄 눈꽃빙수기'],
-                        ['POS·키오스크','별도','토스포스 신청 (POS·프린터·카드단말기)'],
-                        ['간판·사인','300만원','전면 간판·실내 사인물'],
-                        ['테이블·의자','150만원','홀 집기'],
-                        ['초도 비품','200만원','식기·유니폼·소모품'],
-                        ['교육·오픈 지원','350만원','운영·레시피 교육, 오픈지원, 상표권 사용료'],
-                    ] as [$item,$cost,$desc])
-                        <tr class="hover:bg-mango-50/50 transition">
-                            <td class="px-6 py-5 font-extrabold text-neutral-900 w-40">{{ $item }}</td>
-                            <td class="px-6 py-5 font-black text-mango-700 text-lg whitespace-nowrap">{{ $cost }}</td>
-                            <td class="px-6 py-5 text-sm text-neutral-500">{{ $desc }}</td>
-                        </tr>
-                    @endforeach
-                    <tr class="bg-neutral-900 text-white">
-                        <td class="px-6 py-6 font-black text-lg">합계</td>
-                        <td class="px-6 py-6 font-black text-mango-300 text-2xl whitespace-nowrap" colspan="2">4,150만원</td>
-                    </tr>
-                </tbody>
-            </table>
+
+        {{-- 탭 --}}
+        <div class="reveal flex flex-wrap justify-center gap-2 mb-8">
+            @foreach ($packages as $i => $p)
+                <button type="button" data-pkg-tab="{{ $i }}"
+                        class="pkg-tab rounded-full px-6 py-3 font-black text-sm transition {{ $i === 0 ? 'bg-mango-500 text-white shadow-soft' : 'bg-white border border-neutral-200 text-neutral-600 hover:border-mango-300' }}">
+                    {{ $p['size'] }} <span class="opacity-80 font-bold">· {{ $p['total'] }}</span>
+                </button>
+            @endforeach
         </div>
-        <p class="text-center text-xs text-neutral-400 mt-4">* POS·키오스크는 토스포스 신청 건으로 합계에서 제외됩니다. 보증금·냉난방기·상가 임대비는 별도이며, 점포 면적·지역·현장 여건에 따라 달라질 수 있습니다.</p>
+
+        {{-- 패널 --}}
+        @foreach ($packages as $i => $p)
+            <div data-pkg-panel="{{ $i }}" class="reveal {{ $i === 0 ? '' : 'hidden' }}">
+                <div class="rounded-3xl overflow-hidden shadow-card border border-neutral-100 bg-white">
+                    <div class="flex items-center justify-between px-6 py-5 bg-neutral-900 text-white">
+                        <span class="font-black text-lg">{{ $p['size'] }} 패키지</span>
+                        <span class="font-black text-mango-300 text-2xl">{{ $p['total'] }}</span>
+                    </div>
+                    <div class="grid sm:grid-cols-2 gap-x-8">
+                        @foreach ($p['items'] as $idx => [$item, $cost])
+                            <div class="flex items-center justify-between gap-3 px-6 py-3.5 {{ $idx > 0 ? 'border-t border-neutral-100' : '' }} sm:border-t hover:bg-mango-50/40">
+                                <span class="text-sm font-semibold text-neutral-700">{{ $item }}</span>
+                                <span class="text-sm font-black text-mango-700 whitespace-nowrap">{{ $cost }}</span>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+                <p class="text-center text-xs text-neutral-500 mt-4">💡 커피머신 외 사이드 용품·냉장/냉동고는 <b>중고 가능</b> (본사 협의)</p>
+            </div>
+        @endforeach
+
+        {{-- 별도 비용 (공통) --}}
+        <div class="reveal mt-10 rounded-3xl bg-mango-50 border border-mango-100 p-7">
+            <h3 class="font-extrabold text-neutral-900 mb-4">별도 비용 안내</h3>
+            <div class="flex flex-wrap gap-2.5">
+                @foreach (['점포 보증금','권리금 (있는 경우)','임대료','상표권 사용료 550만원','교육비 250만원','초도 홍보비'] as $x)
+                    <span class="rounded-full bg-white border border-neutral-200 text-neutral-600 text-sm font-bold px-4 py-2">{{ $x }}</span>
+                @endforeach
+            </div>
+        </div>
+
+        <p class="text-center text-xs text-neutral-400 mt-6">* 상기 패키지는 예시이며, 점포 면적·지역·현장 여건에 따라 달라질 수 있습니다.</p>
     </div>
 </section>
+@push('scripts')
+<script>
+    document.querySelectorAll('[data-pkg-tab]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var idx = btn.dataset.pkgTab;
+            document.querySelectorAll('[data-pkg-tab]').forEach(function (b) {
+                var on = b.dataset.pkgTab === idx;
+                b.classList.toggle('bg-mango-500', on); b.classList.toggle('text-white', on); b.classList.toggle('shadow-soft', on);
+                b.classList.toggle('bg-white', !on); b.classList.toggle('border', !on); b.classList.toggle('border-neutral-200', !on); b.classList.toggle('text-neutral-600', !on);
+            });
+            document.querySelectorAll('[data-pkg-panel]').forEach(function (p) {
+                p.classList.toggle('hidden', p.dataset.pkgPanel !== idx);
+            });
+        });
+    });
+</script>
+@endpush
 
 {{-- testimonials --}}
 <section class="py-24 bg-mango-50">
