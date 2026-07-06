@@ -30,8 +30,8 @@ class StorePaymentController extends Controller
         );
 
         // 전체 요약
-        $total = (int) $base()->sum(\DB::raw('store_amount + shipping_fee'));
-        $paid = (int) $base()->whereNotNull('paid_at')->sum(\DB::raw('store_amount + shipping_fee'));
+        $total = (int) $base()->sum(\DB::raw('store_amount + store_vat + shipping_fee'));
+        $paid = (int) $base()->whereNotNull('paid_at')->sum(\DB::raw('store_amount + store_vat + shipping_fee'));
 
         $totals = [
             'total' => $total,
@@ -49,8 +49,8 @@ class StorePaymentController extends Controller
             ->where('orders.status', '!=', 'canceled')
             ->selectRaw('stores.id, stores.name, stores.region,
                 count(*) as cnt,
-                sum(orders.store_amount + orders.shipping_fee) as total,
-                sum(case when orders.paid_at is not null then orders.store_amount + orders.shipping_fee else 0 end) as paid,
+                sum(orders.store_amount + orders.store_vat + orders.shipping_fee) as total,
+                sum(case when orders.paid_at is not null then orders.store_amount + orders.store_vat + orders.shipping_fee else 0 end) as paid,
                 sum(case when orders.paid_at is null then 1 else 0 end) as unpaid_cnt,
                 max(orders.paid_at) as last_paid_at')
             ->groupBy('stores.id', 'stores.name', 'stores.region')
@@ -107,7 +107,7 @@ class StorePaymentController extends Controller
                 ->where('status', '!=', 'canceled')->whereNull('paid_at'),
             $period, $from, $to
         );
-        $amount = (int) (clone $q)->sum(\DB::raw('store_amount + shipping_fee'));
+        $amount = (int) (clone $q)->sum(\DB::raw('store_amount + store_vat + shipping_fee'));
         $count = (clone $q)->count();
 
         try {

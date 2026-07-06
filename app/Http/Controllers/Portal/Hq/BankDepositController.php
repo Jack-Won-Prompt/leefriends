@@ -97,7 +97,7 @@ class BankDepositController extends Controller
         if ($needStoreIds) {
             $unpaid = Order::whereIn('store_id', array_keys($needStoreIds))
                 ->whereNull('paid_at')
-                ->get(['id', 'order_no', 'store_id', 'store_amount', 'shipping_fee', 'created_at']);
+                ->get(['id', 'order_no', 'store_id', 'store_amount', 'store_vat', 'shipping_fee', 'created_at']);
             foreach ($deposits as $d) {
                 $sid = $resolvedStore[$d->id];
                 if (! $sid || $d->isMatched()) {
@@ -325,7 +325,7 @@ class BankDepositController extends Controller
                 continue;
             }
             $orders = Order::where('store_id', $sid)->whereNull('paid_at')
-                ->get(['id', 'store_amount', 'shipping_fee'])
+                ->get(['id', 'store_amount', 'store_vat', 'shipping_fee'])
                 ->filter(fn ($o) => $o->order_total === (int) $d->acc_in)
                 ->values();
             if ($orders->count() === 1) {

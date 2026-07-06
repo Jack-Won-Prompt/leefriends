@@ -8,13 +8,14 @@ class Order extends Model
 {
     protected $fillable = [
         'order_no', 'store_id', 'user_id', 'status', 'order_type',
-        'store_amount', 'supply_amount', 'note', 'tax_invoice_id',
+        'store_amount', 'store_vat', 'supply_amount', 'note', 'tax_invoice_id',
         'shipping_box_count', 'shipping_unit_price', 'shipping_fee',
         'statement_emailed_at', 'statement_email_count', 'paid_at',
     ];
 
     protected $casts = [
         'store_amount' => 'integer',
+        'store_vat' => 'integer',
         'supply_amount' => 'integer',
         'shipping_box_count' => 'integer',
         'shipping_unit_price' => 'integer',
@@ -23,6 +24,20 @@ class Order extends Model
         'statement_email_count' => 'integer',
         'paid_at' => 'datetime',
     ];
+
+    /** 매장 청구에 가산되는 부가세(과세·별도 품목의 10%). 택배비는 별도(자체 포함). */
+    public static function addedVatFor($items): int
+    {
+        $vat = 0;
+        foreach ($items as $it) {
+            $taxType = $it->supplyProduct->tax_type ?? 'exc';
+            if ($taxType === 'exc') {
+                $vat += (int) round((int) $it->store_line_amount * 0.1);
+            }
+        }
+
+        return (int) $vat;
+    }
 
     public function isPaid(): bool
     {
@@ -34,10 +49,10 @@ class Order extends Model
         return $this->hasOne(BankDeposit::class, 'matched_order_id');
     }
 
-    /** 발주 합계 = 매장 출고가 합계 + 택배비 합계 */
+    /** 발주 합계 = 매장 공급가액 합계 + 부가세 + 택배비 합계 */
     public function getOrderTotalAttribute(): int
     {
-        return (int) $this->store_amount + (int) $this->shipping_fee;
+        return (int) $this->store_amount + (int) $this->store_vat + (int) $this->shipping_fee;
     }
 
     public function isSample(): bool
@@ -93,9 +108,10 @@ class Order extends Model
     /** 품목 라인합계로 주문 + 연결된 판매주문 금액을 재계산 (싯가 단가 확정 후 호출) */
     public function recomputeAmounts(): void
     {
-        $items = $this->items()->get();
+        $items = $this->items()->with('supplyProduct')->get();
         $this->update([
             'store_amount' => (int) $items->sum('store_line_amount'),
+            'store_vat' => self::addedVatFor($items),
             'supply_amount' => (int) $items->sum('supply_line_amount'),
         ]);
 

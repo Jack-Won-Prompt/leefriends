@@ -11,12 +11,14 @@
         </div>
     </div>
 
+    @php $tax = \App\Support\TaxSummary::fromLines($statement->items ?? []); @endphp
     <div class="p-7">
         <div class="rounded-xl border border-neutral-200 overflow-hidden mb-4">
             <table class="w-full text-sm">
                 <thead class="bg-neutral-100 text-neutral-500">
                     <tr>
                         <th class="text-left font-semibold px-4 py-2.5">품목</th>
+                        <th class="text-center font-semibold px-4 py-2.5">구분</th>
                         <th class="text-right font-semibold px-4 py-2.5">단가</th>
                         <th class="text-right font-semibold px-4 py-2.5">수량</th>
                         <th class="text-right font-semibold px-4 py-2.5">금액</th>
@@ -29,15 +31,36 @@
                                 <span class="font-semibold text-neutral-800">{{ $l['name'] ?? '-' }}</span>
                                 @if (! empty($l['code']))<span class="text-xs text-neutral-400 ml-1">{{ $l['code'] }}</span>@endif
                             </td>
+                            <td class="px-4 py-2.5 text-center">
+                                @if (($l['tax_type'] ?? 'inc') === 'exempt')
+                                    <span class="text-[11px] font-bold px-1.5 py-0.5 rounded bg-sky-100 text-sky-700">면세</span>
+                                @else
+                                    <span class="text-[11px] font-bold px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-500">과세</span>
+                                @endif
+                            </td>
                             <td class="px-4 py-2.5 text-right">{{ number_format($l['price'] ?? 0) }}원</td>
                             <td class="px-4 py-2.5 text-right">{{ number_format($l['qty'] ?? 0) }}{{ $l['unit'] ?? '' }}</td>
                             <td class="px-4 py-2.5 text-right font-semibold">{{ number_format($l['amount'] ?? 0) }}원</td>
                         </tr>
                     @endforeach
                 </tbody>
-                <tfoot>
-                    <tr class="bg-neutral-50 font-black">
-                        <td class="px-4 py-3" colspan="3">합계금액</td>
+                <tfoot class="bg-neutral-50">
+                    <tr>
+                        <td class="px-4 py-2 text-neutral-500" colspan="4">과세 공급가액</td>
+                        <td class="px-4 py-2 text-right font-semibold">{{ number_format($tax['taxable']) }}원</td>
+                    </tr>
+                    <tr>
+                        <td class="px-4 py-2 text-neutral-500" colspan="4">부가세 (VAT)</td>
+                        <td class="px-4 py-2 text-right font-semibold">{{ number_format($tax['vat']) }}원</td>
+                    </tr>
+                    @if ($tax['exempt'] > 0)
+                        <tr>
+                            <td class="px-4 py-2 text-neutral-500" colspan="4">면세 공급가액</td>
+                            <td class="px-4 py-2 text-right font-semibold">{{ number_format($tax['exempt']) }}원</td>
+                        </tr>
+                    @endif
+                    <tr class="font-black border-t border-neutral-200">
+                        <td class="px-4 py-3" colspan="4">합계금액 (부가세 포함)</td>
                         <td class="px-4 py-3 text-right text-mango-700">{{ number_format($statement->total) }}원</td>
                     </tr>
                 </tfoot>

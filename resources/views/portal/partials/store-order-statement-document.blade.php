@@ -3,6 +3,7 @@
     $store = $order->store;
     $totalQty = $order->items->sum('qty');
     $totalAmount = $order->items->sum('store_line_amount');
+    $tax = \App\Support\TaxSummary::fromOrder($order->loadMissing('items.supplyProduct'));
 @endphp
 <div class="bg-white rounded-2xl shadow border border-neutral-200 overflow-hidden" id="invoice-doc">
     <div class="bg-mango-500 text-white px-7 py-5 flex items-center justify-between">
@@ -59,7 +60,10 @@
                 <tbody class="divide-y divide-neutral-100">
                     @foreach ($order->items as $it)
                         <tr>
-                            <td class="px-4 py-2.5 font-semibold text-neutral-800">{{ $it->product_name }}</td>
+                            <td class="px-4 py-2.5 font-semibold text-neutral-800">
+                                {{ $it->product_name }}
+                                @if (($it->supplyProduct->tax_type ?? 'exc') === 'exempt')<span class="text-[11px] font-bold px-1.5 py-0.5 rounded bg-sky-100 text-sky-700 ml-1">면세</span>@endif
+                            </td>
                             <td class="px-4 py-2.5 text-neutral-500">{{ $it->supply_type === 'supplier' ? ($it->supplier_name ?? '공급처') : '본사' }}</td>
                             <td class="px-4 py-2.5 text-neutral-500">{{ $it->unit }}</td>
                             <td class="px-4 py-2.5 text-right">{{ number_format($it->qty) }}</td>
@@ -68,19 +72,29 @@
                         </tr>
                     @endforeach
                 </tbody>
-                <tfoot>
-                    <tr class="bg-neutral-50 font-bold">
-                        <td class="px-4 py-3" colspan="5">매장 출고가 합계 (총 {{ number_format($totalQty) }}개)</td>
-                        <td class="px-4 py-3 text-right">{{ number_format($order->store_amount) }}원</td>
-                    </tr>
+                <tfoot class="bg-neutral-50">
                     @if ($order->shipping_fee)
-                        <tr class="bg-neutral-50 font-bold">
-                            <td class="px-4 py-3" colspan="5">택배비 ({{ number_format($order->shipping_box_count) }}박스 × {{ number_format($order->shipping_unit_price) }}원)</td>
-                            <td class="px-4 py-3 text-right">{{ number_format($order->shipping_fee) }}원</td>
+                        <tr>
+                            <td class="px-4 py-2" colspan="5">택배비 ({{ number_format($order->shipping_box_count) }}박스 × {{ number_format($order->shipping_unit_price) }}원)</td>
+                            <td class="px-4 py-2 text-right">{{ number_format($order->shipping_fee) }}원</td>
                         </tr>
                     @endif
-                    <tr class="bg-neutral-50 font-black border-t border-neutral-200">
-                        <td class="px-4 py-3" colspan="5">발주 합계</td>
+                    <tr>
+                        <td class="px-4 py-2 text-neutral-500" colspan="5">과세 공급가액</td>
+                        <td class="px-4 py-2 text-right font-semibold">{{ number_format($tax['taxable']) }}원</td>
+                    </tr>
+                    <tr>
+                        <td class="px-4 py-2 text-neutral-500" colspan="5">부가세 (VAT)</td>
+                        <td class="px-4 py-2 text-right font-semibold">{{ number_format($tax['vat']) }}원</td>
+                    </tr>
+                    @if ($tax['exempt'] > 0)
+                        <tr>
+                            <td class="px-4 py-2 text-neutral-500" colspan="5">면세 공급가액</td>
+                            <td class="px-4 py-2 text-right font-semibold">{{ number_format($tax['exempt']) }}원</td>
+                        </tr>
+                    @endif
+                    <tr class="font-black border-t border-neutral-200">
+                        <td class="px-4 py-3" colspan="5">발주 합계 (부가세 포함)</td>
                         <td class="px-4 py-3 text-right text-mango-700">{{ number_format($order->order_total) }}원</td>
                     </tr>
                 </tfoot>

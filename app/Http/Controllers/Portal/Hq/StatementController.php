@@ -152,9 +152,12 @@ class StatementController extends Controller
                 'qty' => $qty,
                 'price' => $price,
                 'amount' => $amount,
+                'tax_type' => $p->tax_type ?? 'exc',
             ];
-            $total += $amount;
         }
+
+        // 부가세 포함 합계 (과세 공급가액 + 부가세 + 면세)
+        $total = \App\Support\TaxSummary::fromLines($lines)['total'];
 
         return [$store, $lines, $total, $date];
     }

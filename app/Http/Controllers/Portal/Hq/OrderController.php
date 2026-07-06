@@ -110,6 +110,7 @@ class OrderController extends Controller
             'qty' => (int) $it->qty,
             'price' => (int) $it->store_unit_price,
             'amount' => (int) $it->store_line_amount,
+            'tax_type' => $it->supplyProduct?->tax_type ?? 'exc',
         ])->values()->all();
         if ((int) $order->shipping_box_count > 0) {
             $lines[] = [
@@ -117,6 +118,7 @@ class OrderController extends Controller
                 'qty' => (int) $order->shipping_box_count,
                 'price' => (int) $order->shipping_unit_price,
                 'amount' => (int) $order->shipping_box_count * (int) $order->shipping_unit_price,
+                'tax_type' => 'inc',
             ];
         }
 

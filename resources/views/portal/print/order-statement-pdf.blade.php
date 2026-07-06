@@ -76,25 +76,36 @@
         <tbody>
             @foreach ($order->items as $it)
                 <tr>
-                    <td><b>{{ $it->product_name }}</b></td>
+                    <td><b>{{ $it->product_name }}</b>@if (($it->supplyProduct->tax_type ?? 'exc') === 'exempt') <span style="font-size:9px; color:#0369a1;">(면세)</span>@endif</td>
                     <td>{{ $it->unit }}</td>
                     <td class="r">{{ number_format($it->qty) }}</td>
                     <td class="r">{{ number_format($it->store_unit_price) }}원</td>
                     <td class="r">{{ number_format($it->store_line_amount) }}원</td>
                 </tr>
             @endforeach
-            <tr class="sub">
-                <td colspan="4" class="r">매장 출고가 합계 (총 {{ number_format($totalQty) }}개)</td>
-                <td class="r">{{ number_format($order->store_amount) }}원</td>
-            </tr>
+            @php $tax = \App\Support\TaxSummary::fromOrder($order); @endphp
             @if ($order->shipping_fee)
                 <tr class="sub">
                     <td colspan="4" class="r">택배비 ({{ number_format($order->shipping_box_count) }}박스 × {{ number_format($order->shipping_unit_price) }}원)</td>
                     <td class="r">{{ number_format($order->shipping_fee) }}원</td>
                 </tr>
             @endif
+            <tr class="sub">
+                <td colspan="4" class="r">과세 공급가액</td>
+                <td class="r">{{ number_format($tax['taxable']) }}원</td>
+            </tr>
+            <tr class="sub">
+                <td colspan="4" class="r">부가세 (VAT)</td>
+                <td class="r">{{ number_format($tax['vat']) }}원</td>
+            </tr>
+            @if ($tax['exempt'] > 0)
+                <tr class="sub">
+                    <td colspan="4" class="r">면세 공급가액</td>
+                    <td class="r">{{ number_format($tax['exempt']) }}원</td>
+                </tr>
+            @endif
             <tr class="total">
-                <td colspan="4" class="r">발주 합계</td>
+                <td colspan="4" class="r">발주 합계 (부가세 포함)</td>
                 <td class="r totalv">{{ number_format($order->order_total) }}원</td>
             </tr>
         </tbody>

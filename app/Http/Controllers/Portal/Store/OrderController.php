@@ -308,7 +308,8 @@ class OrderController extends Controller
             $supplyTotal += $supplyLine;
         }
 
-        $order->update(['store_amount' => $storeTotal, 'supply_amount' => $supplyTotal]);
+        // store_amount·store_vat(부가세)·supply_amount 및 연결 판매주문 금액 일괄 재계산
+        $order->recomputeAmounts();
     }
 
     /** 수정/취소 가능: 본인 매장 + 미취소 + 출고 전 (어떤 품목도 출고에 묶이지 않음) */
