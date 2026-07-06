@@ -201,7 +201,7 @@
 
 {{-- ===================== FRANCHISE HIGHLIGHT ===================== --}}
 <section class="relative py-28 overflow-hidden bg-neutral-900">
-    <img src="{{ asset('images/hero/franchise_cafe_v3.png') }}" onerror="this.onerror=null;this.src='{{ asset('images/hero/slide3.svg') }}'" class="absolute inset-0 w-full h-full object-cover opacity-40" alt="">
+    <img src="{{ asset('images/hero/franchise_cafe_v3.jpg') }}" onerror="this.onerror=null;this.src='{{ asset('images/hero/slide3.svg') }}'" class="absolute inset-0 w-full h-full object-cover opacity-40" alt="">
     <div class="absolute inset-0 bg-gradient-to-t from-neutral-900 via-neutral-900/70 to-neutral-900/40"></div>
     <div class="relative z-10 max-w-6xl mx-auto px-5 lg:px-8 text-white">
         <div class="text-center reveal">
