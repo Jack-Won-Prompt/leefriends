@@ -8,6 +8,8 @@
     </x-slot:actions>
 </x-wms.page-head>
 
+<x-date-filter :from="$from" :to="$to" label="작성일 기간" />
+
 <div x-data="{
         open: null,
         picked: [],

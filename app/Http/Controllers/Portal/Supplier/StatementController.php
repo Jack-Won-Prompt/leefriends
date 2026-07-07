@@ -20,13 +20,20 @@ use Illuminate\Support\Facades\Mail;
  */
 class StatementController extends Controller
 {
-    public function index()
+    use \App\Support\FiltersByDate;
+
+    public function index(Request $request)
     {
         $sid = Auth::user()->supplier_id;
+        [$from, $to] = $this->dateRange($request);
+
+        $query = SupplierStatement::where('supplier_id', $sid)->with('taxInvoice')->latest();
+        $this->applyDateRange($query, $from, $to);
 
         return view('portal.supplier.statements.index', [
-            'statements' => SupplierStatement::where('supplier_id', $sid)
-                ->with('taxInvoice')->latest()->paginate(20),
+            'statements' => $query->paginate(20)->withQueryString(),
+            'from' => $from,
+            'to' => $to,
         ]);
     }
 
