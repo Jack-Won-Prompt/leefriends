@@ -7,6 +7,7 @@
         <a href="{{ route('portal.store.orders.create') }}" class="inline-flex items-center gap-1 rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm transition">🛒 재료 발주하기</a>
     </x-slot:actions>
 </x-wms.page-head>
+<x-date-filter :from="$from" :to="$to" label="발주일 기간" />
 
 <x-wms.toolbar :count="$orders->total()" />
 

@@ -9,6 +9,8 @@
     </x-slot:actions>
 </x-wms.page-head>
 
+<x-date-filter :from="$from" :to="$to" label="발송일 기간" />
+
 <x-wms.toolbar :count="$statements->total()" label="발송 이력" />
 
 <x-wms.panel>

@@ -11,20 +11,26 @@ use Illuminate\Support\Facades\Auth;
 /** 공급처 — 본사 구매발주 수신 */
 class PurchaseOrderController extends Controller
 {
+    use \App\Support\FiltersByDate;
+
     public function index(Request $request)
     {
         $sid = Auth::user()->supplier_id;
         abort_unless($sid, 403, '연결된 공급처가 없습니다.');
 
         $status = $request->query('status', 'all');
+        [$from, $to] = $this->dateRange($request);
         $query = PurchaseOrder::forSupplier($sid)->with('items')->latest();
         if (array_key_exists($status, PurchaseOrder::STATUSES)) {
             $query->where('status', $status);
         }
+        $this->applyDateRange($query, $from, $to);
 
         return view('portal.supplier.purchase_orders.index', [
             'orders' => $query->paginate(20)->withQueryString(),
             'status' => $status,
+            'from' => $from,
+            'to' => $to,
         ]);
     }
 

@@ -15,15 +15,19 @@ use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller
 {
-    public function index()
+    use \App\Support\FiltersByDate;
+
+    public function index(Request $request)
     {
-        $orders = Order::where('store_id', Auth::user()->store_id)
+        [$from, $to] = $this->dateRange($request);
+        $query = Order::where('store_id', Auth::user()->store_id)
             ->where('order_type', 'normal')
             ->withCount('items')
-            ->latest()
-            ->paginate(15);
+            ->latest();
+        $this->applyDateRange($query, $from, $to);
+        $orders = $query->paginate(15)->withQueryString();
 
-        return view('portal.store.orders.index', compact('orders'));
+        return view('portal.store.orders.index', compact('orders', 'from', 'to'));
     }
 
     /** 샘플 주문 목록 */

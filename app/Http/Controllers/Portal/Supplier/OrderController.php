@@ -11,10 +11,13 @@ use Illuminate\Support\Facades\Auth;
 
 class OrderController extends Controller
 {
+    use \App\Support\FiltersByDate;
+
     public function index(Request $request)
     {
         $sid = Auth::user()->supplier_id;
         $store = $request->query('store', 'all');
+        [$from, $to] = $this->dateRange($request);
 
         // 자사(공급처) 품목이 포함된 주문만
         $mine = fn ($q) => $q->where('supplier_id', $sid)->where('supply_type', 'supplier');
@@ -23,6 +26,7 @@ class OrderController extends Controller
         if ($store !== 'all') {
             $query->where('store_id', $store);
         }
+        $this->applyDateRange($query, $from, $to);
         $orders = $query->paginate(15)->withQueryString();
 
         $storeIds = Order::whereHas('items', $mine)->distinct()->pluck('store_id');
@@ -31,6 +35,8 @@ class OrderController extends Controller
             'orders' => $orders,
             'stores' => Store::whereIn('id', $storeIds)->orderBy('name')->get(),
             'store' => $store,
+            'from' => $from,
+            'to' => $to,
         ]);
     }
 

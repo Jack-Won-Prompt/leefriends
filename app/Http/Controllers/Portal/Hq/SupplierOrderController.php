@@ -13,10 +13,13 @@ use Illuminate\Http\Request;
  */
 class SupplierOrderController extends Controller
 {
+    use \App\Support\FiltersByDate;
+
     public function index(Request $request)
     {
         $supplierId = $request->query('supplier', 'all');
         $status = $request->query('status', 'all');
+        [$from, $to] = $this->dateRange($request);
 
         // 공급사 전체 판매주문 (forSeller 스코프는 특정 공급사용이라 직접 조건 사용)
         $query = SalesOrder::where('seller_type', 'supplier')
@@ -29,6 +32,7 @@ class SupplierOrderController extends Controller
         if (array_key_exists($status, SalesOrder::STATUSES)) {
             $query->where('status', $status);
         }
+        $this->applyDateRange($query, $from, $to);
 
         // 합계 (필터 반영)
         $sumQuery = (clone $query);
@@ -40,6 +44,8 @@ class SupplierOrderController extends Controller
             'supplierId' => $supplierId,
             'status' => $status,
             'totalSupply' => (int) $sumQuery->sum('supply_amount'),
+            'from' => $from,
+            'to' => $to,
         ]);
     }
 }

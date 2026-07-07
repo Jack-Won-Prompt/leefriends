@@ -16,10 +16,13 @@ use Illuminate\Support\Facades\DB;
 /** 본사 → 공급처 구매(매입) 발주 */
 class PurchaseOrderController extends Controller
 {
+    use \App\Support\FiltersByDate;
+
     public function index(Request $request)
     {
         $supplier = $request->query('supplier', 'all');
         $status = $request->query('status', 'all');
+        [$from, $to] = $this->dateRange($request);
 
         $query = PurchaseOrder::with('supplier')->latest();
         if ($supplier !== 'all' && is_numeric($supplier)) {
@@ -28,12 +31,15 @@ class PurchaseOrderController extends Controller
         if (array_key_exists($status, PurchaseOrder::STATUSES)) {
             $query->where('status', $status);
         }
+        $this->applyDateRange($query, $from, $to);
 
         return view('portal.hq.purchase_orders.index', [
             'orders' => $query->paginate(20)->withQueryString(),
             'suppliers' => Supplier::orderBy('name')->get(),
             'supplier' => $supplier,
             'status' => $status,
+            'from' => $from,
+            'to' => $to,
         ]);
     }
 

@@ -4,6 +4,7 @@
 @section('content')
 <div x-data="{ open: null }">
 <x-wms.page-head title="세금계산서 (수취)" subtitle="공급처가 발행한 세금계산서" icon="🧮" />
+<x-date-filter :from="$from" :to="$to" label="발행일 기간" />
 <div class="grid grid-cols-2 gap-4 mb-6">
     <div class="rounded-2xl bg-white p-5 shadow-sm border border-neutral-100">
         <p class="text-sm text-neutral-500 font-medium">발행 건수</p>

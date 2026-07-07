@@ -13,6 +13,7 @@
 
 @section('content')
 <x-wms.page-head title="공급사 발주 현황" subtitle="매장 발주 중 공급처 직배송분(공급사별 판매주문)을 한눈에 확인합니다." icon="🏭" />
+<x-date-filter :from="$from" :to="$to" label="접수일 기간" />
 
 {{-- 요약 --}}
 <div class="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">

@@ -14,15 +14,19 @@ use Illuminate\Support\Facades\Auth;
  */
 class StatementController extends Controller
 {
-    public function index()
+    use \App\Support\FiltersByDate;
+
+    public function index(\Illuminate\Http\Request $request)
     {
         $storeId = Auth::user()->store_id;
         abort_unless($storeId, 403, '연결된 매장이 없습니다.');
 
-        $statements = Statement::where('store_id', $storeId)
-            ->latest('sent_at')->paginate(20);
+        [$from, $to] = $this->dateRange($request);
+        $query = Statement::where('store_id', $storeId)->latest('sent_at');
+        $this->applyDateRange($query, $from, $to, 'sent_at');
+        $statements = $query->paginate(20)->withQueryString();
 
-        return view('portal.store.statements.index', compact('statements'));
+        return view('portal.store.statements.index', compact('statements', 'from', 'to'));
     }
 
     public function pdf(Statement $statement)

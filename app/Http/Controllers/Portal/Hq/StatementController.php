@@ -17,11 +17,19 @@ use Illuminate\Support\Facades\Mail;
  */
 class StatementController extends Controller
 {
+    use \App\Support\FiltersByDate;
+
     /** 발송 이력 목록 */
-    public function index()
+    public function index(Request $request)
     {
+        [$from, $to] = $this->dateRange($request);
+        $query = Statement::with(['store', 'sender', 'taxInvoice', 'order'])->latest('sent_at');
+        $this->applyDateRange($query, $from, $to, 'sent_at');
+
         return view('portal.hq.statements.index', [
-            'statements' => Statement::with(['store', 'sender', 'taxInvoice', 'order'])->latest('sent_at')->paginate(20),
+            'statements' => $query->paginate(20)->withQueryString(),
+            'from' => $from,
+            'to' => $to,
         ]);
     }
 

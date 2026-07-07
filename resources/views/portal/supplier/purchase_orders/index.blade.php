@@ -15,6 +15,8 @@
     </x-slot:actions>
 </x-wms.page-head>
 
+<x-date-filter :from="$from" :to="$to" label="등록일 기간" />
+
 <x-wms.panel>
     <div class="overflow-x-auto">
         <table class="w-full text-sm">

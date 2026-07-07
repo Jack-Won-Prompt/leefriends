@@ -24,6 +24,8 @@
     </x-wms.field>
 </x-wms.filter>
 
+<x-date-filter :from="$from ?? null" :to="$to ?? null" label="접수일 기간" />
+
 <x-wms.toolbar :count="$salesOrders->total()" />
 
 <x-wms.panel>

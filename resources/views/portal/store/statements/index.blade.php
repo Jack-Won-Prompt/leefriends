@@ -4,6 +4,8 @@
 @section('content')
 <x-wms.page-head title="거래명세서(수취)" subtitle="본사가 발송한 거래명세서를 확인하고 PDF로 볼 수 있습니다." icon="🧾" />
 
+<x-date-filter :from="$from" :to="$to" label="발송일 기간" />
+
 <x-wms.panel>
     <table class="w-full text-sm">
         <thead class="bg-neutral-50 text-neutral-500">

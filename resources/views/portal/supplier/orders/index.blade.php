@@ -15,6 +15,8 @@
     </x-wms.field>
 </x-wms.filter>
 
+<x-date-filter :from="$from" :to="$to" label="발주일 기간" />
+
 <x-wms.toolbar :count="$orders->total()" />
 
 <x-wms.panel>

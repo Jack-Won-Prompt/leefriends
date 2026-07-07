@@ -10,10 +10,13 @@ use Illuminate\Http\Request;
 
 class SalesOrderController extends Controller
 {
+    use \App\Support\FiltersByDate;
+
     public function index(Request $request)
     {
         $status = $request->query('status', 'all');
         $store = $request->query('store', 'all');
+        [$from, $to] = $this->dateRange($request);
 
         $query = SalesOrder::forSeller('hq')->with(['store', 'order', 'items'])->latest();
         if (array_key_exists($status, SalesOrder::STATUSES)) {
@@ -22,6 +25,7 @@ class SalesOrderController extends Controller
         if ($store !== 'all') {
             $query->where('store_id', $store);
         }
+        $this->applyDateRange($query, $from, $to);
         $salesOrders = $query->paginate(15)->withQueryString();
 
         return view('portal.shared.sales_orders.index', [
@@ -32,6 +36,8 @@ class SalesOrderController extends Controller
             'stores' => Store::orderBy('name')->get(),
             'store' => $store,
             'asModal' => true, // 상세는 팝업으로
+            'from' => $from,
+            'to' => $to,
         ]);
     }
 

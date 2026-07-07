@@ -9,7 +9,9 @@
     </x-slot:actions>
 </x-wms.page-head>
 
-<form method="GET" class="flex flex-wrap gap-2 mb-4">
+<form method="GET" class="flex flex-wrap items-end gap-2 mb-4">
+    @if (request('from'))<input type="hidden" name="from" value="{{ request('from') }}">@endif
+    @if (request('to'))<input type="hidden" name="to" value="{{ request('to') }}">@endif
     <select name="supplier" onchange="this.form.submit()" class="rounded-xl border-neutral-200 text-sm py-2">
         <option value="all">전체 공급처</option>
         @foreach ($suppliers as $s)<option value="{{ $s->id }}" @selected((string) $supplier === (string) $s->id)>{{ $s->name }}</option>@endforeach
@@ -19,6 +21,7 @@
         @foreach (\App\Models\PurchaseOrder::STATUSES as $k => $v)<option value="{{ $k }}" @selected($status === $k)>{{ $v }}</option>@endforeach
     </select>
 </form>
+<x-date-filter :from="$from" :to="$to" label="등록일 기간" />
 
 <x-wms.panel>
     <div class="overflow-x-auto">

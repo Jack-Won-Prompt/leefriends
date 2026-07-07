@@ -8,19 +8,22 @@ use Illuminate\Http\Request;
 
 class InvoiceController extends Controller
 {
+    use \App\Support\FiltersByDate;
+
     /** 본사가 공급처로부터 받은(수취) 세금계산서 목록 */
     public function index(Request $request)
     {
-        $invoices = TaxInvoice::with('supplier')
-            ->latest('issue_date')->latest()
-            ->paginate(20);
+        [$from, $to] = $this->dateRange($request);
+        $query = TaxInvoice::with('supplier')->latest('issue_date')->latest();
+        $this->applyDateRange($query, $from, $to, 'issue_date');
+        $invoices = $query->paginate(20)->withQueryString();
 
         $totals = [
             'count' => TaxInvoice::where('status', 'issued')->count(),
             'amount' => (int) TaxInvoice::where('status', 'issued')->sum('total_amount'),
         ];
 
-        return view('portal.hq.invoices.index', compact('invoices', 'totals'));
+        return view('portal.hq.invoices.index', compact('invoices', 'totals', 'from', 'to'));
     }
 
     /** 세금계산서 인쇄 전용 페이지 (?print=1 자동 인쇄) */
