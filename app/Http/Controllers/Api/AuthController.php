@@ -71,6 +71,22 @@ class AuthController extends Controller
         return response()->json(['message' => '로그아웃되었습니다.']);
     }
 
+    /**
+     * POST /api/v1/auth/forgot-password
+     * 비밀번호 재설정 링크 이메일 발송 (링크는 웹 재설정 페이지로 연결).
+     * 계정 존재 여부를 노출하지 않기 위해 항상 동일 메시지 반환.
+     */
+    public function forgotPassword(Request $request): JsonResponse
+    {
+        $request->validate(['email' => ['required', 'email']]);
+
+        \Illuminate\Support\Facades\Password::sendResetLink($request->only('email'));
+
+        return response()->json([
+            'message' => '입력하신 이메일로 계정이 있으면 비밀번호 재설정 링크를 보냈습니다. 메일함을 확인해 주세요.',
+        ]);
+    }
+
     private function userPayload(User $user, ?string $role): array
     {
         $user->loadMissing('store');

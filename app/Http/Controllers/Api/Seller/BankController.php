@@ -290,6 +290,28 @@ class BankController extends Controller
         return response()->json(['message' => "입금자 '{$data['depositor_name']}' 매핑을 저장했습니다."]);
     }
 
+    /** POST /api/v1/seller/bank/map-bulk — 여러 입금자 → 한 매장 일괄 매핑 */
+    public function mapDepositorBulk(Request $request): JsonResponse
+    {
+        $this->guardHq($request);
+        $data = $request->validate([
+            'depositor_names' => ['required', 'array', 'min:1'],
+            'depositor_names.*' => ['string', 'max:120'],
+            'store_id' => ['required', 'exists:stores,id'],
+        ]);
+
+        $corp = $this->corpNum();
+        $names = array_values(array_unique(array_filter(array_map('trim', $data['depositor_names']))));
+        foreach ($names as $name) {
+            BankDepositorMapping::updateOrCreate(
+                ['corp_num' => $corp, 'depositor_name' => $name],
+                ['store_id' => $data['store_id']]
+            );
+        }
+
+        return response()->json(['message' => count($names).'명의 입금자를 한 매장으로 매핑했습니다.']);
+    }
+
     public function match(Request $request): JsonResponse
     {
         $this->guardHq($request);

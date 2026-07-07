@@ -37,8 +37,12 @@ Route::prefix('v1')->group(function () {
     Route::get('blog-posts', [ContentFeedController::class, 'blogPosts'])->name('api.blog_posts.index');
     Route::get('naver-clips', [ContentFeedController::class, 'clips'])->name('api.naver_clips.index');
 
+    // 공개: 가맹(창업) 문의 접수
+    Route::post('franchise-inquiry', [\App\Http\Controllers\Api\FranchiseController::class, 'store'])->name('api.franchise.store');
+
     // 인증 (매장/포털 계정)
     Route::post('auth/login', [AuthController::class, 'login'])->name('api.auth.login');
+    Route::post('auth/forgot-password', [AuthController::class, 'forgotPassword'])->name('api.auth.forgot_password');
 
     // 보호: 토큰 필요
     Route::middleware('auth:sanctum')->group(function () {
@@ -72,6 +76,9 @@ Route::prefix('v1')->group(function () {
         Route::get('inbound', [InboundController::class, 'index'])->name('api.inbound.index');
         Route::get('shipments/{shipment}', [InboundController::class, 'show'])->name('api.shipments.show');
         Route::post('shipments/{shipment}/receive', [InboundController::class, 'receive'])->name('api.shipments.receive');
+
+        // 과일 보관 가이드 (매장: 본사 공유 항목 읽기)
+        Route::get('fruit-storages', [\App\Http\Controllers\Api\FruitStorageController::class, 'index'])->name('api.fruit_storages.index');
 
         // 재고
         Route::get('inventory', [InventoryController::class, 'index'])->name('api.inventory.index');
@@ -225,6 +232,18 @@ Route::prefix('v1')->group(function () {
             Route::post('hq-inventory/{product}/seed', [Seller\HqInventoryController::class, 'seedOne'])->name('hq_inventory.seed_one');
             Route::post('hq-inventory/{product}/notify-restock', [Seller\HqInventoryController::class, 'notifyRestock'])->name('hq_inventory.notify');
 
+            // 본사 물류 입고 (공급처 명세서 입고처리 + 수동입고)
+            Route::get('logistics/inbound', [Seller\LogisticsInboundController::class, 'index'])->name('logistics.inbound');
+            Route::post('logistics/inbound/manual', [Seller\LogisticsInboundController::class, 'manual'])->name('logistics.inbound_manual');
+            Route::post('logistics/inbound/{statement}/receive', [Seller\LogisticsInboundController::class, 'receive'])->name('logistics.inbound_receive');
+
+            // 과일 보관 관리 (본사 CRUD + 매장 공유 토글)
+            Route::get('fruit-storages', [Seller\FruitStorageController::class, 'index'])->name('fruit_storages.index');
+            Route::post('fruit-storages', [Seller\FruitStorageController::class, 'store'])->name('fruit_storages.store');
+            Route::put('fruit-storages/{fruit}', [Seller\FruitStorageController::class, 'update'])->name('fruit_storages.update');
+            Route::patch('fruit-storages/{fruit}/toggle-share', [Seller\FruitStorageController::class, 'toggleShare'])->name('fruit_storages.toggle_share');
+            Route::delete('fruit-storages/{fruit}', [Seller\FruitStorageController::class, 'destroy'])->name('fruit_storages.destroy');
+
             // 매장별 입금현황 — 총 발주액 대비 입금완료/미입금 (본사 전용)
             Route::get('store-payments', [Seller\StorePaymentController::class, 'index'])->name('store_payments.index');
             Route::get('store-payments/{store}', [Seller\StorePaymentController::class, 'show'])->name('store_payments.show');
@@ -235,6 +254,7 @@ Route::prefix('v1')->group(function () {
             Route::post('bank/request', [Seller\BankController::class, 'requestJob'])->name('bank.request');
             Route::get('bank/jobs/{job:job_id}/state', [Seller\BankController::class, 'jobState'])->name('bank.job_state');
             Route::post('bank/map', [Seller\BankController::class, 'mapDepositor'])->name('bank.map');
+            Route::post('bank/map-bulk', [Seller\BankController::class, 'mapDepositorBulk'])->name('bank.map_bulk');
             Route::post('bank/match', [Seller\BankController::class, 'match'])->name('bank.match');
             Route::delete('bank/deposits/{deposit}/match', [Seller\BankController::class, 'unmatch'])->name('bank.unmatch');
             Route::post('bank/auto-match', [Seller\BankController::class, 'autoMatch'])->name('bank.auto_match');
