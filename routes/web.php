@@ -347,7 +347,6 @@ Route::prefix('portal')->name('portal.')->group(function () {
 
             // 본사 구매발주 수신
             Route::get('purchase-orders', [Portal\Supplier\PurchaseOrderController::class, 'index'])->name('purchase_orders.index');
-            Route::get('purchase-orders/{purchaseOrder}', [Portal\Supplier\PurchaseOrderController::class, 'show'])->name('purchase_orders.show');
             Route::post('purchase-orders/{purchaseOrder}/confirm', [Portal\Supplier\PurchaseOrderController::class, 'confirm'])->name('purchase_orders.confirm');
             // 자사 공급 품목 배송상태 변경
             Route::patch('fulfillment/{item}', [Portal\Supplier\OrderController::class, 'updateItem'])->name('fulfillment.update');

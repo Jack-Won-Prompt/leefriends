@@ -17,7 +17,7 @@ class PurchaseOrderController extends Controller
         abort_unless($sid, 403, '연결된 공급처가 없습니다.');
 
         $status = $request->query('status', 'all');
-        $query = PurchaseOrder::forSupplier($sid)->latest();
+        $query = PurchaseOrder::forSupplier($sid)->with('items')->latest();
         if (array_key_exists($status, PurchaseOrder::STATUSES)) {
             $query->where('status', $status);
         }
@@ -26,14 +26,6 @@ class PurchaseOrderController extends Controller
             'orders' => $query->paginate(20)->withQueryString(),
             'status' => $status,
         ]);
-    }
-
-    public function show(PurchaseOrder $purchaseOrder)
-    {
-        $this->authorizeOwn($purchaseOrder);
-        $purchaseOrder->load('items');
-
-        return view('portal.supplier.purchase_orders.show', ['po' => $purchaseOrder]);
     }
 
     /** 공급처 발주 확인 */
