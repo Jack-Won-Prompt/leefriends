@@ -6,6 +6,11 @@
 <x-wms.page-head :title="'구매발주 ' . $po->po_no" :subtitle="$po->supplier_name . ' · ' . $po->created_at->format('Y-m-d H:i')" icon="🧾">
     <x-slot:actions>
         <span class="text-xs font-bold px-3 py-1.5 rounded-full {{ $chip[$po->status] ?? '' }}">{{ $po->status_label }}</span>
+        <a href="{{ route('portal.hq.purchase_orders.statement.pdf', $po) }}" target="_blank" class="rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-bold px-4 py-2 text-sm">📄 거래명세서</a>
+        <form method="POST" action="{{ route('portal.hq.purchase_orders.statement.email', $po) }}" onsubmit="return confirm('구매 거래명세서를 공급처({{ optional($po->supplier)->email ?? '이메일 없음' }})로 전송할까요?')">
+            @csrf
+            <button class="rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-bold px-4 py-2 text-sm" @disabled(! optional($po->supplier)->email)>📧 명세서 전송</button>
+        </form>
         @if (! in_array($po->status, ['received','canceled'], true))
             <form method="POST" action="{{ route('portal.hq.purchase_orders.receive', $po) }}" onsubmit="return confirm('입고 처리하면 본사 재고에 반영됩니다. 진행할까요?')">
                 @csrf

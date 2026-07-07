@@ -43,7 +43,15 @@
                         <td class="px-5 py-3.5 text-right font-black text-neutral-800 whitespace-nowrap">{{ number_format($o->total_amount) }}원</td>
                         <td class="px-5 py-3.5 whitespace-nowrap"><span class="text-xs font-bold px-2.5 py-1 rounded-full {{ $chip[$o->status] ?? '' }}">{{ $o->status_label }}</span></td>
                         <td class="px-5 py-3.5 hidden md:table-cell text-neutral-500 whitespace-nowrap">{{ $o->created_at->format('Y-m-d') }}</td>
-                        <td class="px-5 py-3.5 text-right"><a href="{{ route('portal.hq.purchase_orders.show', $o) }}" class="text-xs font-bold text-neutral-600 hover:text-mango-600">상세</a></td>
+                        <td class="px-5 py-3.5 text-right whitespace-nowrap">
+                            <a href="{{ route('portal.hq.purchase_orders.show', $o) }}" class="text-xs font-bold text-neutral-600 hover:text-mango-600 mr-3">상세</a>
+                            <a href="{{ route('portal.hq.purchase_orders.statement.pdf', $o) }}" target="_blank" class="text-xs font-bold text-neutral-700 hover:text-mango-600 mr-3">📄 명세서</a>
+                            <form method="POST" action="{{ route('portal.hq.purchase_orders.statement.email', $o) }}" class="inline"
+                                  onsubmit="return confirm('구매 거래명세서를 공급처({{ $o->supplier->email ?? '이메일 없음' }})로 전송할까요?')">
+                                @csrf
+                                <button class="text-xs font-bold text-mango-600 hover:text-mango-700" @disabled(! optional($o->supplier)->email)>📧 전송</button>
+                            </form>
+                        </td>
                     </tr>
                 @empty
                     <tr><td colspan="7" class="px-5 py-12 text-center text-neutral-400">구매발주가 없습니다.</td></tr>
