@@ -270,6 +270,14 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::patch('clips/{clip}', [Portal\Hq\ClipController::class, 'update'])->name('clips.update');
             Route::delete('clips/{clip}', [Portal\Hq\ClipController::class, 'destroy'])->name('clips.destroy');
 
+            // 공급처 구매(매입) 발주
+            Route::get('purchase-orders', [Portal\Hq\PurchaseOrderController::class, 'index'])->name('purchase_orders.index');
+            Route::get('purchase-orders/create', [Portal\Hq\PurchaseOrderController::class, 'create'])->name('purchase_orders.create');
+            Route::post('purchase-orders', [Portal\Hq\PurchaseOrderController::class, 'store'])->name('purchase_orders.store');
+            Route::get('purchase-orders/{purchaseOrder}', [Portal\Hq\PurchaseOrderController::class, 'show'])->name('purchase_orders.show');
+            Route::post('purchase-orders/{purchaseOrder}/receive', [Portal\Hq\PurchaseOrderController::class, 'receive'])->name('purchase_orders.receive');
+            Route::post('purchase-orders/{purchaseOrder}/cancel', [Portal\Hq\PurchaseOrderController::class, 'cancel'])->name('purchase_orders.cancel');
+
             // 사이트 방문 분석
             Route::get('analytics', [Portal\Hq\VisitAnalyticsController::class, 'index'])->name('analytics.index');
 
@@ -336,6 +344,11 @@ Route::prefix('portal')->name('portal.')->group(function () {
         Route::middleware('role:supplier')->prefix('supplier')->name('supplier.')->group(function () {
             Route::get('orders', [Portal\Supplier\OrderController::class, 'index'])->name('orders.index');
             Route::get('orders/{order}', [Portal\Supplier\OrderController::class, 'show'])->name('orders.show');
+
+            // 본사 구매발주 수신
+            Route::get('purchase-orders', [Portal\Supplier\PurchaseOrderController::class, 'index'])->name('purchase_orders.index');
+            Route::get('purchase-orders/{purchaseOrder}', [Portal\Supplier\PurchaseOrderController::class, 'show'])->name('purchase_orders.show');
+            Route::post('purchase-orders/{purchaseOrder}/confirm', [Portal\Supplier\PurchaseOrderController::class, 'confirm'])->name('purchase_orders.confirm');
             // 자사 공급 품목 배송상태 변경
             Route::patch('fulfillment/{item}', [Portal\Supplier\OrderController::class, 'updateItem'])->name('fulfillment.update');
 

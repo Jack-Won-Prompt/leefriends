@@ -33,6 +33,7 @@
                 ['portal.hq.orders.index', '매장 발주 주문', ['portal.hq.orders.show']],
                 ['portal.hq.sales_orders.index', '판매주문', []],
                 ['portal.hq.supplier_orders.index', '공급사 발주 현황', []],
+                ['portal.hq.purchase_orders.index', '공급처 구매발주', ['portal.hq.purchase_orders.show','portal.hq.purchase_orders.create']],
                 ['portal.order_changes.index', '매장 주문 변경', []],
             ]],
             ['물류관리', '🚚', [
@@ -105,6 +106,7 @@
             ['주문 · 판매', '📦', [
                 ['portal.supplier.orders.index', '주문 관리', ['portal.supplier.orders.show']],
                 ['portal.supplier.sales_orders.index', '판매주문', []],
+                ['portal.supplier.purchase_orders.index', '본사 구매발주', ['portal.supplier.purchase_orders.show']],
                 ['portal.order_changes.index', '매장 주문 변경', []],
             ]],
             ['출고 · 배송', '🚚', [
