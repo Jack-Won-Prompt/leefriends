@@ -83,7 +83,15 @@ class OrderController extends Controller
         $statementDate = $this->statementDate($request->query('date'), $order);
 
         return \Barryvdh\DomPDF\Facade\Pdf::loadView('portal.print.order-statement-pdf', compact('order', 'statementDate'))
-            ->setPaper('a4')->stream('거래명세서_'.$order->order_no.'.pdf');
+            ->setPaper('a4')->stream(\App\Support\StatementFile::name(optional($order->store)->name, $statementDate, $this->orderSeq($order)));
+    }
+
+    /** 매장별 그 날짜의 발주 순번 */
+    private function orderSeq(Order $order): int
+    {
+        return Order::where('store_id', $order->store_id)
+            ->whereDate('created_at', $order->created_at)
+            ->where('id', '<=', $order->id)->count();
     }
 
     /** 발주 거래명세서 PDF를 매장 이메일로 전송 + 전송상태 기록 */
@@ -99,7 +107,7 @@ class OrderController extends Controller
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('portal.print.order-statement-pdf', compact('order', 'statementDate'))->setPaper('a4');
 
         \Illuminate\Support\Facades\Mail::to($to)->send(
-            new \App\Mail\OrderStatementMail($order, $pdf->output(), '거래명세서_'.$order->order_no.'.pdf')
+            new \App\Mail\OrderStatementMail($order, $pdf->output(), \App\Support\StatementFile::name(optional($order->store)->name, $statementDate, $this->orderSeq($order)))
         );
 
         // 거래명세서 이력(Statement) 기록 — 발주 상세 전송도 «거래명세서 이력» 화면과 매장 수취 화면에 노출

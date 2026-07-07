@@ -45,8 +45,9 @@ class StatementController extends Controller
     public function preview(Request $request)
     {
         [$store, $lines, $total, $date] = $this->build($request);
+        $seq = Statement::where('store_id', $store->id)->whereDate('created_at', now())->count() + 1;
 
-        return $this->buildPdf($store, $lines, $total, $date)->stream('거래명세서.pdf');
+        return $this->buildPdf($store, $lines, $total, $date)->stream(\App\Support\StatementFile::name($store->name, $date, $seq));
     }
 
     /** 매장 이메일로 PDF 전송 */
@@ -88,8 +89,10 @@ class StatementController extends Controller
     public function pdf(Statement $statement)
     {
         $store = $statement->storeForRender();
+        $seq = Statement::where('store_id', $statement->store_id)->whereDate('sent_at', $statement->sent_at)->where('id', '<=', $statement->id)->count();
 
-        return $this->buildPdf($store, $statement->items, $statement->total, $statement->issueDate())->stream('거래명세서.pdf');
+        return $this->buildPdf($store, $statement->items, $statement->total, $statement->issueDate())
+            ->stream(\App\Support\StatementFile::name($statement->store_name, $statement->issueDate(), max(1, $seq)));
     }
 
     /** 이력 재전송 */

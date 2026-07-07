@@ -35,13 +35,14 @@ class StatementController extends Controller
         }
 
         $store = $statement->storeForRender();
+        $seq = Statement::where('store_id', $statement->store_id)->whereDate('sent_at', $statement->sent_at)->where('id', '<=', $statement->id)->count();
 
         return Pdf::loadView('portal.hq.statements.pdf', [
             'store' => $store,
             'lines' => $statement->items,
             'total' => $statement->total,
             'date' => $statement->issueDate(),
-        ])->setPaper('a4')->stream('거래명세서.pdf');
+        ])->setPaper('a4')->stream(\App\Support\StatementFile::name($statement->store_name, $statement->issueDate(), max(1, $seq)));
     }
 
     /** 매장 확인 처리 → 본사 알림 */
