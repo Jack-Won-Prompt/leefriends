@@ -4,18 +4,19 @@
 @section('content')
 @php $chip = ['ordered'=>'bg-sky-100 text-sky-700','confirmed'=>'bg-amber-100 text-amber-700','received'=>'bg-emerald-100 text-emerald-700','canceled'=>'bg-neutral-100 text-neutral-400']; @endphp
 <div x-data="{ open: null }">
-<x-wms.page-head title="본사 구매발주" subtitle="본사가 우리 공급처에 등록한 매입 발주입니다. 발주번호를 클릭하면 상세가 열립니다." icon="🧾">
-    <x-slot:actions>
-        <form method="GET">
-            <select name="status" onchange="this.form.submit()" class="rounded-xl border-neutral-200 text-sm py-2">
-                <option value="all">전체 상태</option>
-                @foreach (\App\Models\PurchaseOrder::STATUSES as $k => $v)<option value="{{ $k }}" @selected($status === $k)>{{ $v }}</option>@endforeach
-            </select>
-        </form>
-    </x-slot:actions>
-</x-wms.page-head>
+<x-wms.page-head title="본사 구매발주" subtitle="본사가 우리 공급처에 등록한 매입 발주입니다. 발주번호를 클릭하면 상세가 열립니다." icon="🧾" />
 
-<x-date-filter :from="$from" :to="$to" label="등록일 기간" />
+<form method="GET" class="flex flex-wrap items-center gap-2 mb-4">
+    <select name="status" class="rounded-xl border-neutral-200 text-sm py-2">
+        <option value="all">전체 상태</option>
+        @foreach (\App\Models\PurchaseOrder::STATUSES as $k => $v)<option value="{{ $k }}" @selected($status === $k)>{{ $v }}</option>@endforeach
+    </select>
+    <input type="date" name="from" value="{{ $from }}" class="rounded-xl border-neutral-200 text-sm py-2">
+    <span class="text-neutral-400">~</span>
+    <input type="date" name="to" value="{{ $to }}" class="rounded-xl border-neutral-200 text-sm py-2">
+    <button class="rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm">조회</button>
+    @if ($status !== 'all' || $from || $to)<a href="{{ url()->current() }}" class="rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-500 font-bold px-3 py-2 text-sm">초기화</a>@endif
+</form>
 
 <x-wms.panel>
     <div class="overflow-x-auto">

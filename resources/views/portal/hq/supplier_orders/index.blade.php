@@ -13,7 +13,6 @@
 
 @section('content')
 <x-wms.page-head title="공급사 발주 현황" subtitle="매장 발주 중 공급처 직배송분(공급사별 판매주문)을 한눈에 확인합니다." icon="🏭" />
-<x-date-filter :from="$from" :to="$to" label="접수일 기간" />
 
 {{-- 요약 --}}
 <div class="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
@@ -37,6 +36,10 @@
         @endforeach
     </select>
     <input type="hidden" name="status" value="{{ $status }}">
+    <input type="date" name="from" value="{{ $from }}" class="rounded-xl border-neutral-200 text-sm py-2">
+    <span class="text-neutral-400">~</span>
+    <input type="date" name="to" value="{{ $to }}" class="rounded-xl border-neutral-200 text-sm py-2">
+    <button class="rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm">조회</button>
     <div class="flex flex-wrap gap-1.5">
         <a href="{{ request()->fullUrlWithQuery(['status' => 'all']) }}"
            class="px-3.5 py-2 rounded-full text-sm font-bold {{ $status === 'all' ? 'bg-mango-500 text-white' : 'bg-white text-neutral-600 border border-neutral-200 hover:bg-mango-50' }}">전체</a>

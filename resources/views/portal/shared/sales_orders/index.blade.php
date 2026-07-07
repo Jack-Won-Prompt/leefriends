@@ -22,9 +22,13 @@
             @endforeach
         </select>
     </x-wms.field>
+    <x-wms.field label="접수 시작일">
+        <input type="date" name="from" value="{{ $from ?? '' }}" class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+    </x-wms.field>
+    <x-wms.field label="접수 종료일">
+        <input type="date" name="to" value="{{ $to ?? '' }}" class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+    </x-wms.field>
 </x-wms.filter>
-
-<x-date-filter :from="$from ?? null" :to="$to ?? null" label="접수일 기간" />
 
 <x-wms.toolbar :count="$salesOrders->total()" />
 
