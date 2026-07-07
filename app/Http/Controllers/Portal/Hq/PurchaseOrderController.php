@@ -149,23 +149,6 @@ class PurchaseOrderController extends Controller
             ->setPaper('a4')->stream('구매거래명세서_'.$purchaseOrder->po_no.'.pdf');
     }
 
-    /** 구매 거래명세서 공급처 이메일 전송 */
-    public function statementEmail(PurchaseOrder $purchaseOrder)
-    {
-        $purchaseOrder->load(['items.supplyProduct', 'supplier']);
-        $to = $purchaseOrder->supplier?->email;
-        if (! $to) {
-            return back()->withErrors(['statement' => '공급처 이메일이 없습니다. 공급처 관리에서 이메일을 먼저 등록하세요.']);
-        }
-
-        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('portal.print.purchase-order-statement-pdf', ['po' => $purchaseOrder])->setPaper('a4');
-        \Illuminate\Support\Facades\Mail::to($to)->send(
-            new \App\Mail\PurchaseStatementMail($purchaseOrder, $pdf->output(), '구매거래명세서_'.$purchaseOrder->po_no.'.pdf')
-        );
-
-        return back()->with('success', "구매 거래명세서를 공급처({$to})로 전송했습니다.");
-    }
-
     public function cancel(PurchaseOrder $purchaseOrder)
     {
         if ($purchaseOrder->status === 'received') {

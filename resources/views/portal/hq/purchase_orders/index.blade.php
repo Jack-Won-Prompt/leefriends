@@ -45,12 +45,11 @@
                         <td class="px-5 py-3.5 hidden md:table-cell text-neutral-500 whitespace-nowrap">{{ $o->created_at->format('Y-m-d') }}</td>
                         <td class="px-5 py-3.5 text-right whitespace-nowrap">
                             <a href="{{ route('portal.hq.purchase_orders.show', $o) }}" class="text-xs font-bold text-neutral-600 hover:text-mango-600 mr-3">상세</a>
-                            <a href="{{ route('portal.hq.purchase_orders.statement.pdf', $o) }}" target="_blank" class="text-xs font-bold text-neutral-700 hover:text-mango-600 mr-3">📄 명세서</a>
-                            <form method="POST" action="{{ route('portal.hq.purchase_orders.statement.email', $o) }}" class="inline"
-                                  onsubmit="return confirm('구매 거래명세서를 공급처({{ $o->supplier->email ?? '이메일 없음' }})로 전송할까요?')">
-                                @csrf
-                                <button class="text-xs font-bold text-mango-600 hover:text-mango-700" @disabled(! optional($o->supplier)->email)>📧 전송</button>
-                            </form>
+                            @if ($o->statement_issued_at)
+                                <a href="{{ route('portal.hq.purchase_orders.statement.pdf', $o) }}" target="_blank" class="text-xs font-bold text-mango-600 hover:text-mango-700">📄 거래명세서</a>
+                            @else
+                                <span class="text-xs text-neutral-400">명세서 미발행</span>
+                            @endif
                         </td>
                     </tr>
                 @empty

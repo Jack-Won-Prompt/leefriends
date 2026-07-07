@@ -6,11 +6,11 @@
 <x-wms.page-head :title="'구매발주 ' . $po->po_no" :subtitle="$po->supplier_name . ' · ' . $po->created_at->format('Y-m-d H:i')" icon="🧾">
     <x-slot:actions>
         <span class="text-xs font-bold px-3 py-1.5 rounded-full {{ $chip[$po->status] ?? '' }}">{{ $po->status_label }}</span>
-        <a href="{{ route('portal.hq.purchase_orders.statement.pdf', $po) }}" target="_blank" class="rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-bold px-4 py-2 text-sm">📄 거래명세서</a>
-        <form method="POST" action="{{ route('portal.hq.purchase_orders.statement.email', $po) }}" onsubmit="return confirm('구매 거래명세서를 공급처({{ optional($po->supplier)->email ?? '이메일 없음' }})로 전송할까요?')">
-            @csrf
-            <button class="rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-bold px-4 py-2 text-sm" @disabled(! optional($po->supplier)->email)>📧 명세서 전송</button>
-        </form>
+        @if ($po->statement_issued_at)
+            <a href="{{ route('portal.hq.purchase_orders.statement.pdf', $po) }}" target="_blank" class="rounded-xl bg-mango-100 hover:bg-mango-200 text-mango-700 font-bold px-4 py-2 text-sm">📄 거래명세서 확인</a>
+        @else
+            <span class="text-xs text-neutral-400">공급처 명세서 미발행</span>
+        @endif
         @if (! in_array($po->status, ['received','canceled'], true))
             <form method="POST" action="{{ route('portal.hq.purchase_orders.receive', $po) }}" onsubmit="return confirm('입고 처리하면 본사 재고에 반영됩니다. 진행할까요?')">
                 @csrf
@@ -34,6 +34,7 @@
         <span class="text-neutral-400">등록자 <b class="text-neutral-800 ml-1">{{ optional($po->creator)->name ?? '본사' }}</b></span>
         @if ($po->confirmed_at)<span class="text-neutral-400">확인 <b class="text-neutral-800 ml-1">{{ $po->confirmed_at->format('Y-m-d H:i') }}</b></span>@endif
         @if ($po->received_at)<span class="text-neutral-400">입고 <b class="text-emerald-700 ml-1">{{ $po->received_at->format('Y-m-d H:i') }}</b></span>@endif
+        @if ($po->statement_issued_at)<span class="text-neutral-400">명세서 발행 <b class="text-mango-700 ml-1">{{ $po->statement_issued_at->format('Y-m-d H:i') }}</b></span>@endif
         @if ($po->note)<span class="text-neutral-400">메모 <b class="text-neutral-800 ml-1">{{ $po->note }}</b></span>@endif
     </div>
     <table class="w-full text-sm">

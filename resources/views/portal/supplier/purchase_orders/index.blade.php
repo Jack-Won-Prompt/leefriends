@@ -51,14 +51,24 @@
 {{-- 상세 모달 --}}
 @foreach ($orders as $o)
     <x-detail-modal :id="$o->id">
-        @if ($o->status === 'ordered')
-            <x-slot:actions>
+        <x-slot:actions>
+            @if ($o->status === 'ordered')
                 <form method="POST" action="{{ route('portal.supplier.purchase_orders.confirm', $o) }}" onsubmit="return confirm('이 구매발주를 확인할까요?')">
                     @csrf
-                    <button class="rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm shadow">✅ 발주 확인</button>
+                    <button class="rounded-xl bg-white/90 hover:bg-white text-mango-700 font-bold px-4 py-2 text-sm shadow">✅ 발주 확인</button>
                 </form>
-            </x-slot:actions>
-        @endif
+            @endif
+            @if ($o->status !== 'canceled')
+                @if ($o->statement_issued_at)
+                    <a href="{{ route('portal.supplier.purchase_orders.statement.pdf', $o) }}" target="_blank" class="rounded-xl bg-white/90 hover:bg-white text-neutral-700 font-bold px-4 py-2 text-sm shadow">📄 거래명세서 보기</a>
+                @else
+                    <form method="POST" action="{{ route('portal.supplier.purchase_orders.statement.issue', $o) }}" onsubmit="return confirm('본사에 거래명세서를 발행할까요?')">
+                        @csrf
+                        <button class="rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm shadow">🧾 거래명세서 발행</button>
+                    </form>
+                @endif
+            @endif
+        </x-slot:actions>
         <div class="bg-white rounded-2xl shadow border border-neutral-200 overflow-hidden">
             <div class="bg-mango-500 text-white px-6 py-4 flex items-center justify-between">
                 <div>

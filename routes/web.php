@@ -276,7 +276,6 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::post('purchase-orders', [Portal\Hq\PurchaseOrderController::class, 'store'])->name('purchase_orders.store');
             Route::get('purchase-orders/{purchaseOrder}', [Portal\Hq\PurchaseOrderController::class, 'show'])->name('purchase_orders.show');
             Route::get('purchase-orders/{purchaseOrder}/statement/pdf', [Portal\Hq\PurchaseOrderController::class, 'statementPdf'])->name('purchase_orders.statement.pdf');
-            Route::post('purchase-orders/{purchaseOrder}/statement/email', [Portal\Hq\PurchaseOrderController::class, 'statementEmail'])->name('purchase_orders.statement.email');
             Route::post('purchase-orders/{purchaseOrder}/receive', [Portal\Hq\PurchaseOrderController::class, 'receive'])->name('purchase_orders.receive');
             Route::post('purchase-orders/{purchaseOrder}/cancel', [Portal\Hq\PurchaseOrderController::class, 'cancel'])->name('purchase_orders.cancel');
 
@@ -347,9 +346,11 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::get('orders', [Portal\Supplier\OrderController::class, 'index'])->name('orders.index');
             Route::get('orders/{order}', [Portal\Supplier\OrderController::class, 'show'])->name('orders.show');
 
-            // 본사 구매발주 수신
+            // 본사 구매발주 수신 + 거래명세서 발행
             Route::get('purchase-orders', [Portal\Supplier\PurchaseOrderController::class, 'index'])->name('purchase_orders.index');
             Route::post('purchase-orders/{purchaseOrder}/confirm', [Portal\Supplier\PurchaseOrderController::class, 'confirm'])->name('purchase_orders.confirm');
+            Route::get('purchase-orders/{purchaseOrder}/statement/pdf', [Portal\Supplier\PurchaseOrderController::class, 'statementPdf'])->name('purchase_orders.statement.pdf');
+            Route::post('purchase-orders/{purchaseOrder}/statement/issue', [Portal\Supplier\PurchaseOrderController::class, 'issueStatement'])->name('purchase_orders.statement.issue');
             // 자사 공급 품목 배송상태 변경
             Route::patch('fulfillment/{item}', [Portal\Supplier\OrderController::class, 'updateItem'])->name('fulfillment.update');
 

@@ -40,6 +40,11 @@ return [
         'blog_id' => env('NAVER_BLOG_ID', 'mangojung_official'),  // 공식 네이버 블로그 아이디
     ],
 
+    // 본사(회사) 정보
+    'company' => [
+        'email' => env('COMPANY_EMAIL'),  // 본사 수신 이메일
+    ],
+
     // FCM (Firebase Cloud Messaging) - 모바일 앱 푸시
     'fcm' => [
         'credentials' => env('FCM_CREDENTIALS'),        // 서비스계정 JSON 경로 (예: storage/app/firebase/sa.json)

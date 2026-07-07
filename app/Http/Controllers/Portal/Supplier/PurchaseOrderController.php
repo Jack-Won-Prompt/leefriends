@@ -28,6 +28,42 @@ class PurchaseOrderController extends Controller
         ]);
     }
 
+    /** 구매 거래명세서 PDF 미리보기 (공급처 발행 문서) */
+    public function statementPdf(PurchaseOrder $purchaseOrder)
+    {
+        $this->authorizeOwn($purchaseOrder);
+        $purchaseOrder->load(['items.supplyProduct', 'supplier']);
+
+        return \Barryvdh\DomPDF\Facade\Pdf::loadView('portal.print.purchase-order-statement-pdf', ['po' => $purchaseOrder])
+            ->setPaper('a4')->stream('거래명세서_'.$purchaseOrder->po_no.'.pdf');
+    }
+
+    /** 공급처 → 본사 거래명세서 발행 (본사 확인용) */
+    public function issueStatement(PurchaseOrder $purchaseOrder)
+    {
+        $this->authorizeOwn($purchaseOrder);
+        $purchaseOrder->load(['items.supplyProduct', 'supplier']);
+        $purchaseOrder->update(['statement_issued_at' => now()]);
+
+        // 본사에 이메일(있으면) + 인앱 알림
+        $hqEmail = config('services.company.email');
+        if ($hqEmail) {
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('portal.print.purchase-order-statement-pdf', ['po' => $purchaseOrder])->setPaper('a4');
+            \Illuminate\Support\Facades\Mail::to($hqEmail)->send(
+                new \App\Mail\PurchaseStatementMail($purchaseOrder, $pdf->output(), '거래명세서_'.$purchaseOrder->po_no.'.pdf')
+            );
+        }
+
+        $hq = User::where('role', 'hq')->orWhere('is_admin', true)->get();
+        app(\App\Services\Notification\NotificationService::class)->notifyUsers(
+            $hq, 'purchase_order', '🧾 구매 거래명세서 발행',
+            "«{$purchaseOrder->supplier_name}»이(가) 구매발주 «{$purchaseOrder->po_no}»의 거래명세서를 발행했습니다.",
+            ['purchase_order_id' => $purchaseOrder->id]
+        );
+
+        return back()->with('success', '거래명세서를 발행했습니다. 본사에서 확인할 수 있습니다.');
+    }
+
     /** 공급처 발주 확인 */
     public function confirm(PurchaseOrder $purchaseOrder)
     {
