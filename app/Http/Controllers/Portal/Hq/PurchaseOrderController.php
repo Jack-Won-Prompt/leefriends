@@ -144,9 +144,11 @@ class PurchaseOrderController extends Controller
     public function statementPdf(PurchaseOrder $purchaseOrder)
     {
         $purchaseOrder->load(['items.supplyProduct', 'supplier']);
+        $seq = PurchaseOrder::where('supplier_id', $purchaseOrder->supplier_id)
+            ->whereDate('created_at', $purchaseOrder->created_at)->where('id', '<=', $purchaseOrder->id)->count();
 
         return \Barryvdh\DomPDF\Facade\Pdf::loadView('portal.print.purchase-order-statement-pdf', ['po' => $purchaseOrder])
-            ->setPaper('a4')->stream('구매거래명세서_'.$purchaseOrder->po_no.'.pdf');
+            ->setPaper('a4')->stream(\App\Support\StatementFile::purchaseName($purchaseOrder->supplier_name, $purchaseOrder->created_at, max(1, $seq)));
     }
 
     public function cancel(PurchaseOrder $purchaseOrder)

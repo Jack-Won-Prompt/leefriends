@@ -18,4 +18,17 @@ class StatementFile
 
         return sprintf('%s_%s_%03d.pdf', $store, $d, max(1, $seq));
     }
+
+    /** 구매(매입) 거래명세서: 본사_공급처명_날짜(Ymd)_시퀀스(3자리).pdf */
+    public static function purchaseName(?string $supplierName, $date, int $seq): string
+    {
+        $sup = trim((string) $supplierName);
+        $sup = $sup !== '' ? $sup : '공급처';
+        $sup = preg_replace('/\s+/u', '', $sup);
+        $sup = preg_replace('#[\\\\/:*?"<>|]+#u', '', $sup);
+
+        $d = $date ? Carbon::parse($date)->format('Ymd') : now()->format('Ymd');
+
+        return sprintf('본사_%s_%s_%03d.pdf', $sup, $d, max(1, $seq));
+    }
 }

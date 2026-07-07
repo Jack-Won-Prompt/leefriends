@@ -35,7 +35,14 @@ class PurchaseOrderController extends Controller
         $purchaseOrder->load(['items.supplyProduct', 'supplier']);
 
         return \Barryvdh\DomPDF\Facade\Pdf::loadView('portal.print.purchase-order-statement-pdf', ['po' => $purchaseOrder])
-            ->setPaper('a4')->stream('거래명세서_'.$purchaseOrder->po_no.'.pdf');
+            ->setPaper('a4')->stream(\App\Support\StatementFile::purchaseName($purchaseOrder->supplier_name, $purchaseOrder->created_at, $this->poSeq($purchaseOrder)));
+    }
+
+    /** 공급처별 그 날짜의 구매발주 순번 */
+    private function poSeq(PurchaseOrder $po): int
+    {
+        return max(1, PurchaseOrder::where('supplier_id', $po->supplier_id)
+            ->whereDate('created_at', $po->created_at)->where('id', '<=', $po->id)->count());
     }
 
     /** 공급처 → 본사 거래명세서 발행 (본사 확인용) */
@@ -50,7 +57,7 @@ class PurchaseOrderController extends Controller
         if ($hqEmail) {
             $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('portal.print.purchase-order-statement-pdf', ['po' => $purchaseOrder])->setPaper('a4');
             \Illuminate\Support\Facades\Mail::to($hqEmail)->send(
-                new \App\Mail\PurchaseStatementMail($purchaseOrder, $pdf->output(), '거래명세서_'.$purchaseOrder->po_no.'.pdf')
+                new \App\Mail\PurchaseStatementMail($purchaseOrder, $pdf->output(), \App\Support\StatementFile::purchaseName($purchaseOrder->supplier_name, $purchaseOrder->created_at, $this->poSeq($purchaseOrder)))
             );
         }
 
