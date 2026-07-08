@@ -175,7 +175,7 @@
                                 class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl font-bold transition {{ $groupActive ? 'text-white' : 'text-neutral-400 hover:text-white hover:bg-white/5' }}">
                             <span>{{ $groupIcon }}</span>
                             <span class="flex-1 text-left">{{ $groupLabel }}</span>
-                            <svg class="w-4 h-4 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 9l6 6 6-6"/></svg>
+                            <svg class="w-4 h-4 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 9l6 6 6-6"/></svg>
                         </button>
                         <div x-show="open" x-collapse class="mt-1 ml-3 pl-3 border-l border-white/10 space-y-0.5">
                             @foreach ($children as $child)
