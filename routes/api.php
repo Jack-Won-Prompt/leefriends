@@ -187,6 +187,7 @@ Route::prefix('v1')->group(function () {
 
             Route::get('orders', [Seller\OrderController::class, 'index'])->name('orders.index');
             Route::get('orders/{order}', [Seller\OrderController::class, 'show'])->name('orders.show');
+            Route::post('orders/{order}/items', [Seller\OrderController::class, 'addItem'])->name('orders.items.add');
             Route::patch('orders/{order}/items/{item}', [Seller\OrderController::class, 'updateItem'])->name('orders.items.update');
             Route::patch('orders/{order}/items/{item}/price', [Seller\OrderController::class, 'setItemPrice'])->name('orders.items.price');
             Route::patch('orders/{order}/items/{item}/edit', [Seller\OrderController::class, 'editItem'])->name('orders.items.edit');
@@ -231,6 +232,15 @@ Route::prefix('v1')->group(function () {
             Route::post('hq-inventory/seed', [Seller\HqInventoryController::class, 'seed'])->name('hq_inventory.seed');
             Route::post('hq-inventory/{product}/seed', [Seller\HqInventoryController::class, 'seedOne'])->name('hq_inventory.seed_one');
             Route::post('hq-inventory/{product}/notify-restock', [Seller\HqInventoryController::class, 'notifyRestock'])->name('hq_inventory.notify');
+
+            // 구매발주 (본사→공급사 발주 · 공급사 확인)
+            Route::get('purchase-orders', [Seller\PurchaseOrderController::class, 'index'])->name('purchase_orders.index');
+            Route::get('purchase-orders/create-data', [Seller\PurchaseOrderController::class, 'createData'])->name('purchase_orders.create_data');
+            Route::post('purchase-orders', [Seller\PurchaseOrderController::class, 'store'])->name('purchase_orders.store');
+            Route::get('purchase-orders/{purchaseOrder}', [Seller\PurchaseOrderController::class, 'show'])->name('purchase_orders.show');
+            Route::post('purchase-orders/{purchaseOrder}/receive', [Seller\PurchaseOrderController::class, 'receive'])->name('purchase_orders.receive');
+            Route::post('purchase-orders/{purchaseOrder}/cancel', [Seller\PurchaseOrderController::class, 'cancel'])->name('purchase_orders.cancel');
+            Route::post('purchase-orders/{purchaseOrder}/confirm', [Seller\PurchaseOrderController::class, 'confirm'])->name('purchase_orders.confirm');
 
             // 본사 물류 입고 (공급처 명세서 입고처리 + 수동입고)
             Route::get('logistics/inbound', [Seller\LogisticsInboundController::class, 'index'])->name('logistics.inbound');
