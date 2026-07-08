@@ -158,7 +158,6 @@
 </div>
 
 {{-- 품목: 공급처명 확인 가능 --}}
-@php $canAddItem = in_array($order->status, ['pending', 'processing'], true); @endphp
 <div class="rounded-2xl bg-white shadow-sm border border-neutral-100 overflow-hidden"
      x-data="{ itemOpen: false, addOpen: false, f: { id: null, name: '', supply: 0, store: 0, qty: 1, unit: '', isSupplier: false },
                get lineStore() { return (this.store || 0) * (this.qty || 0); },
@@ -167,13 +166,13 @@
         <span>발주 품목 · 공급처 / 배송현황</span>
         <div class="flex items-center gap-3">
             <span class="text-xs font-semibold text-neutral-400">품목명을 클릭해 수정</span>
-            @if ($canAddItem)
+            @if (in_array($order->status, ['pending', 'processing'], true))
                 <button type="button" @click="addOpen = !addOpen" class="rounded-lg bg-mango-500 hover:bg-mango-600 text-white text-xs font-bold px-3 py-1.5">＋ 품목 추가</button>
             @endif
         </div>
     </div>
 
-    @if ($canAddItem)
+    @if (in_array($order->status, ['pending', 'processing'], true))
         @error('add')<div class="mx-6 mt-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 px-4 py-2.5 text-sm">{{ $message }}</div>@enderror
         <form method="POST" action="{{ route('portal.hq.orders.items.add', $order) }}" x-show="addOpen" x-cloak
               class="px-6 py-4 bg-mango-50/40 border-b border-neutral-100 flex flex-wrap items-end gap-2">
