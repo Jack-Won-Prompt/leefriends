@@ -158,14 +158,43 @@
 </div>
 
 {{-- 품목: 공급처명 확인 가능 --}}
+@php $canAddItem = in_array($order->status, ['pending', 'processing'], true); @endphp
 <div class="rounded-2xl bg-white shadow-sm border border-neutral-100 overflow-hidden"
-     x-data="{ itemOpen: false, f: { id: null, name: '', supply: 0, store: 0, qty: 1, unit: '', isSupplier: false },
+     x-data="{ itemOpen: false, addOpen: false, f: { id: null, name: '', supply: 0, store: 0, qty: 1, unit: '', isSupplier: false },
                get lineStore() { return (this.store || 0) * (this.qty || 0); },
                openItem(d) { this.f = d; this.itemOpen = true; } }">
     <div class="px-6 py-4 border-b border-neutral-100 font-extrabold text-neutral-900 flex items-center justify-between">
         <span>발주 품목 · 공급처 / 배송현황</span>
-        <span class="text-xs font-semibold text-neutral-400">품목명을 클릭해 수정</span>
+        <div class="flex items-center gap-3">
+            <span class="text-xs font-semibold text-neutral-400">품목명을 클릭해 수정</span>
+            @if ($canAddItem)
+                <button type="button" @click="addOpen = !addOpen" class="rounded-lg bg-mango-500 hover:bg-mango-600 text-white text-xs font-bold px-3 py-1.5">＋ 품목 추가</button>
+            @endif
+        </div>
     </div>
+
+    @if ($canAddItem)
+        @error('add')<div class="mx-6 mt-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 px-4 py-2.5 text-sm">{{ $message }}</div>@enderror
+        <form method="POST" action="{{ route('portal.hq.orders.items.add', $order) }}" x-show="addOpen" x-cloak
+              class="px-6 py-4 bg-mango-50/40 border-b border-neutral-100 flex flex-wrap items-end gap-2">
+            @csrf
+            <div class="flex-1 min-w-[220px]">
+                <label class="block text-xs font-bold text-neutral-500 mb-1">품목</label>
+                <select name="product_id" required class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+                    <option value="">품목 선택</option>
+                    @foreach ($addableProducts as $p)
+                        <option value="{{ $p->id }}">{{ $p->name }} ({{ $p->unit }}{{ $p->supply_type === 'supplier' ? ' · 공급처' : ' · 본사' }})</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="w-24">
+                <label class="block text-xs font-bold text-neutral-500 mb-1">수량</label>
+                <input type="number" name="qty" min="1" value="1" required class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+            </div>
+            <button class="rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-5 py-2 text-sm">추가</button>
+            <button type="button" @click="addOpen = false" class="rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-500 font-bold px-4 py-2 text-sm">닫기</button>
+        </form>
+    @endif
     <div class="overflow-x-auto">
         <table class="w-full text-sm">
             <thead class="bg-neutral-50 text-neutral-500">

@@ -191,6 +191,7 @@ Route::prefix('portal')->name('portal.')->group(function () {
         Route::middleware('role:hq')->prefix('hq')->name('hq.')->group(function () {
             Route::get('orders', [Portal\Hq\OrderController::class, 'index'])->name('orders.index');
             Route::get('orders/{order}', [Portal\Hq\OrderController::class, 'show'])->name('orders.show');
+            Route::post('orders/{order}/items', [Portal\Hq\OrderController::class, 'addItem'])->name('orders.items.add');
             Route::patch('orders/{order}/items/{item}', [Portal\Hq\OrderController::class, 'updateItem'])->name('orders.items.update');
             Route::patch('orders/{order}/items/{item}/price', [Portal\Hq\OrderController::class, 'setItemPrice'])->name('orders.items.price');
             Route::patch('orders/{order}/items/{item}/edit', [Portal\Hq\OrderController::class, 'editItem'])->name('orders.items.edit');

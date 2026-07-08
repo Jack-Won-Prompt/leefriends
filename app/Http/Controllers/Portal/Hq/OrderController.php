@@ -73,7 +73,101 @@ class OrderController extends Controller
     {
         $order->load(['items.supplier', 'store', 'user']);
 
-        return view('portal.hq.orders.show', compact('order'));
+        // 품목 추가용 카탈로그 (배송 시작 전에만 사용)
+        $addableProducts = \App\Models\SupplyProduct::active()->approved()
+            ->orderBy('name')->get(['id', 'name', 'unit', 'supply_type']);
+
+        return view('portal.hq.orders.show', compact('order', 'addableProducts'));
+    }
+
+    /** 받은 매장 발주서에 품목 추가 (배송 시작 전) */
+    public function addItem(Request $request, Order $order, \App\Services\Inventory\HqStockService $stock, \App\Services\Notification\NotificationService $notifications)
+    {
+        if (! in_array($order->status, ['pending', 'processing'], true)) {
+            return back()->withErrors(['add' => '배송 시작 이후에는 품목을 추가할 수 없습니다.']);
+        }
+
+        $data = $request->validate([
+            'product_id' => ['required', 'exists:supply_products,id'],
+            'qty' => ['required', 'integer', 'min:1', 'max:99999'],
+        ], ['product_id.required' => '추가할 품목을 선택해 주세요.', 'qty.required' => '수량을 입력해 주세요.']);
+
+        $p = \App\Models\SupplyProduct::active()->approved()->with(['supplier', 'units'])->find($data['product_id']);
+        if (! $p) {
+            return back()->withErrors(['add' => '판매 가능한 품목이 아닙니다.']);
+        }
+        if ($order->items->contains('supply_product_id', $p->id)) {
+            return back()->withErrors(['add' => '이미 발주에 포함된 품목입니다. 수량을 수정해 주세요.']);
+        }
+
+        $qty = (int) $data['qty'];
+        $unit = $p->units->firstWhere('is_default', true) ?? $p->units->first();
+        $isSample = $order->order_type === 'sample';
+        $isMarket = ! $isSample && $p->is_market_price;
+        $storePrice = ($isSample || $isMarket) ? 0 : (int) ($unit->store_price ?? $p->store_price);
+        $supplyPrice = ($isSample || $isMarket) ? 0 : ($p->supply_type === 'supplier' ? (int) ($unit->supply_price ?? $p->supply_price) : 0);
+
+        try {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($order, $p, $unit, $qty, $storePrice, $supplyPrice, $isMarket, $stock) {
+                $stock->releaseOrder($order);
+
+                $item = OrderItem::create([
+                    'order_id' => $order->id,
+                    'supply_product_id' => $p->id,
+                    'supply_product_unit_id' => $unit->id ?? null,
+                    'product_name' => $p->name,
+                    'unit' => $unit->name ?? $p->unit,
+                    'supply_type' => $p->supply_type,
+                    'supplier_id' => $p->supply_type === 'supplier' ? $p->supplier_id : null,
+                    'supplier_name' => $p->supply_type === 'supplier' ? optional($p->supplier)->name : '본사',
+                    'qty' => $qty,
+                    'store_unit_price' => $storePrice,
+                    'supply_unit_price' => $supplyPrice,
+                    'store_line_amount' => $storePrice * $qty,
+                    'supply_line_amount' => $supplyPrice * $qty,
+                    'price_pending' => $isMarket,
+                    'fulfillment_status' => 'pending',
+                ]);
+
+                // 이행주체(본사/공급처) 판매주문에 연결 — 미처리(created) 있으면 재사용, 없으면 신규
+                $sellerType = $p->supply_type === 'supplier' ? 'supplier' : 'hq';
+                $supplierId = $p->supply_type === 'supplier' ? $p->supplier_id : null;
+                $so = \App\Models\SalesOrder::where('order_id', $order->id)->where('seller_type', $sellerType)
+                    ->where('supplier_id', $supplierId)->where('status', 'created')->first();
+                if (! $so) {
+                    $seq = \App\Models\SalesOrder::where('order_id', $order->id)->count() + 1;
+                    $so = \App\Models\SalesOrder::create([
+                        'sales_order_no' => 'SO-'.preg_replace('/^PO-/', '', $order->order_no).'-'.$seq,
+                        'order_id' => $order->id, 'store_id' => $order->store_id,
+                        'seller_type' => $sellerType, 'supplier_id' => $supplierId,
+                        'status' => 'created', 'order_type' => $order->order_type ?? 'normal',
+                        'item_count' => 0, 'store_amount' => 0, 'supply_amount' => 0,
+                    ]);
+                }
+                $item->update(['sales_order_id' => $so->id]);
+
+                $soItems = OrderItem::where('sales_order_id', $so->id)->get();
+                $so->update([
+                    'item_count' => $soItems->count(),
+                    'store_amount' => (int) $soItems->sum('store_line_amount'),
+                    'supply_amount' => (int) $soItems->sum('supply_line_amount'),
+                ]);
+
+                $order->recomputeAmounts();
+                $stock->reserveOrder($order->load('items'));
+            });
+        } catch (\App\Exceptions\StockShortageException $e) {
+            return back()->withErrors(['add' => '본사 재고 부족 — '.$e->summary()]);
+        }
+
+        try {
+            $notifications->notifyStore((int) $order->store_id, 'order_item_added', '➕ 발주 품목 추가',
+                "{$p->name} 품목이 본사에서 발주에 추가되었습니다.", ['order_id' => $order->id]);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        return back()->with('success', "«{$p->name}» 품목을 발주에 추가했습니다. (매장·정산·판매주문 반영)");
     }
 
     /** 발주 거래명세서 PDF 다운로드/미리보기 */
