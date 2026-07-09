@@ -275,7 +275,6 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::get('purchase-orders', [Portal\Hq\PurchaseOrderController::class, 'index'])->name('purchase_orders.index');
             Route::get('purchase-orders/create', [Portal\Hq\PurchaseOrderController::class, 'create'])->name('purchase_orders.create');
             Route::post('purchase-orders', [Portal\Hq\PurchaseOrderController::class, 'store'])->name('purchase_orders.store');
-            Route::get('purchase-orders/{purchaseOrder}', [Portal\Hq\PurchaseOrderController::class, 'show'])->name('purchase_orders.show');
             Route::get('purchase-orders/{purchaseOrder}/statement/pdf', [Portal\Hq\PurchaseOrderController::class, 'statementPdf'])->name('purchase_orders.statement.pdf');
             Route::post('purchase-orders/{purchaseOrder}/receive', [Portal\Hq\PurchaseOrderController::class, 'receive'])->name('purchase_orders.receive');
             Route::post('purchase-orders/{purchaseOrder}/cancel', [Portal\Hq\PurchaseOrderController::class, 'cancel'])->name('purchase_orders.cancel');

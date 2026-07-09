@@ -3,7 +3,7 @@
 
 @section('content')
 @php $chip = ['ordered'=>'bg-sky-100 text-sky-700','confirmed'=>'bg-amber-100 text-amber-700','received'=>'bg-emerald-100 text-emerald-700','canceled'=>'bg-neutral-100 text-neutral-400']; @endphp
-<x-wms.page-head title="공급처 구매발주" subtitle="본사가 공급처에 재료·물품을 매입 발주합니다. 입고 처리하면 본사 재고에 반영됩니다." icon="🧾">
+<x-wms.page-head title="공급처 구매발주" subtitle="본사가 공급처에 재료·물품을 매입 발주합니다. 발주번호를 클릭하면 상세가 열립니다." icon="🧾">
     <x-slot:actions>
         <a href="{{ route('portal.hq.purchase_orders.create') }}" class="inline-flex items-center gap-1 rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm transition">＋ 구매발주 등록</a>
     </x-slot:actions>
@@ -25,6 +25,7 @@
     @if ($supplier !== 'all' || $status !== 'all' || $from || $to)<a href="{{ url()->current() }}" class="rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-500 font-bold px-3 py-2 text-sm">초기화</a>@endif
 </form>
 
+<div x-data="{ open: null }">
 <x-wms.panel>
     <div class="overflow-x-auto">
         <table class="w-full text-sm">
@@ -36,24 +37,25 @@
                     <th class="text-right font-semibold px-5 py-3">합계</th>
                     <th class="text-left font-semibold px-5 py-3">상태</th>
                     <th class="text-left font-semibold px-5 py-3 hidden md:table-cell">등록일</th>
-                    <th class="text-right font-semibold px-5 py-3">관리</th>
+                    <th class="text-right font-semibold px-5 py-3">거래명세서</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-neutral-100">
                 @forelse ($orders as $o)
                     <tr class="hover:bg-mango-50/40">
-                        <td class="px-5 py-3.5 font-bold text-mango-700 whitespace-nowrap">{{ $o->po_no }}</td>
+                        <td class="px-5 py-3.5 whitespace-nowrap">
+                            <button type="button" @click="open = {{ $o->id }}" class="font-bold text-mango-700 hover:underline">{{ $o->po_no }}</button>
+                        </td>
                         <td class="px-5 py-3.5">{{ $o->supplier_name }}</td>
-                        <td class="px-5 py-3.5 text-right text-neutral-500">{{ $o->items_count ?? $o->items()->count() }}건</td>
+                        <td class="px-5 py-3.5 text-right text-neutral-500">{{ $o->items->count() }}건</td>
                         <td class="px-5 py-3.5 text-right font-black text-neutral-800 whitespace-nowrap">{{ number_format($o->total_amount) }}원</td>
                         <td class="px-5 py-3.5 whitespace-nowrap"><span class="text-xs font-bold px-2.5 py-1 rounded-full {{ $chip[$o->status] ?? '' }}">{{ $o->status_label }}</span></td>
                         <td class="px-5 py-3.5 hidden md:table-cell text-neutral-500 whitespace-nowrap">{{ $o->created_at->format('Y-m-d') }}</td>
                         <td class="px-5 py-3.5 text-right whitespace-nowrap">
-                            <a href="{{ route('portal.hq.purchase_orders.show', $o) }}" class="text-xs font-bold text-neutral-600 hover:text-mango-600 mr-3">상세</a>
                             @if ($o->statement_issued_at)
-                                <a href="{{ route('portal.hq.purchase_orders.statement.pdf', $o) }}" target="_blank" class="text-xs font-bold text-mango-600 hover:text-mango-700">📄 거래명세서</a>
+                                <a href="{{ route('portal.hq.purchase_orders.statement.pdf', $o) }}" target="_blank" class="text-xs font-bold text-mango-600 hover:text-mango-700">📄 확인</a>
                             @else
-                                <span class="text-xs text-neutral-400">명세서 미발행</span>
+                                <span class="text-xs text-neutral-400">미발행</span>
                             @endif
                         </td>
                     </tr>
@@ -66,4 +68,71 @@
 </x-wms.panel>
 
 <div class="mt-5">{{ $orders->links() }}</div>
+
+{{-- 상세 모달 --}}
+@foreach ($orders as $o)
+    <x-detail-modal :id="$o->id">
+        <x-slot:actions>
+            @if ($o->statement_issued_at)
+                <a href="{{ route('portal.hq.purchase_orders.statement.pdf', $o) }}" target="_blank" class="rounded-xl bg-white/90 hover:bg-white text-neutral-700 font-bold px-4 py-2 text-sm shadow">📄 거래명세서</a>
+            @endif
+            @if (! in_array($o->status, ['received','canceled'], true))
+                <form method="POST" action="{{ route('portal.hq.purchase_orders.receive', $o) }}" onsubmit="return confirm('입고 처리하면 본사 재고에 반영됩니다. 진행할까요?')">
+                    @csrf
+                    <button class="rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-4 py-2 text-sm shadow">📥 입고 처리</button>
+                </form>
+                <form method="POST" action="{{ route('portal.hq.purchase_orders.cancel', $o) }}" onsubmit="return confirm('이 구매발주를 취소할까요?')">
+                    @csrf
+                    <button class="rounded-xl bg-white/90 hover:bg-white text-rose-600 font-bold px-4 py-2 text-sm shadow">취소</button>
+                </form>
+            @endif
+        </x-slot:actions>
+        <div class="bg-white rounded-2xl shadow border border-neutral-200 overflow-hidden">
+            <div class="bg-mango-500 text-white px-6 py-4 flex items-center justify-between">
+                <div>
+                    <h2 class="text-lg font-black">구매발주 {{ $o->po_no }}</h2>
+                    <p class="text-white/80 text-sm">{{ $o->supplier_name }} · {{ $o->created_at->format('Y-m-d H:i') }}</p>
+                </div>
+                <span class="text-xs font-bold px-3 py-1.5 rounded-full bg-white/20">{{ $o->status_label }}</span>
+            </div>
+            <div class="px-6 py-3 border-b border-neutral-100 flex flex-wrap gap-x-6 gap-y-1 text-xs text-neutral-500">
+                <span>등록자 <b class="text-neutral-800">{{ optional($o->creator)->name ?? '본사' }}</b></span>
+                @if ($o->confirmed_at)<span>확인 <b class="text-neutral-800">{{ $o->confirmed_at->format('Y-m-d H:i') }}</b></span>@endif
+                @if ($o->received_at)<span>입고 <b class="text-emerald-700">{{ $o->received_at->format('Y-m-d H:i') }}</b></span>@endif
+                @if ($o->statement_issued_at)<span>명세서 발행 <b class="text-mango-700">{{ $o->statement_issued_at->format('Y-m-d H:i') }}</b></span>@endif
+                @if ($o->note)<span>메모 <b class="text-neutral-800">{{ $o->note }}</b></span>@endif
+            </div>
+            <table class="w-full text-sm">
+                <thead class="bg-neutral-50 text-neutral-500">
+                    <tr>
+                        <th class="text-left font-semibold px-6 py-2.5">품목</th>
+                        <th class="text-left font-semibold px-6 py-2.5">단위</th>
+                        <th class="text-right font-semibold px-6 py-2.5">단가</th>
+                        <th class="text-right font-semibold px-6 py-2.5">수량</th>
+                        <th class="text-right font-semibold px-6 py-2.5">금액</th>
+                        <th class="text-right font-semibold px-6 py-2.5">입고</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-neutral-100">
+                    @foreach ($o->items as $it)
+                        <tr>
+                            <td class="px-6 py-2.5 font-semibold text-neutral-800">{{ $it->product_name }}</td>
+                            <td class="px-6 py-2.5 text-neutral-500">{{ $it->unit }}</td>
+                            <td class="px-6 py-2.5 text-right">{{ number_format($it->unit_price) }}원</td>
+                            <td class="px-6 py-2.5 text-right">{{ number_format($it->qty) }}</td>
+                            <td class="px-6 py-2.5 text-right font-bold">{{ number_format($it->line_amount) }}원</td>
+                            <td class="px-6 py-2.5 text-right text-neutral-500">{{ number_format($it->received_qty) }}</td>
+                        </tr>
+                    @endforeach
+                    <tr class="bg-neutral-50 font-black">
+                        <td class="px-6 py-3" colspan="4">합계</td>
+                        <td class="px-6 py-3 text-right text-mango-700">{{ number_format($o->total_amount) }}원</td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </x-detail-modal>
+@endforeach
+</div>
 @endsection

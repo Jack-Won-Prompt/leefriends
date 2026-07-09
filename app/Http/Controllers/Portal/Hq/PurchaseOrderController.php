@@ -24,7 +24,7 @@ class PurchaseOrderController extends Controller
         $status = $request->query('status', 'all');
         [$from, $to] = $this->dateRange($request);
 
-        $query = PurchaseOrder::with('supplier')->latest();
+        $query = PurchaseOrder::with(['supplier', 'items', 'creator'])->latest();
         if ($supplier !== 'all' && is_numeric($supplier)) {
             $query->where('supplier_id', (int) $supplier);
         }
@@ -113,13 +113,6 @@ class PurchaseOrderController extends Controller
             ['purchase_order_id' => $po->id]);
 
         return redirect()->route('portal.hq.purchase_orders.show', $po)->with('success', "구매발주 «{$po->po_no}»를 등록하고 공급처에 전송했습니다.");
-    }
-
-    public function show(PurchaseOrder $purchaseOrder)
-    {
-        $purchaseOrder->load('items', 'supplier', 'creator');
-
-        return view('portal.hq.purchase_orders.show', ['po' => $purchaseOrder]);
     }
 
     /** 입고 처리 → 본사 재고 반영 */
