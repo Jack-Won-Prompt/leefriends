@@ -6,6 +6,11 @@
 
 <x-wms.page-head title="계좌연동 입금확인" subtitle="등록된 계좌의 입금내역을 수집하고, 입금자↔매장 매핑으로 매장 주문과 대사합니다." icon="🏦">
     <x-slot:actions>
+        <form method="POST" action="{{ route('portal.hq.bank.auto_charge') }}" class="inline">
+            @csrf
+            <input type="hidden" name="acc" value="{{ $selAcc }}">
+            <button type="submit" class="inline-flex items-center gap-1 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-4 py-2 text-sm transition">💰 예치금 자동충전</button>
+        </form>
         <form method="POST" action="{{ route('portal.hq.bank.auto_match') }}" class="inline">
             @csrf
             <input type="hidden" name="acc" value="{{ $selAcc }}">
@@ -153,6 +158,22 @@
                                         </button>
                                     </form>
                                 @endforeach
+                            </div>
+                        @endif
+
+                        {{-- 예치금 충전 (주문 대사와 병행) --}}
+                        @if ($store)
+                            <div class="mt-1.5">
+                                @if (isset($chargedDepositIds[$d->id]))
+                                    <span class="inline-flex items-center gap-1 rounded-lg bg-emerald-100 text-emerald-700 font-bold px-2.5 py-1 text-xs">💰 예치금 충전됨</span>
+                                @else
+                                    <form method="POST" action="{{ route('portal.hq.bank.charge') }}" onsubmit="return confirm('{{ $store->name }} 예치금으로 {{ number_format((int) $d->acc_in) }}원을 충전할까요?')">
+                                        @csrf
+                                        <input type="hidden" name="deposit_id" value="{{ $d->id }}">
+                                        <input type="hidden" name="store_id" value="{{ $sid }}">
+                                        <button class="inline-flex items-center gap-1 rounded-lg border border-emerald-300 text-emerald-700 hover:bg-emerald-50 font-bold px-2.5 py-1 text-xs">💰 예치금 충전{{ $store->settlement_type === 'prepaid' ? '' : ' (후불매장)' }}</button>
+                                    </form>
+                                @endif
                             </div>
                         @endif
                     </td>

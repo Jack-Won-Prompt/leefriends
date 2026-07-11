@@ -8,7 +8,9 @@ use App\Models\BankDeposit;
 use App\Models\BankDepositorMapping;
 use App\Models\Order;
 use App\Models\Store;
+use App\Models\StoreLedgerEntry;
 use App\Services\Popbill\PopbillEasyFinBankService;
+use App\Services\Settlement\LedgerService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -80,15 +82,24 @@ class BankDepositController extends Controller
 
         // 입금자 → 매장 매핑, 미매칭 입금건 후보주문
         $map = BankDepositorMapping::mapFor($corp);
-        $stores = Store::orderBy('name')->get(['id', 'name']);
+        $stores = Store::orderBy('name')->get(['id', 'name', 'settlement_type', 'virtual_account', 'ledger_balance']);
         $storeById = $stores->keyBy('id');
+
+        // 가상계좌(입금 식별) → 매장 (입금자명/적요에 포함되면 자동 인식)
+        $vaMap = $stores->filter(fn ($s) => filled($s->virtual_account))
+            ->mapWithKeys(fn ($s) => [preg_replace('/\s+/', '', $s->virtual_account) => $s->id]);
+
+        // 이미 예치금으로 충전 처리된 입금건 (원장 기준)
+        $chargedDepositIds = StoreLedgerEntry::where('ref_type', 'deposit')
+            ->whereIn('ref_id', $deposits->pluck('id'))
+            ->pluck('ref_id')->flip();
 
         // 후보 주문: 매핑된 매장의 미입금 주문 (금액 일치)
         $resolvedStore = [];
         $candidates = [];
         $needStoreIds = [];
         foreach ($deposits as $d) {
-            $sid = $map[BankDepositorMapping::normalize($d->depositor)] ?? null;
+            $sid = $map[BankDepositorMapping::normalize($d->depositor)] ?? $this->resolveByVirtualAccount($d, $vaMap);
             $resolvedStore[$d->id] = $sid;
             if ($sid && ! $d->isMatched()) {
                 $needStoreIds[$sid] = true;
@@ -131,6 +142,7 @@ class BankDepositController extends Controller
             'candidates' => $candidates,
             'stores' => $stores,
             'storeById' => $storeById,
+            'chargedDepositIds' => $chargedDepositIds,
             'summary' => $summary,
             'defStart' => now()->startOfMonth()->format('Y-m-d'),
             'defEnd' => now()->format('Y-m-d'),
@@ -338,6 +350,74 @@ class BankDepositController extends Controller
         }
 
         return back()->with('success', "자동 대사 {$matched}건을 처리했습니다.");
+    }
+
+    /** 입금건의 입금자/적요에서 가상계좌(입금 식별) 매칭 → 매장 ID */
+    private function resolveByVirtualAccount(BankDeposit $d, $vaMap): ?int
+    {
+        if ($vaMap->isEmpty()) {
+            return null;
+        }
+        $hay = preg_replace('/\s+/', '', (string) $d->depositor.' '.(string) $d->remark);
+        foreach ($vaMap as $va => $sid) {
+            if ($va !== '' && str_contains($hay, $va)) {
+                return $sid;
+            }
+        }
+
+        return null;
+    }
+
+    /** 입금건을 매장 예치금으로 충전 (주문 대사와 병행) */
+    public function chargeDeposit(Request $request, LedgerService $ledger)
+    {
+        $data = $request->validate([
+            'deposit_id' => ['required', 'exists:bank_deposits,id'],
+            'store_id' => ['required', 'exists:stores,id'],
+        ]);
+
+        $deposit = BankDeposit::findOrFail($data['deposit_id']);
+        $store = Store::findOrFail($data['store_id']);
+        $ledger->chargeDeposit($store, (int) $deposit->acc_in, $deposit->id,
+            '계좌 입금'.($deposit->depositor ? " ({$deposit->depositor})" : ''));
+
+        return back()->with('success', $store->name.' 예치금 '.number_format($deposit->acc_in).'원을 충전했습니다.');
+    }
+
+    /** 식별된 선입금 매장의 미처리 입금건을 예치금으로 일괄 자동 충전 */
+    public function autoCharge(Request $request, LedgerService $ledger)
+    {
+        $corp = $this->corpNum();
+        $map = BankDepositorMapping::mapFor($corp);
+        $stores = Store::get(['id', 'name', 'settlement_type', 'virtual_account']);
+        $storeById = $stores->keyBy('id');
+        $vaMap = $stores->filter(fn ($s) => filled($s->virtual_account))
+            ->mapWithKeys(fn ($s) => [preg_replace('/\s+/', '', $s->virtual_account) => $s->id]);
+
+        $q = BankDeposit::where('corp_num', $corp)->where('acc_in', '>', 0);
+        if ($request->filled('acc') && str_contains($request->input('acc'), '|')) {
+            [$bc, $an] = explode('|', $request->input('acc'), 2);
+            $q->where('bank_code', $bc)->where('account_number', $an);
+        }
+        $deposits = $q->get();
+
+        $charged = 0;
+        foreach ($deposits as $d) {
+            $sid = $map[BankDepositorMapping::normalize($d->depositor)] ?? $this->resolveByVirtualAccount($d, $vaMap);
+            $store = $sid ? $storeById->get($sid) : null;
+            // 선입금(예치) 매장만 자동 충전 대상
+            if (! $store || $store->settlement_type !== 'prepaid') {
+                continue;
+            }
+            $before = StoreLedgerEntry::where('ref_type', 'deposit')->where('ref_id', $d->id)->exists();
+            $ledger->chargeDeposit($store, (int) $d->acc_in, $d->id,
+                '계좌 입금'.($d->depositor ? " ({$d->depositor})" : ''));
+            if (! $before) {
+                $charged++;
+            }
+        }
+
+        return back()->with('success', "선입금 매장 예치금 자동 충전 {$charged}건을 처리했습니다.");
     }
 
     /** 정액제 신청 팝업 */

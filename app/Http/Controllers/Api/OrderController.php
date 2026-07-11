@@ -138,6 +138,11 @@ class OrderController extends Controller
                 (new SalesOrderGenerator())->generate($order);
                 app(\App\Services\Inventory\HqStockService::class)->reserveOrder($order);
 
+                // 거래처 원장 차감 (정식 발주만)
+                if ($type === 'normal') {
+                    app(\App\Services\Settlement\LedgerService::class)->syncOrder($order->loadMissing('store'), $user->id);
+                }
+
                 return $order;
             });
         } catch (\App\Exceptions\StockShortageException $e) {
@@ -200,6 +205,11 @@ class OrderController extends Controller
                 $this->buildItems($order, $lines);
                 (new SalesOrderGenerator())->generate($order);
                 app(\App\Services\Inventory\HqStockService::class)->reserveOrder($order->load('items'));
+
+                // 변경된 금액으로 원장 반영 동기화 (정식 발주만)
+                if ($order->order_type === 'normal') {
+                    app(\App\Services\Settlement\LedgerService::class)->syncOrder($order->fresh()->loadMissing('store'));
+                }
             });
         } catch (\App\Exceptions\StockShortageException $e) {
             return response()->json(['message' => $e->summary(), 'shortages' => $e->shortages], 422);
@@ -235,6 +245,11 @@ class OrderController extends Controller
             app(\App\Services\Inventory\HqStockService::class)->releaseOrder($order);
             SalesOrder::where('order_id', $order->id)->update(['status' => 'canceled']);
             $order->update(['status' => 'canceled']);
+
+            // 원장 환불 (정식 발주만)
+            if ($order->order_type === 'normal') {
+                app(\App\Services\Settlement\LedgerService::class)->syncOrder($order->loadMissing('store'));
+            }
         });
 
         $changes->record($order, 'canceled', $snapshot);

@@ -51,6 +51,7 @@
                 ['portal.hq.hometax.index', '매출/매입 관리', []],
                 ['portal.hq.bank.index', '계좌 입금확인', []],
                 ['portal.hq.store_payments.index', '매장별 입금현황', ['portal.hq.store_payments.show']],
+                ['portal.hq.store_ledger.index', '매장 원장(정산)', ['portal.hq.store_ledger.show']],
             ]],
             ['기준정보', '🗂️', [
                 ['portal.hq.products.index', '품목 관리', []],

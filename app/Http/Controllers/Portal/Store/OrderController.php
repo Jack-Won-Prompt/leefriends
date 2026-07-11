@@ -26,8 +26,9 @@ class OrderController extends Controller
             ->latest();
         $this->applyDateRange($query, $from, $to);
         $orders = $query->paginate(15)->withQueryString();
+        $store = Auth::user()->store;
 
-        return view('portal.store.orders.index', compact('orders', 'from', 'to'));
+        return view('portal.store.orders.index', compact('orders', 'from', 'to', 'store'));
     }
 
     /** 샘플 주문 목록 */
@@ -91,6 +92,11 @@ class OrderController extends Controller
                 (new SalesOrderGenerator())->generate($order);
                 // 본사 가용재고 확인 후 출고예정 예약 (부족 시 발주 차단)
                 app(\App\Services\Inventory\HqStockService::class)->reserveOrder($order);
+
+                // 거래처 원장 차감 (정식 발주만; 잔액 = 예치/미수)
+                if ($type === 'normal') {
+                    app(\App\Services\Settlement\LedgerService::class)->syncOrder($order->loadMissing('store'), $user->id);
+                }
 
                 return $order;
             });
@@ -156,6 +162,11 @@ class OrderController extends Controller
                 (new SalesOrderGenerator())->generate($order);
                 // 재예약 (부족 시 발주 수정 차단)
                 app(\App\Services\Inventory\HqStockService::class)->reserveOrder($order->load('items'));
+
+                // 변경된 금액으로 원장 반영 동기화 (정식 발주만)
+                if ($order->order_type === 'normal') {
+                    app(\App\Services\Settlement\LedgerService::class)->syncOrder($order->fresh()->loadMissing('store'), Auth::id());
+                }
             });
         } catch (\App\Exceptions\StockShortageException $e) {
             return back()->withErrors(['qty' => $e->summary()])->withInput();
@@ -178,6 +189,11 @@ class OrderController extends Controller
             app(\App\Services\Inventory\HqStockService::class)->releaseOrder($order);
             SalesOrder::where('order_id', $order->id)->update(['status' => 'canceled']);
             $order->update(['status' => 'canceled']);
+
+            // 원장 환불 (정식 발주만)
+            if ($order->order_type === 'normal') {
+                app(\App\Services\Settlement\LedgerService::class)->syncOrder($order->loadMissing('store'), Auth::id());
+            }
         });
 
         $changes->record($order, 'canceled', $snapshot);

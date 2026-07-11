@@ -11,12 +11,29 @@ class Store extends Model
         'corp_postcode', 'corp_address', 'corp_address_detail',
         'biz_no', 'ceo', 'biz_type', 'biz_class',
         'phone', 'email', 'hours', 'lat', 'lng', 'image', 'is_active',
+        'settlement_type', 'virtual_account', 'ledger_balance',
     ];
+
+    public const SETTLEMENT_TYPES = [
+        'postpaid' => '후불',
+        'prepaid' => '선입금(예치금)',
+    ];
+
+    public function getSettlementLabelAttribute(): string
+    {
+        return self::SETTLEMENT_TYPES[$this->settlement_type] ?? '후불';
+    }
 
     /** 매장 포털 계정 (1개) */
     public function account()
     {
         return $this->hasOne(User::class)->where('role', 'store');
+    }
+
+    /** 거래 원장 */
+    public function ledgerEntries()
+    {
+        return $this->hasMany(StoreLedgerEntry::class)->latest();
     }
 
     /** 배송 주소 전체 (우편번호 + 주소 + 상세) */
@@ -34,6 +51,7 @@ class Store extends Model
         'is_active' => 'boolean',
         'lat' => 'float',
         'lng' => 'float',
+        'ledger_balance' => 'integer',
     ];
 
     public function scopeActive($query)

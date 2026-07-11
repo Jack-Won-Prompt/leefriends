@@ -7,6 +7,17 @@
         <a href="{{ route('portal.store.orders.create') }}" class="inline-flex items-center gap-1 rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm transition">🛒 재료 발주하기</a>
     </x-slot:actions>
 </x-wms.page-head>
+
+@if ($store && $store->settlement_type === 'prepaid')
+    <div class="mb-5 flex items-center justify-between rounded-2xl p-5 text-white {{ $store->ledger_balance < 0 ? 'bg-gradient-to-br from-rose-500 to-rose-600' : 'bg-gradient-to-br from-emerald-500 to-emerald-600' }}">
+        <div>
+            <p class="text-white/80 font-semibold text-sm">{{ $store->ledger_balance < 0 ? '미수금 (예치 잔액 부족)' : '예치금 잔액' }}</p>
+            <p class="text-2xl font-black mt-0.5">{{ number_format(abs($store->ledger_balance)) }}<span class="text-base">원</span></p>
+        </div>
+        <p class="text-xs text-white/80 text-right leading-relaxed">발주 시 예치금에서<br>자동 차감됩니다</p>
+    </div>
+@endif
+
 <x-date-filter :from="$from" :to="$to" label="발주일 기간" />
 
 <x-wms.toolbar :count="$orders->total()" />

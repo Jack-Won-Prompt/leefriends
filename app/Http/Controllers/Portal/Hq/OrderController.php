@@ -155,6 +155,11 @@ class OrderController extends Controller
 
                 $order->recomputeAmounts();
                 $stock->reserveOrder($order->load('items'));
+
+                // 원장 반영 동기화 (이미 추적 중인 발주만)
+                if (($order->order_type ?? 'normal') === 'normal') {
+                    app(\App\Services\Settlement\LedgerService::class)->syncOrder($order->fresh(), \Illuminate\Support\Facades\Auth::id(), false);
+                }
             });
         } catch (\App\Exceptions\StockShortageException $e) {
             return back()->withErrors(['add' => '본사 재고 부족 — '.$e->summary()]);
@@ -297,6 +302,10 @@ class OrderController extends Controller
 
         $order->recomputeAmounts(); // 발주 + 판매주문 합계 동기화
 
+        if (($order->order_type ?? 'normal') === 'normal') {
+            app(\App\Services\Settlement\LedgerService::class)->syncOrder($order->fresh(), \Illuminate\Support\Facades\Auth::id(), false);
+        }
+
         try {
             $notifications->notifyStore(
                 (int) $order->store_id,
@@ -370,6 +379,10 @@ class OrderController extends Controller
         ]);
 
         $order->recomputeAmounts();
+
+        if (($order->order_type ?? 'normal') === 'normal') {
+            app(\App\Services\Settlement\LedgerService::class)->syncOrder($order->fresh(), \Illuminate\Support\Facades\Auth::id(), false);
+        }
 
         try {
             $notifications->notifyStore(

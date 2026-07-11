@@ -279,6 +279,13 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::post('purchase-orders/{purchaseOrder}/receive', [Portal\Hq\PurchaseOrderController::class, 'receive'])->name('purchase_orders.receive');
             Route::post('purchase-orders/{purchaseOrder}/cancel', [Portal\Hq\PurchaseOrderController::class, 'cancel'])->name('purchase_orders.cancel');
 
+            // 매장 원장 (예치금 · 미수금 정산)
+            Route::get('store-ledger', [Portal\Hq\StoreLedgerController::class, 'index'])->name('store_ledger.index');
+            Route::get('store-ledger/{store}', [Portal\Hq\StoreLedgerController::class, 'show'])->name('store_ledger.show');
+            Route::post('store-ledger/{store}/charge', [Portal\Hq\StoreLedgerController::class, 'charge'])->name('store_ledger.charge');
+            Route::post('store-ledger/{store}/adjust', [Portal\Hq\StoreLedgerController::class, 'adjust'])->name('store_ledger.adjust');
+            Route::patch('store-ledger/{store}/settings', [Portal\Hq\StoreLedgerController::class, 'settings'])->name('store_ledger.settings');
+
             // 사이트 방문 분석
             Route::get('analytics', [Portal\Hq\VisitAnalyticsController::class, 'index'])->name('analytics.index');
 
@@ -317,6 +324,8 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::post('bank/match', [Portal\Hq\BankDepositController::class, 'match'])->name('bank.match');
             Route::delete('bank/deposits/{deposit}/match', [Portal\Hq\BankDepositController::class, 'unmatch'])->name('bank.unmatch');
             Route::post('bank/auto-match', [Portal\Hq\BankDepositController::class, 'autoMatch'])->name('bank.auto_match');
+            Route::post('bank/charge', [Portal\Hq\BankDepositController::class, 'chargeDeposit'])->name('bank.charge');
+            Route::post('bank/auto-charge', [Portal\Hq\BankDepositController::class, 'autoCharge'])->name('bank.auto_charge');
             Route::get('bank/flatrate', [Portal\Hq\BankDepositController::class, 'flatRateUrl'])->name('bank.flatrate');
             Route::post('statements/{statement}/tax-invoice', [Portal\Hq\TaxInvoiceController::class, 'issueForStatement'])->name('tax_invoices.issue_statement');
 
