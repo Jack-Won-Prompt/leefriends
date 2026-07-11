@@ -11,10 +11,12 @@ use App\Models\SupplierStatement;
 use App\Models\SupplyProduct;
 use App\Models\TaxInvoice;
 use App\Models\User;
+use App\Mail\TaxInvoiceIssuedMail;
 use App\Services\Notification\NotificationService;
 use App\Services\Popbill\PopbillTaxinvoiceService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 
 /**
  * 매장 발주(주문)를 기반으로 전자세금계산서를 생성하고 팝빌로 즉시발행한다.
@@ -383,7 +385,47 @@ class TaxInvoiceIssueService
 
         $this->notifyIssued($direction, $refs, $issued);
 
+        // 본사→매장 발행 시, 발행 담당자에게 확인 메일 발송 (팝빌은 매장에만 자동발송)
+        if ($direction === 'hq_to_store') {
+            $this->notifyIssuerEmail($issued);
+        }
+
         return $issued;
+    }
+
+    /**
+     * 발행 담당자(본사)에게 세금계산서 발행 확인 메일 발송.
+     * 로그인 담당자 이메일 우선, 없으면 config 본사 이메일. 실패해도 발행은 막지 않음.
+     */
+    private function notifyIssuerEmail(Collection $issued): void
+    {
+        if ($issued->isEmpty()) {
+            return;
+        }
+
+        $to = optional(Auth::user())->email ?: config('popbill.hq.email');
+        if (! $to) {
+            return;
+        }
+
+        try {
+            $docs = $issued->map(fn ($inv) => [
+                'invoice_no' => $inv->invoice_no,
+                'note' => $inv->note ?: '세금계산서',
+                'supply' => (int) $inv->supply_amount,
+                'vat' => (int) $inv->vat,
+                'total' => (int) $inv->total_amount,
+                'print_url' => route('portal.hq.tax_invoices.print', $inv),
+            ])->values();
+
+            Mail::to($to)->send(new TaxInvoiceIssuedMail(
+                $issued->first()->invoicee_corp_name ?: '매장',
+                $docs,
+                (int) $issued->sum('total_amount'),
+            ));
+        } catch (\Throwable $e) {
+            report($e); // 메일 실패는 발행에 영향 없음
+        }
     }
 
     /** 단일 문서(세금계산서 또는 계산서) 발행 + 로컬 기록 */
