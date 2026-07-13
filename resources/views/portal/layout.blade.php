@@ -34,7 +34,6 @@
                 ['portal.hq.sales_orders.index', '판매주문', []],
                 ['portal.hq.purchase_orders.index', '공급처 구매발주', ['portal.hq.purchase_orders.create']],
                 ['portal.hq.supplier_orders.index', '공급사 발주 현황', []],
-                ['portal.order_changes.index', '매장 주문 변경', []],
             ]],
             ['물류관리', '🚚', [
                 ['portal.hq.logistics.inbound', '입고관리', []],
@@ -108,7 +107,6 @@
                 ['portal.supplier.orders.index', '주문 관리', ['portal.supplier.orders.show']],
                 ['portal.supplier.sales_orders.index', '판매주문', []],
                 ['portal.supplier.purchase_orders.index', '본사 구매발주', []],
-                ['portal.order_changes.index', '매장 주문 변경', []],
             ]],
             ['출고 · 배송', '🚚', [
                 ['portal.supplier.shipments.index', '출고 관리', ['portal.supplier.shipments.create','portal.supplier.shipments.show']],
@@ -275,40 +273,6 @@
         </header>
 
         <main class="flex-1 p-5 lg:p-8">
-            @if (in_array($role, ['hq', 'supplier'], true))
-                @php
-                    [$ocType, $ocSid] = \App\Http\Controllers\Portal\OrderChangeController::sellerContext($user);
-                    $pendingChanges = \App\Models\OrderChange::forSeller($ocType, $ocSid)->pending()->latest()->get();
-                @endphp
-                @if ($pendingChanges->isNotEmpty())
-                    <div class="mb-5 rounded-2xl bg-amber-50 border-2 border-amber-300 px-5 py-4">
-                        <div class="flex items-start justify-between gap-4">
-                            <div class="flex items-start gap-3">
-                                <span class="text-2xl">⚠️</span>
-                                <div>
-                                    <p class="font-extrabold text-amber-900">매장 주문 변경 {{ $pendingChanges->count() }}건 미반영</p>
-                                    <ul class="mt-1 text-sm text-amber-800 space-y-0.5">
-                                        @foreach ($pendingChanges->take(3) as $pc)
-                                            <li>· [{{ $pc->type_label }}] {{ $pc->summary }}</li>
-                                        @endforeach
-                                        @if ($pendingChanges->count() > 3)
-                                            <li class="text-amber-600">외 {{ $pendingChanges->count() - 3 }}건…</li>
-                                        @endif
-                                    </ul>
-                                </div>
-                            </div>
-                            <div class="flex flex-col gap-2 shrink-0">
-                                <a href="{{ route('portal.order_changes.index') }}" class="text-center rounded-lg bg-white border border-amber-300 text-amber-800 font-bold px-4 py-2 text-sm hover:bg-amber-100">확인하기</a>
-                                <form method="POST" action="{{ route('portal.order_changes.ack_all') }}" onsubmit="return confirm('모든 변경을 확인(반영) 처리할까요?')">
-                                    @csrf
-                                    <button class="w-full rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold px-4 py-2 text-sm">모두 반영</button>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                @endif
-            @endif
-
             @if (session('success'))
                 <div class="mb-5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 px-5 py-3.5 text-sm font-medium">{{ session('success') }}</div>
             @endif
