@@ -20,9 +20,10 @@ class OrderChangeController extends Controller
     {
         [$type, $sid] = self::sellerContext(Auth::user());
 
+        // 미반영(확인 전) 건만 표시 — 반영 완료 건은 목록에서 숨김(작업목록)
         $changes = OrderChange::forSeller($type, $sid)
+            ->pending()
             ->with('store')
-            ->orderByRaw('acknowledged_at is null desc')
             ->latest()
             ->paginate(20);
 
