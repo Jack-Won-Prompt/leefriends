@@ -8,8 +8,16 @@
 
     <meta property="og:title" content="@yield('title', 'LEEFRIENDS · 프리미엄 망고빙수 전문점')">
     <meta property="og:description" content="@yield('desc', '농익은 애플망고로 만드는 프리미엄 망고빙수 전문점 LEEFRIENDS.')">
-    <meta property="og:image" content="{{ asset('images/og.svg') }}">
+    <meta property="og:image" content="{{ asset('images/og.png') }}">
+    <meta property="og:image:type" content="image/png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
     <meta property="og:type" content="website">
+
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="@yield('title', 'LEEFRIENDS · 프리미엄 망고빙수 전문점')">
+    <meta name="twitter:description" content="@yield('desc', '농익은 애플망고로 만드는 프리미엄 망고빙수 전문점 LEEFRIENDS.')">
+    <meta name="twitter:image" content="{{ asset('images/og.png') }}">
 
     <link rel="icon" href="{{ asset('images/menu/mango-cheese-bingsu.svg') }}">
 
