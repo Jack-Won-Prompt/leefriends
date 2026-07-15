@@ -219,6 +219,7 @@ class ProductController extends Controller
             'supplier_id' => ['nullable', 'required_if:supply_type,supplier', 'exists:suppliers,id'],
             'supply_price' => ['nullable', 'integer', 'min:0'],
             'is_market_price' => ['nullable', 'boolean'],
+            'tax_type' => ['nullable', 'in:inc,exc,exempt'],
             'sort_order' => ['nullable', 'integer'],
             'is_active' => ['nullable', 'boolean'],
         ]);
@@ -231,6 +232,7 @@ class ProductController extends Controller
             $data['supply_price'] = 0;
         }
         $data['is_market_price'] = (bool) ($data['is_market_price'] ?? false);
+        $data['tax_type'] = $data['tax_type'] ?? ($product->tax_type ?? 'inc');
         $data['sort_order'] = (int) ($data['sort_order'] ?? 0);
         $data['is_active'] = (bool) ($data['is_active'] ?? true);
 
@@ -253,6 +255,8 @@ class ProductController extends Controller
             'supply_price' => (int) $p->supply_price,
             'store_price' => (int) $p->store_price,
             'is_market_price' => (bool) $p->is_market_price,
+            'tax_type' => $p->tax_type ?: 'inc',
+            'tax_type_label' => $p->tax_type_label,
             'is_active' => (bool) $p->is_active,
             'approval_status' => $p->approval_status,
             'approval_note' => $p->approval_note,

@@ -59,6 +59,7 @@ Route::prefix('v1')->group(function () {
         Route::post('orders', [OrderController::class, 'store'])->name('api.orders.store');
         Route::get('orders/{order}', [OrderController::class, 'show'])->name('api.orders.show');
         Route::put('orders/{order}', [OrderController::class, 'update'])->name('api.orders.update');
+        Route::post('orders/{order}/items', [OrderController::class, 'addItem'])->name('api.orders.items.add');
         Route::delete('orders/{order}', [OrderController::class, 'destroy'])->name('api.orders.destroy');
 
         // 매장 홈 대시보드

@@ -227,6 +227,87 @@ class OrderController extends Controller
     }
 
     /**
+     * POST /api/v1/orders/{order}/items  — 매장이 자기 발주(거래명세서)에 품목 추가 (출고 전에만)
+     * body: { product_id, qty }
+     * 기존 품목 목록에 새 품목을 더해 update 와 동일한 재빌드(판매주문 재생성·재고 재예약)를 수행한다.
+     */
+    public function addItem(Request $request, Order $order, OrderChangeService $changes): JsonResponse
+    {
+        $this->authorizeStore($request, $order);
+        if (! $this->isEditable($order)) {
+            return response()->json(
+                ['message' => '이미 출고가 진행되었거나 취소/완료된 발주는 품목을 추가할 수 없습니다.'],
+                409,
+            );
+        }
+
+        $data = $request->validate([
+            'product_id' => ['required', 'integer'],
+            'qty' => ['required', 'integer', 'min:1', 'max:9999'],
+        ], ['product_id.required' => '추가할 품목을 선택해 주세요.', 'qty.required' => '수량을 입력해 주세요.']);
+
+        $product = SupplyProduct::active()->find($data['product_id']);
+        if (! $product) {
+            return response()->json(['message' => '판매 가능한 품목이 아닙니다.'], 422);
+        }
+
+        // 기존 품목 → 라인, 새 품목 병합(이미 있으면 수량 합산)
+        $lines = $order->items()->get()->map(fn (OrderItem $it) => [
+            'product_id' => (int) $it->supply_product_id,
+            'unit_id' => $it->supply_product_unit_id ? (int) $it->supply_product_unit_id : null,
+            'qty' => (int) $it->qty,
+        ]);
+        $existing = $lines->firstWhere('product_id', $product->id);
+        if ($existing) {
+            $lines = $lines->map(fn ($l) => $l['product_id'] === $product->id
+                ? [...$l, 'qty' => $l['qty'] + (int) $data['qty']]
+                : $l);
+        } else {
+            $lines = $lines->push([
+                'product_id' => (int) $product->id,
+                'unit_id' => null,
+                'qty' => (int) $data['qty'],
+            ]);
+        }
+
+        $lines = $this->validLines($lines->all());
+        if ($lines->isEmpty()) {
+            return response()->json(['message' => '유효한 품목이 없습니다.'], 422);
+        }
+
+        $oldItems = $order->items()->get();
+        $isSample = ($order->order_type ?? 'normal') === 'sample';
+
+        try {
+            DB::transaction(function () use ($order, $lines, $isSample) {
+                app(\App\Services\Inventory\HqStockService::class)->releaseOrder($order);
+                SalesOrder::where('order_id', $order->id)->delete();
+                $order->items()->delete();
+                $order->update(['status' => 'pending']);
+
+                $this->buildItems($order, $lines, $isSample);
+                (new SalesOrderGenerator())->generate($order);
+                app(\App\Services\Inventory\HqStockService::class)->reserveOrder($order->load('items'));
+
+                if ($order->order_type === 'normal') {
+                    app(\App\Services\Settlement\LedgerService::class)->syncOrder($order->fresh()->loadMissing('store'));
+                }
+            });
+        } catch (\App\Exceptions\StockShortageException $e) {
+            return response()->json(['message' => $e->summary(), 'shortages' => $e->shortages], 422);
+        }
+
+        // 본사·공급처에 변경 알림 + 미반영 기록
+        $changes->record($order, 'updated', $oldItems);
+        $order->load('items');
+
+        return response()->json([
+            'message' => "«{$product->name}» 품목을 발주에 추가했습니다.",
+            'data' => $this->detail($order),
+        ], 201);
+    }
+
+    /**
      * DELETE /api/v1/orders/{order}  — 발주 취소 (출고 전에만 가능)
      */
     public function destroy(Request $request, Order $order, OrderChangeService $changes): JsonResponse
