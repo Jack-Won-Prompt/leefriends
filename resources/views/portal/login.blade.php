@@ -52,6 +52,11 @@
                 </div>
                 <button class="w-full rounded-xl bg-gradient-to-r from-mango-500 to-mango-600 text-white font-bold py-3.5 hover:brightness-105 active:scale-[0.99] transition">로그인</button>
             </form>
+
+            <div class="mt-6 pt-5 border-t border-neutral-100 text-center">
+                <p class="text-sm text-neutral-500">아직 회원이 아니신가요?</p>
+                <a href="{{ route('portal.register') }}" class="inline-block mt-2 text-sm font-bold text-mango-600 hover:text-mango-700">제품 구매자 · 공급자 회원가입 →</a>
+            </div>
         </div>
 
         <p class="text-center text-neutral-500 text-sm mt-6">

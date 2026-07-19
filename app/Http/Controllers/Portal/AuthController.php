@@ -25,10 +25,24 @@ class AuthController extends Controller
         ]);
 
         if (Auth::attempt($credentials, $request->boolean('remember'))) {
-            if (! $this->portalRole(Auth::user())) {
+            $user = Auth::user();
+
+            if (! $this->portalRole($user)) {
                 Auth::logout();
                 return back()->withErrors(['email' => '포털 사용 권한이 없는 계정입니다.'])->onlyInput('email');
             }
+
+            // 본사 승인 게이트 — 대기/반려 계정은 로그인 차단
+            if ($user->approval_status === \App\Models\User::APPROVAL_PENDING) {
+                Auth::logout();
+                return back()->withErrors(['email' => '본사 승인 대기 중인 계정입니다. 승인 완료 후 이용하실 수 있습니다.'])->onlyInput('email');
+            }
+            if ($user->approval_status === \App\Models\User::APPROVAL_REJECTED) {
+                Auth::logout();
+                $reason = $user->rejected_reason ? " (사유: {$user->rejected_reason})" : '';
+                return back()->withErrors(['email' => "가입 신청이 반려된 계정입니다.{$reason}"])->onlyInput('email');
+            }
+
             $request->session()->regenerate();
 
             return redirect()->intended(route('portal.dashboard'));

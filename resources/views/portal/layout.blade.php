@@ -24,6 +24,8 @@
     $user = auth()->user();
     $role = $user->role ?: ($user->is_admin ? 'hq' : '');
     $roleLabel = \App\Models\User::ROLES[$role] ?? '사용자';
+    // 본사 사이드바 — 승인 대기 중인 회원가입 신청 수 (뱃지)
+    $pendingSignups = $role === 'hq' ? \App\Models\User::pendingApproval()->count() : 0;
     // 2레벨 메뉴: 각 그룹 = [그룹명, 아이콘, 자식[]]. 자식 = [route, label, also[]]. 자식이 비면 그룹 자체가 링크.
     $menus = [
         'hq' => [
@@ -57,6 +59,7 @@
                 ['portal.hq.categories.index', '카테고리 관리', []],
                 ['portal.hq.suppliers.index', '공급처 관리', []],
                 ['portal.hq.stores.index', '매장 관리', []],
+                ['portal.hq.registrations.index', '회원 승인', []],
                 ['portal.hq.couriers.index', '택배사 관리', []],
                 ['portal.hq.fruit_storages.index', '과일 보관 관리', []],
             ]],
@@ -183,6 +186,9 @@
                                    class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition {{ $active ? 'bg-mango-500 text-white' : 'text-neutral-300 hover:bg-white/5 hover:text-white' }}">
                                     <span class="w-1.5 h-1.5 rounded-full {{ $active ? 'bg-white' : 'bg-white/30' }}"></span>
                                     {{ $label }}
+                                    @if ($r === 'portal.hq.registrations.index' && $pendingSignups > 0)
+                                        <span class="ml-auto inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-rose-500 text-white text-[11px] font-bold">{{ $pendingSignups }}</span>
+                                    @endif
                                 </a>
                             @endforeach
                         </div>

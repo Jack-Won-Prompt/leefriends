@@ -76,6 +76,10 @@ Route::prefix('portal')->name('portal.')->group(function () {
     Route::post('login', [Portal\AuthController::class, 'login'])->name('login.attempt');
     Route::post('logout', [Portal\AuthController::class, 'logout'])->name('logout');
 
+    // 이메일 자가 회원가입 (구매자/공급자) — 본사 승인 후 이용 가능
+    Route::get('register', [Portal\RegisterController::class, 'show'])->name('register');
+    Route::post('register', [Portal\RegisterController::class, 'store'])->name('register.store');
+
     // 비밀번호 찾기 (이메일 재설정) — 비로그인 접근
     Route::get('forgot-password', [Portal\PasswordResetController::class, 'request'])->name('password.request');
     Route::post('forgot-password', [Portal\PasswordResetController::class, 'email'])->name('password.email');
@@ -256,6 +260,11 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::post('stores/{store}/reinvite', [Portal\Hq\StoreController::class, 'reinvite'])->name('stores.reinvite');
             Route::patch('stores/{store}', [Portal\Hq\StoreController::class, 'update'])->name('stores.update');
             Route::delete('stores/{store}', [Portal\Hq\StoreController::class, 'destroy'])->name('stores.destroy');
+
+            // 회원가입 신청 승인 / 반려
+            Route::get('registrations', [Portal\Hq\RegistrationController::class, 'index'])->name('registrations.index');
+            Route::post('registrations/{user}/approve', [Portal\Hq\RegistrationController::class, 'approve'])->name('registrations.approve');
+            Route::post('registrations/{user}/reject', [Portal\Hq\RegistrationController::class, 'reject'])->name('registrations.reject');
 
             // 홈페이지 콘텐츠 (메뉴 / 블로그 / 네이버 클립)
             Route::get('menus', [Portal\Hq\MenuController::class, 'index'])->name('menus.index');

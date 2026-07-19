@@ -37,6 +37,21 @@ class User extends Authenticatable
         'supplier_id',
         'invite_token',
         'invited_at',
+        'approval_status',
+        'approved_at',
+        'approved_by',
+        'rejected_reason',
+    ];
+
+    /** 회원가입 승인 상태 */
+    public const APPROVAL_PENDING = 'pending';
+    public const APPROVAL_APPROVED = 'approved';
+    public const APPROVAL_REJECTED = 'rejected';
+
+    /** 자가 회원가입 시 선택 가능한 회원 종류 → 내부 역할 매핑 */
+    public const SIGNUP_TYPES = [
+        'store' => '제품 구매자',
+        'supplier' => '제품 공급자',
     ];
 
     public const ROLES = [
@@ -69,10 +84,33 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
+            'approved_at' => 'datetime',
             'password' => 'hashed',
             'is_admin' => 'boolean',
             'hourly_wage' => 'integer',
         ];
+    }
+
+    /** 본사 승인이 완료되어 포털 이용이 가능한 계정인지 */
+    public function isApproved(): bool
+    {
+        return $this->approval_status === self::APPROVAL_APPROVED;
+    }
+
+    public function isPendingApproval(): bool
+    {
+        return $this->approval_status === self::APPROVAL_PENDING;
+    }
+
+    /** 승인 대기 중인 자가 가입 신청 목록 */
+    public function scopePendingApproval($query)
+    {
+        return $query->where('approval_status', self::APPROVAL_PENDING);
+    }
+
+    public function getSignupTypeLabelAttribute(): string
+    {
+        return self::SIGNUP_TYPES[$this->role] ?? ($this->role_label ?? $this->role);
     }
 
     public function isPartTime(): bool
