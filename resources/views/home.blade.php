@@ -201,15 +201,18 @@
 
 {{-- ===================== FRANCHISE HIGHLIGHT ===================== --}}
 <section class="relative py-28 overflow-hidden bg-neutral-900">
-    <img src="{{ asset('images/hero/franchise_storefront.jpg') }}" onerror="this.onerror=null;this.src='{{ asset('images/hero/slide3.svg') }}'" class="absolute inset-0 w-full h-full object-cover opacity-40" alt="">
-    <div class="absolute inset-0 bg-gradient-to-t from-neutral-900 via-neutral-900/70 to-neutral-900/40"></div>
+    <img src="{{ asset('images/hero/franchise_storefront.jpg') }}" onerror="this.onerror=null;this.src='{{ asset('images/hero/slide3.svg') }}'" class="absolute inset-0 w-full h-full object-cover opacity-90" alt="">
+    {{-- 매장 이미지가 잘 보이도록 스크림은 최소화하되, 흰 텍스트 가독성은 확보 --}}
+    <div class="absolute inset-0 bg-gradient-to-t from-neutral-900/85 via-neutral-900/45 to-neutral-900/45"></div>
     <div class="relative z-10 max-w-6xl mx-auto px-5 lg:px-8 text-white">
-        <div class="text-center reveal">
-            <p class="text-mango-300 font-bold tracking-widest text-sm mb-5">FRANCHISE</p>
-            <h2 class="text-3xl md:text-5xl font-black leading-tight mb-5 text-balance">
+        {{-- 헤드라인은 밝은 간판 위에 올라오므로 뒤에 부드러운 어두운 스크림을 깔아 대비 확보 --}}
+        <div class="text-center reveal relative">
+            <div class="absolute -inset-x-8 -inset-y-6 -z-10 bg-neutral-900/55 blur-2xl rounded-[3rem]"></div>
+            <p class="text-mango-300 font-bold tracking-widest text-sm mb-5 [text-shadow:0_2px_10px_rgb(0_0_0/60%)]">FRANCHISE</p>
+            <h2 class="text-3xl md:text-5xl font-black leading-tight mb-5 text-balance [text-shadow:0_3px_16px_rgb(0_0_0/75%)]">
                 사계절 잘 팔리는 디저트 카페<br>망고정과 시작하세요
             </h2>
-            <p class="text-white/80 text-lg">낮은 창업비 · 높은 수익률 · 본사 토탈 지원</p>
+            <p class="text-white/90 text-lg [text-shadow:0_2px_10px_rgb(0_0_0/70%)]">낮은 창업비 · 높은 수익률 · 본사 토탈 지원</p>
         </div>
 
         {{-- 핵심 수치 (카운트업) --}}
