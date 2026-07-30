@@ -323,38 +323,26 @@ class OrderController extends Controller
             );
         }
 
-        $lines = $order->items()->where('id', '!=', $item->id)->get()->map(fn (OrderItem $it) => [
-            'product_id' => (int) $it->supply_product_id,
-            'unit_id' => $it->supply_product_unit_id ? (int) $it->supply_product_unit_id : null,
-            'qty' => (int) $it->qty,
-        ]);
-        if ($lines->isEmpty()) {
+        $order->loadMissing('items');
+        if ($order->items->count() <= 1) {
             return response()->json(['message' => '발주의 마지막 품목은 삭제할 수 없습니다. 발주를 취소해 주세요.'], 422);
         }
 
-        $lines = $this->validLines($lines->all());
         $oldItems = $order->items()->get();
         $name = $item->product_name;
-        $isSample = ($order->order_type ?? 'normal') === 'sample';
+        // 삭제 품목의 예약만 해제(수요 감소) → 재예약 불필요, 재고 부족으로 삭제가 막히지 않음
+        $releaseLine = [['product_id' => (int) $item->supply_product_id, 'qty' => (int) $item->qty, 'name' => $name]];
 
-        try {
-            DB::transaction(function () use ($order, $lines, $isSample) {
-                app(\App\Services\Inventory\HqStockService::class)->releaseOrder($order);
-                SalesOrder::where('order_id', $order->id)->delete();
-                $order->items()->delete();
-                $order->update(['status' => 'pending']);
+        DB::transaction(function () use ($order, $item, $releaseLine) {
+            app(\App\Services\Inventory\HqStockService::class)->release($releaseLine, 'Order', $order->id);
+            $item->delete();
+            SalesOrder::where('order_id', $order->id)->delete();
+            (new SalesOrderGenerator())->generate($order->load('items'));
 
-                $this->buildItems($order, $lines, $isSample);
-                (new SalesOrderGenerator())->generate($order);
-                app(\App\Services\Inventory\HqStockService::class)->reserveOrder($order->load('items'));
-
-                if ($order->order_type === 'normal') {
-                    app(\App\Services\Settlement\LedgerService::class)->syncOrder($order->fresh()->loadMissing('store'));
-                }
-            });
-        } catch (\App\Exceptions\StockShortageException $e) {
-            return response()->json(['message' => $e->summary(), 'shortages' => $e->shortages], 422);
-        }
+            if ($order->order_type === 'normal') {
+                app(\App\Services\Settlement\LedgerService::class)->syncOrder($order->fresh()->loadMissing('store'));
+            }
+        });
 
         $changes->record($order, 'updated', $oldItems);
         $order->load('items');

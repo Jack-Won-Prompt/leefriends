@@ -217,6 +217,11 @@ class OrderController extends Controller
             return response()->json(['message' => '본사 재고 부족 — '.$e->summary()], 409);
         }
 
+        // 원장 반영 동기화 (이미 추적 중인 발주만; 웹 본사와 동일)
+        if (($order->order_type ?? 'normal') === 'normal') {
+            app(\App\Services\Settlement\LedgerService::class)->syncOrder($order->fresh(), $request->user()?->id, false);
+        }
+
         try {
             $notifications->notifyStore((int) $order->store_id, 'order_item_added', '➕ 발주 품목 추가',
                 "{$p->name} 품목이 본사에서 발주에 추가되었습니다.", ['order_id' => $order->id]);
@@ -256,10 +261,12 @@ class OrderController extends Controller
 
         $name = $item->product_name;
         $soId = $item->sales_order_id;
+        // 삭제 품목의 예약만 해제(수요 감소) — 다른 품목 예약은 유지, 재예약 불필요
+        $releaseLine = [['product_id' => (int) $item->supply_product_id, 'qty' => (int) $item->qty, 'name' => $name]];
 
-        \Illuminate\Support\Facades\DB::transaction(function () use ($order, $item, $soId, $stock) {
-            $stock->releaseOrder($order);
+        \Illuminate\Support\Facades\DB::transaction(function () use ($order, $item, $soId, $releaseLine, $stock) {
             $item->delete();
+            $stock->release($releaseLine, 'Order', $order->id);
 
             if ($soId) {
                 $so = \App\Models\SalesOrder::find($soId);
@@ -278,8 +285,12 @@ class OrderController extends Controller
             }
 
             $order->recomputeAmounts();
-            $stock->reserveOrder($order->load('items'));
         });
+
+        // 원장 반영 동기화 (이미 추적 중인 발주만; 웹 본사와 동일)
+        if (($order->order_type ?? 'normal') === 'normal') {
+            app(\App\Services\Settlement\LedgerService::class)->syncOrder($order->fresh(), $request->user()?->id, false);
+        }
 
         try {
             $notifications->notifyStore((int) $order->store_id, 'order_item_removed', '➖ 발주 품목 삭제',
@@ -329,6 +340,11 @@ class OrderController extends Controller
         ]);
 
         $order->recomputeAmounts();
+
+        // 원장 반영 동기화 (이미 추적 중인 발주만; 웹 본사와 동일)
+        if (($order->order_type ?? 'normal') === 'normal') {
+            app(\App\Services\Settlement\LedgerService::class)->syncOrder($order->fresh(), $request->user()?->id, false);
+        }
 
         try {
             $notifications->notifyStore(
@@ -385,6 +401,11 @@ class OrderController extends Controller
         ]);
 
         $order->recomputeAmounts();
+
+        // 원장 반영 동기화 (이미 추적 중인 발주만; 웹 본사와 동일)
+        if (($order->order_type ?? 'normal') === 'normal') {
+            app(\App\Services\Settlement\LedgerService::class)->syncOrder($order->fresh(), $request->user()?->id, false);
+        }
 
         try {
             $notifications->notifyStore(
