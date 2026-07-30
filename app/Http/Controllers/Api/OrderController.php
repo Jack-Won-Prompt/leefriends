@@ -76,6 +76,7 @@ class OrderController extends Controller
                     'seller' => $seller,
                     'subtotal' => (int) $items->sum('store_line_amount'),
                     'items' => $items->map(fn ($it) => [
+                        'id' => (int) $it->id,
                         'name' => $it->product_name,
                         'unit' => $it->unit,
                         'qty' => (int) $it->qty,
@@ -305,6 +306,63 @@ class OrderController extends Controller
             'message' => "«{$product->name}» 품목을 발주에 추가했습니다.",
             'data' => $this->detail($order),
         ], 201);
+    }
+
+    /**
+     * DELETE /api/v1/orders/{order}/items/{item}  — 매장이 자기 발주(거래명세서)에서 품목 삭제 (출고 전에만)
+     * 남은 품목으로 update 와 동일한 재빌드(판매주문 재생성·재고 재예약)를 수행한다.
+     */
+    public function deleteItem(Request $request, Order $order, OrderItem $item, OrderChangeService $changes): JsonResponse
+    {
+        $this->authorizeStore($request, $order);
+        abort_unless($item->order_id === $order->id, 403);
+        if (! $this->isEditable($order)) {
+            return response()->json(
+                ['message' => '이미 출고가 진행되었거나 취소/완료된 발주는 품목을 삭제할 수 없습니다.'],
+                409,
+            );
+        }
+
+        $lines = $order->items()->where('id', '!=', $item->id)->get()->map(fn (OrderItem $it) => [
+            'product_id' => (int) $it->supply_product_id,
+            'unit_id' => $it->supply_product_unit_id ? (int) $it->supply_product_unit_id : null,
+            'qty' => (int) $it->qty,
+        ]);
+        if ($lines->isEmpty()) {
+            return response()->json(['message' => '발주의 마지막 품목은 삭제할 수 없습니다. 발주를 취소해 주세요.'], 422);
+        }
+
+        $lines = $this->validLines($lines->all());
+        $oldItems = $order->items()->get();
+        $name = $item->product_name;
+        $isSample = ($order->order_type ?? 'normal') === 'sample';
+
+        try {
+            DB::transaction(function () use ($order, $lines, $isSample) {
+                app(\App\Services\Inventory\HqStockService::class)->releaseOrder($order);
+                SalesOrder::where('order_id', $order->id)->delete();
+                $order->items()->delete();
+                $order->update(['status' => 'pending']);
+
+                $this->buildItems($order, $lines, $isSample);
+                (new SalesOrderGenerator())->generate($order);
+                app(\App\Services\Inventory\HqStockService::class)->reserveOrder($order->load('items'));
+
+                if ($order->order_type === 'normal') {
+                    app(\App\Services\Settlement\LedgerService::class)->syncOrder($order->fresh()->loadMissing('store'));
+                }
+            });
+        } catch (\App\Exceptions\StockShortageException $e) {
+            return response()->json(['message' => $e->summary(), 'shortages' => $e->shortages], 422);
+        }
+
+        $changes->record($order, 'updated', $oldItems);
+        $order->load('items');
+
+        return response()->json([
+            'message' => "«{$name}» 품목을 삭제했습니다.",
+            'data' => $this->detail($order),
+        ]);
     }
 
     /**

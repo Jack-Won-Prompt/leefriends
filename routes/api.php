@@ -60,6 +60,7 @@ Route::prefix('v1')->group(function () {
         Route::get('orders/{order}', [OrderController::class, 'show'])->name('api.orders.show');
         Route::put('orders/{order}', [OrderController::class, 'update'])->name('api.orders.update');
         Route::post('orders/{order}/items', [OrderController::class, 'addItem'])->name('api.orders.items.add');
+        Route::delete('orders/{order}/items/{item}', [OrderController::class, 'deleteItem'])->name('api.orders.items.delete');
         Route::delete('orders/{order}', [OrderController::class, 'destroy'])->name('api.orders.destroy');
 
         // 매장 홈 대시보드
@@ -189,6 +190,7 @@ Route::prefix('v1')->group(function () {
             Route::get('orders', [Seller\OrderController::class, 'index'])->name('orders.index');
             Route::get('orders/{order}', [Seller\OrderController::class, 'show'])->name('orders.show');
             Route::post('orders/{order}/items', [Seller\OrderController::class, 'addItem'])->name('orders.items.add');
+            Route::delete('orders/{order}/items/{item}', [Seller\OrderController::class, 'deleteItem'])->name('orders.items.delete');
             Route::patch('orders/{order}/items/{item}', [Seller\OrderController::class, 'updateItem'])->name('orders.items.update');
             Route::patch('orders/{order}/items/{item}/price', [Seller\OrderController::class, 'setItemPrice'])->name('orders.items.price');
             Route::patch('orders/{order}/items/{item}/edit', [Seller\OrderController::class, 'editItem'])->name('orders.items.edit');

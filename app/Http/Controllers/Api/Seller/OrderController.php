@@ -228,6 +228,78 @@ class OrderController extends Controller
     }
 
     /**
+     * DELETE /api/v1/seller/orders/{order}/items/{item} — 본사가 매장 발주건에서 품목 삭제 (본사 전용)
+     * addItem 과 대칭: 재고 해제 → 품목 삭제 → 판매주문 재계산(비면 삭제) → 주문 재계산 → 재고 재예약.
+     */
+    public function deleteItem(
+        Request $request,
+        Order $order,
+        OrderItem $item,
+        \App\Services\Inventory\HqStockService $stock,
+        NotificationService $notifications
+    ): JsonResponse {
+        [$type] = $this->seller($request);
+        abort_unless($type === 'hq', 403, '본사 계정만 사용할 수 있습니다.');
+        abort_unless($item->order_id === $order->id, 403);
+
+        if (! in_array($order->status, ['pending', 'processing'], true)) {
+            return response()->json(['message' => '배송 시작 이후에는 품목을 삭제할 수 없습니다.'], 409);
+        }
+        if ($item->shipment_id) {
+            return response()->json(['message' => '이미 출고에 포함된 품목은 삭제할 수 없습니다.'], 409);
+        }
+
+        $order->loadMissing('items');
+        if ($order->items->count() <= 1) {
+            return response()->json(['message' => '발주의 마지막 품목은 삭제할 수 없습니다. 발주를 취소해 주세요.'], 422);
+        }
+
+        $name = $item->product_name;
+        $soId = $item->sales_order_id;
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($order, $item, $soId, $stock) {
+            $stock->releaseOrder($order);
+            $item->delete();
+
+            if ($soId) {
+                $so = \App\Models\SalesOrder::find($soId);
+                if ($so) {
+                    $soItems = OrderItem::where('sales_order_id', $so->id)->get();
+                    if ($soItems->isEmpty()) {
+                        $so->delete();
+                    } else {
+                        $so->update([
+                            'item_count' => $soItems->count(),
+                            'store_amount' => (int) $soItems->sum('store_line_amount'),
+                            'supply_amount' => (int) $soItems->sum('supply_line_amount'),
+                        ]);
+                    }
+                }
+            }
+
+            $order->recomputeAmounts();
+            $stock->reserveOrder($order->load('items'));
+        });
+
+        try {
+            $notifications->notifyStore((int) $order->store_id, 'order_item_removed', '➖ 발주 품목 삭제',
+                "{$name} 품목이 본사에서 발주에서 삭제되었습니다.", ['order_id' => $order->id]);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        $order->refresh();
+
+        return response()->json([
+            'message' => "«{$name}» 품목을 삭제했습니다.",
+            'data' => [
+                'order_store_amount' => (int) $order->store_amount,
+                'order_total' => (int) $order->order_total,
+            ],
+        ]);
+    }
+
+    /**
      * PATCH /api/v1/seller/orders/{order}/items/{item}/edit — 품목 공급가/출고가/수량 수정 (본사)
      * body: { supply_unit_price?, store_unit_price, qty }
      */
