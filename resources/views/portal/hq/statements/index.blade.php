@@ -102,7 +102,7 @@
             @endif
             <button type="button" onclick="printFrame('{{ route('portal.hq.statements.print', ['statement' => $s, 'print' => 1]) }}')" class="rounded-xl bg-neutral-900 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm shadow">🖨️ 인쇄</button>
         </x-slot:actions>
-        @include('portal.partials.hq-statement-document', ['statement' => $s])
+        @include('portal.partials.hq-statement-document', ['statement' => $s, 'editable' => true])
     </x-detail-modal>
 @endforeach
 </div>

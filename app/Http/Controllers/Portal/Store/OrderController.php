@@ -203,6 +203,38 @@ class OrderController extends Controller
             ->with('success', '발주가 취소되었습니다. 본사·공급처에 취소 알림이 전송되었습니다.');
     }
 
+    /** 발주에서 품목 1개 삭제 (출고 전) */
+    public function destroyItem(Order $order, OrderItem $item, OrderChangeService $changes)
+    {
+        $this->authorizeEditable($order);
+        abort_unless($item->order_id === $order->id, 403);
+
+        if ($order->items->count() <= 1) {
+            return back()->withErrors(['item' => '마지막 남은 품목은 삭제할 수 없습니다. 발주 전체를 취소하려면 «발주 취소»를 이용해 주세요.']);
+        }
+
+        $name = $item->product_name;
+        $oldItems = $order->items()->get();
+        // 삭제 품목의 예약만 해제(수요 감소) — 재예약 불필요, 재고 부족으로 삭제가 막히지 않음
+        $releaseLine = [['product_id' => (int) $item->supply_product_id, 'qty' => (int) $item->qty, 'name' => $name]];
+
+        DB::transaction(function () use ($order, $item, $releaseLine) {
+            app(\App\Services\Inventory\HqStockService::class)->release($releaseLine, 'Order', $order->id);
+            $item->delete();
+            SalesOrder::where('order_id', $order->id)->delete();
+            (new SalesOrderGenerator())->generate($order->load('items'));
+
+            if ($order->order_type === 'normal') {
+                app(\App\Services\Settlement\LedgerService::class)->syncOrder($order->fresh()->loadMissing('store'), Auth::id());
+            }
+        });
+
+        $changes->record($order, 'updated', $oldItems);
+
+        return redirect()->route('portal.store.orders.show', $order)
+            ->with('success', "«{$name}» 품목을 발주에서 삭제했습니다. 본사·공급처에 변경 알림이 전송되었습니다.");
+    }
+
     public function show(Order $order)
     {
         abort_unless($order->store_id === Auth::user()->store_id, 403);

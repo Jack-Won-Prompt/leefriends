@@ -294,6 +294,15 @@
                     <button type="button" @click="itemOpen = false" class="rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-600 font-bold px-4 py-2.5 text-sm">취소</button>
                 </div>
             </form>
+            {{-- 품목 삭제 (배송 시작 전) — 별도 form --}}
+            @if (in_array($order->status, ['pending', 'processing'], true) && $order->items->count() > 1)
+                <form method="POST" :action="'{{ url('portal/hq/orders/'.$order->id.'/items') }}/' + f.id"
+                      onsubmit="return confirm('이 품목을 발주에서 삭제할까요? 매장·정산·판매주문에 반영됩니다.')"
+                      class="mt-3 pt-3 border-t border-neutral-100">
+                    @csrf @method('DELETE')
+                    <button type="submit" class="w-full rounded-xl border border-rose-200 text-rose-600 hover:bg-rose-50 font-bold px-4 py-2.5 text-sm transition">🗑 이 품목 발주에서 삭제</button>
+                </form>
+            @endif
         </div>
     </div>
 </div>

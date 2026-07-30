@@ -168,6 +168,7 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::get('orders/{order}/statement', [Portal\Store\OrderController::class, 'statement'])->name('orders.statement');
             Route::get('orders/{order}/edit', [Portal\Store\OrderController::class, 'edit'])->name('orders.edit');
             Route::put('orders/{order}', [Portal\Store\OrderController::class, 'update'])->name('orders.update');
+            Route::delete('orders/{order}/items/{item}', [Portal\Store\OrderController::class, 'destroyItem'])->name('orders.items.destroy');
             Route::delete('orders/{order}', [Portal\Store\OrderController::class, 'destroy'])->name('orders.destroy');
             Route::get('purchases', [Portal\Store\PurchaseController::class, 'index'])->name('purchases');
 
@@ -199,6 +200,7 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::patch('orders/{order}/items/{item}', [Portal\Hq\OrderController::class, 'updateItem'])->name('orders.items.update');
             Route::patch('orders/{order}/items/{item}/price', [Portal\Hq\OrderController::class, 'setItemPrice'])->name('orders.items.price');
             Route::patch('orders/{order}/items/{item}/edit', [Portal\Hq\OrderController::class, 'editItem'])->name('orders.items.edit');
+            Route::delete('orders/{order}/items/{item}', [Portal\Hq\OrderController::class, 'deleteItem'])->name('orders.items.destroy');
             Route::patch('orders/{order}/shipping', [Portal\Hq\OrderController::class, 'updateShipping'])->name('orders.shipping');
             Route::post('orders/{order}/payment-request', [Portal\Hq\OrderController::class, 'paymentRequest'])->name('orders.payment_request');
             Route::get('orders/{order}/statement/pdf', [Portal\Hq\OrderController::class, 'statementPdf'])->name('orders.statement.pdf');
@@ -346,6 +348,7 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::get('statements/{statement}/pdf', [Portal\Hq\StatementController::class, 'pdf'])->name('statements.pdf');
             Route::get('statements/{statement}/print', [Portal\Hq\StatementController::class, 'print'])->name('statements.print');
             Route::post('statements/{statement}/resend', [Portal\Hq\StatementController::class, 'resend'])->name('statements.resend');
+            Route::delete('statements/{statement}/items/{index}', [Portal\Hq\StatementController::class, 'deleteItem'])->name('statements.items.destroy');
 
             // 공지사항 발송 (매장/공급처 대상)
             Route::get('notices', [Portal\Hq\NoticeController::class, 'index'])->name('notices.index');

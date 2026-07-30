@@ -175,6 +175,65 @@ class OrderController extends Controller
         return back()->with('success', "«{$p->name}» 품목을 발주에 추가했습니다. (매장·정산·판매주문 반영)");
     }
 
+    /** 받은 매장 발주서에서 품목 삭제 (배송 시작 전) */
+    public function deleteItem(Order $order, OrderItem $item, \App\Services\Inventory\HqStockService $stock, \App\Services\Notification\NotificationService $notifications)
+    {
+        abort_unless($item->order_id === $order->id, 403);
+
+        if (! in_array($order->status, ['pending', 'processing'], true)) {
+            return back()->withErrors(['item' => '배송 시작 이후에는 품목을 삭제할 수 없습니다.']);
+        }
+        if ($item->shipment_id) {
+            return back()->withErrors(['item' => '이미 출고에 묶인 품목은 삭제할 수 없습니다.']);
+        }
+        if ($order->items->count() <= 1) {
+            return back()->withErrors(['item' => '마지막 남은 품목은 삭제할 수 없습니다. 발주 전체를 취소하려면 매장에 요청하세요.']);
+        }
+
+        $name = $item->product_name;
+        // 삭제 품목의 예약만 해제(수요 감소) — 다른 품목 예약은 그대로 유지
+        $releaseLine = [['product_id' => (int) $item->supply_product_id, 'qty' => (int) $item->qty, 'name' => $name]];
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($order, $item, $releaseLine, $stock) {
+            $soId = $item->sales_order_id;
+            $item->delete();
+            $stock->release($releaseLine, 'Order', $order->id);
+
+            // 연결된 판매주문 합계 재계산 — 품목이 남아있지 않으면 판매주문 자체 삭제
+            if ($soId) {
+                $so = \App\Models\SalesOrder::find($soId);
+                if ($so) {
+                    $soItems = OrderItem::where('sales_order_id', $so->id)->get();
+                    if ($soItems->isEmpty()) {
+                        $so->delete();
+                    } else {
+                        $so->update([
+                            'item_count' => $soItems->count(),
+                            'store_amount' => (int) $soItems->sum('store_line_amount'),
+                            'supply_amount' => (int) $soItems->sum('supply_line_amount'),
+                        ]);
+                    }
+                }
+            }
+
+            $order->recomputeAmounts();
+
+            // 원장 반영 동기화 (이미 추적 중인 발주만)
+            if (($order->order_type ?? 'normal') === 'normal') {
+                app(\App\Services\Settlement\LedgerService::class)->syncOrder($order->fresh(), \Illuminate\Support\Facades\Auth::id(), false);
+            }
+        });
+
+        try {
+            $notifications->notifyStore((int) $order->store_id, 'order_item_removed', '➖ 발주 품목 삭제',
+                "{$name} 품목이 본사에서 발주에서 삭제되었습니다.", ['order_id' => $order->id]);
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        return back()->with('success', "«{$name}» 품목을 발주에서 삭제했습니다. (매장·정산·판매주문 반영)");
+    }
+
     /** 발주 거래명세서 PDF 다운로드/미리보기 */
     public function statementPdf(Request $request, Order $order)
     {

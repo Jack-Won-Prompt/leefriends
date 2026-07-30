@@ -119,6 +119,34 @@ class StatementController extends Controller
         return back()->with('success', "«{$statement->store_name}»({$email})로 거래명세서를 재전송했습니다.");
     }
 
+    /** 거래명세서에서 품목 1줄 삭제 (스냅샷 편집 + 합계 재계산) */
+    public function deleteItem(Statement $statement, int $index)
+    {
+        if ($statement->tax_invoice_id) {
+            return back()->withErrors(['item' => '세금계산서가 발행된 거래명세서는 품목을 수정할 수 없습니다.']);
+        }
+
+        $items = array_values($statement->items ?? []);
+        if (! array_key_exists($index, $items)) {
+            return back()->withErrors(['item' => '이미 삭제되었거나 존재하지 않는 품목입니다.']);
+        }
+        if (count($items) <= 1) {
+            return back()->withErrors(['item' => '마지막 남은 품목은 삭제할 수 없습니다.']);
+        }
+
+        $removed = $items[$index]['name'] ?? '품목';
+        unset($items[$index]);
+        $items = array_values($items);
+
+        $statement->update([
+            'items' => $items,
+            'item_count' => count($items),
+            'total' => \App\Support\TaxSummary::fromLines($items)['total'],
+        ]);
+
+        return back()->with('success', "«{$removed}» 품목을 거래명세서에서 삭제했습니다. (합계 재계산됨)");
+    }
+
     /** PDF 생성 + 메일 발송 */
     private function mailStatement(Store $store, array $lines, int $total, ?string $email = null, $date = null): void
     {

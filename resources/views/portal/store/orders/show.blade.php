@@ -56,6 +56,7 @@
                     <th class="text-right font-semibold px-6 py-3">수량</th>
                     @unless ($isSample)<th class="text-right font-semibold px-6 py-3">금액</th>@endunless
                     <th class="text-left font-semibold px-6 py-3">배송</th>
+                    @if (! empty($editable))<th class="text-center font-semibold px-6 py-3 w-16">관리</th>@endif
                 </tr>
             </thead>
             <tbody class="divide-y divide-neutral-100">
@@ -73,6 +74,15 @@
                         <td class="px-6 py-3.5 text-right">{{ number_format($it->qty) }}{{ $it->unit }}</td>
                         @unless ($isSample)<td class="px-6 py-3.5 text-right font-semibold">@if ($it->price_pending)<span class="text-amber-600">확정 대기</span>@else{{ number_format($it->store_line_amount) }}원@endif</td>@endunless
                         <td class="px-6 py-3.5">@include('portal.partials.fulfillment-status', ['status' => $it->fulfillment_status, 'label' => $it->fulfillment_label])</td>
+                        @if (! empty($editable))
+                            <td class="px-6 py-3.5 text-center">
+                                <form method="POST" action="{{ route('portal.store.orders.items.destroy', [$order, $it]) }}"
+                                      onsubmit="return confirm('«{{ $it->product_name }}» 품목을 발주에서 삭제할까요? 본사·공급처에 변경 알림이 전송됩니다.')">
+                                    @csrf @method('DELETE')
+                                    <button class="rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 px-2.5 py-1.5 text-xs font-bold" title="품목 삭제">🗑 삭제</button>
+                                </form>
+                            </td>
+                        @endif
                     </tr>
                 @endforeach
             </tbody>
@@ -82,6 +92,7 @@
                     <td class="px-6 py-4" colspan="4">합계</td>
                     <td class="px-6 py-4 text-right text-mango-700 text-lg">{{ number_format($order->store_amount) }}원</td>
                     <td></td>
+                    @if (! empty($editable))<td></td>@endif
                 </tr>
             </tfoot>
             @endunless

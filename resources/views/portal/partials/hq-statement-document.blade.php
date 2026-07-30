@@ -23,10 +23,11 @@
                         <th class="text-right font-semibold px-4 py-2.5">수량</th>
                         <th class="text-right font-semibold px-4 py-2.5">공급가액</th>
                         <th class="text-right font-semibold px-4 py-2.5">부가세</th>
+                        @if (! empty($editable) && ! $statement->tax_invoice_id)<th class="text-center font-semibold px-4 py-2.5 w-14 print:hidden">관리</th>@endif
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-neutral-100">
-                    @foreach ($statement->items ?? [] as $l)
+                    @foreach ($statement->items ?? [] as $i => $l)
                         @php $tt = $l['tax_type'] ?? 'inc'; [$sup, $ltax] = \App\Models\SupplyProduct::taxBreakdown($tt, (int) ($l['amount'] ?? 0)); @endphp
                         <tr>
                             <td class="px-4 py-2.5">
@@ -44,6 +45,17 @@
                             <td class="px-4 py-2.5 text-right">{{ number_format($l['qty'] ?? 0) }}{{ $l['unit'] ?? '' }}</td>
                             <td class="px-4 py-2.5 text-right font-semibold">{{ number_format($sup) }}원</td>
                             <td class="px-4 py-2.5 text-right text-neutral-500">{{ $tt === 'exempt' ? '면세' : number_format($ltax).'원' }}</td>
+                            @if (! empty($editable) && ! $statement->tax_invoice_id)
+                                <td class="px-4 py-2.5 text-center print:hidden">
+                                    @if (count($statement->items ?? []) > 1)
+                                        <form method="POST" action="{{ route('portal.hq.statements.items.destroy', ['statement' => $statement, 'index' => $i]) }}"
+                                              onsubmit="return confirm('«{{ $l['name'] ?? '품목' }}» 품목을 거래명세서에서 삭제할까요? 합계가 다시 계산됩니다.')">
+                                            @csrf @method('DELETE')
+                                            <button class="rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 px-2 py-1 text-xs font-bold" title="품목 삭제">🗑</button>
+                                        </form>
+                                    @endif
+                                </td>
+                            @endif
                         </tr>
                     @endforeach
                 </tbody>
