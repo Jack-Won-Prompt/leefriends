@@ -53,7 +53,7 @@ class ProductController extends Controller
         ]);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, \App\Services\Notification\NotificationService $notifications): JsonResponse
     {
         [$type, $sid] = $this->seller($request);
 
@@ -103,6 +103,11 @@ class ProductController extends Controller
 
             return $p;
         });
+
+        // 본사 직접 등록분이 매장 노출(활성+승인) 상태면 전 매장에 신규 상품 알림
+        if ($product->is_active && $product->approval_status === 'approved') {
+            $notifications->notifyNewProduct($product);
+        }
 
         return response()->json([
             'message' => '품목이 등록되었습니다.',
@@ -177,7 +182,7 @@ class ProductController extends Controller
     }
 
     /** PATCH approve (hq) */
-    public function approve(Request $request, SupplyProduct $product): JsonResponse
+    public function approve(Request $request, SupplyProduct $product, \App\Services\Notification\NotificationService $notifications): JsonResponse
     {
         [$type] = $this->seller($request);
         abort_unless($type === 'hq', 403);
@@ -192,6 +197,9 @@ class ProductController extends Controller
             $def = $product->units()->where('is_default', true)->first() ?? $product->units()->first();
             $def?->update(['store_price' => $data['store_price']]);
         });
+
+        // 승인으로 매장 노출이 시작되므로 전 매장에 신규 상품 알림
+        $notifications->notifyNewProduct($product);
 
         return response()->json(['message' => "{$product->name} 물품을 승인했습니다."]);
     }

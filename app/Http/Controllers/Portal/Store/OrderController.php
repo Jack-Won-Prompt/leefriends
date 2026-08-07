@@ -274,7 +274,10 @@ class OrderController extends Controller
             $p->stock_available = $rec ? $rec->available : null;
         }
 
-        return $products->groupBy('category');
+        // 대분류별로 신규 상품(등록순 최신)을 앞으로, 나머지는 기존 카탈로그 순서 유지
+        return $products->groupBy('category')->map(
+            fn ($items) => $items->sortByDesc(fn ($p) => $p->is_new ? $p->created_at->getTimestamp() : 0)->values()
+        );
     }
 
     /** 빠른 재발주용 최근 발주 이력 (취소 제외, 최신 10건) */

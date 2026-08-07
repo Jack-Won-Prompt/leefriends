@@ -23,7 +23,10 @@ class SupplyProductController extends Controller
         $groups = $grouped->map(fn ($products, $category) => [
             'category' => $category,
             'category_code' => $products->first()->category_code,
-            'products' => $products->map(fn (SupplyProduct $p) => $this->transform($p))->values(),
+            // 신규 상품(등록순 최신)을 앞으로, 나머지는 기존 카탈로그 순서 유지
+            'products' => $products
+                ->sortByDesc(fn (SupplyProduct $p) => $p->is_new ? $p->created_at->getTimestamp() : 0)
+                ->map(fn (SupplyProduct $p) => $this->transform($p))->values(),
         ])->values();
 
         return response()->json([
@@ -64,6 +67,7 @@ class SupplyProductController extends Controller
             'supplier_name' => $p->supply_type === 'supplier' ? $p->supplier?->name : '본사',
             'store_price' => (int) $p->store_price,
             'is_market_price' => (bool) $p->is_market_price,
+            'is_new' => (bool) $p->is_new,
             'image' => $p->image ? asset($p->image) : null,
             'units' => $units,
         ];

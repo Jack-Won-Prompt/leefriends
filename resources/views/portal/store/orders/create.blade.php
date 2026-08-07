@@ -121,6 +121,9 @@
                                 <div class="flex-1 min-w-0">
                                     <div class="flex items-center gap-2 flex-wrap">
                                         <span class="font-bold text-neutral-900">{{ $p->name }}</span>
+                                        @if ($p->is_new)
+                                            <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-rose-500 text-white">NEW</span>
+                                        @endif
                                         @if ($p->spec)
                                             <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600">{{ $p->spec }}</span>
                                         @endif

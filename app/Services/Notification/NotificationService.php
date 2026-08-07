@@ -23,6 +23,23 @@ class NotificationService
         $this->notifyUsers($users, $type, $title, $body, $data);
     }
 
+    /** 전 매장 계정에 알림 */
+    public function notifyAllStores(string $type, string $title, string $body, array $data = []): void
+    {
+        $this->notifyUsers(User::where('role', 'store')->get(), $type, $title, $body, $data);
+    }
+
+    /** 신규 상품 등록(매장 노출 시작) → 전 매장에 알림 */
+    public function notifyNewProduct(\App\Models\SupplyProduct $product): void
+    {
+        $this->notifyAllStores(
+            'product_new',
+            '🆕 신규 상품 등록',
+            "«{$product->name}» 상품이 새로 등록되었습니다. 발주 화면에서 확인하세요.",
+            ['product_id' => $product->id],
+        );
+    }
+
     /**
      * 새 발주 접수 → 본사 전원 + 해당 발주에 포함된 공급처에 알림.
      */

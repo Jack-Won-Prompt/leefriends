@@ -60,13 +60,13 @@ class ProductController extends Controller
     /** 발주 카탈로그 대분류 */
     public const CATEGORIES = ['마카롱', '쿠키', '재료'];
 
-    public function store(Request $request)
+    public function store(Request $request, \App\Services\Notification\NotificationService $notifications)
     {
         $data = $this->validateData($request);
         // 대분류코드 자동 설정 (기준정보 우선, 상수 폴백; 코드 채번은 모델 creating 이벤트가 처리)
         $data['category_code'] = ProductCategory::codeFor($data['category']) ?? SupplyProduct::CATEGORY_CODES[$data['category']] ?? null;
 
-        DB::transaction(function () use ($request, $data) {
+        $product = DB::transaction(function () use ($request, $data) {
             $product = SupplyProduct::create($data); // code 자동 채번
             // 기본 단위 1개 (판매단가/공급가 동기화)
             $product->units()->create([
@@ -77,7 +77,14 @@ class ProductController extends Controller
             if ($request->hasFile('image_file')) {
                 $product->update(['image' => $this->storeImage($request, $product)]);
             }
+
+            return $product;
         });
+
+        // 매장 노출(활성+승인) 상태로 등록되면 전 매장에 신규 상품 알림
+        if ($product->is_active && $product->approval_status === 'approved') {
+            $notifications->notifyNewProduct($product);
+        }
 
         return redirect()->route('portal.hq.products.index')->with('success', '품목이 등록되었습니다.');
     }
@@ -112,7 +119,7 @@ class ProductController extends Controller
     }
 
     /** 공급처 등록 물품 승인 — 매장 판매가(출고가) 책정 + 노출 */
-    public function approve(Request $request, SupplyProduct $product)
+    public function approve(Request $request, SupplyProduct $product, \App\Services\Notification\NotificationService $notifications)
     {
         $data = $request->validate([
             'store_price' => ['required', 'integer', 'min:0'],
@@ -128,6 +135,9 @@ class ProductController extends Controller
             $def = $product->units()->where('is_default', true)->first() ?? $product->units()->first();
             $def?->update(['store_price' => $data['store_price']]);
         });
+
+        // 승인으로 매장 노출이 시작되므로 전 매장에 신규 상품 알림
+        $notifications->notifyNewProduct($product);
 
         return back()->with('success', "{$product->name} 물품을 승인했습니다. 매장 발주 화면에 노출됩니다.");
     }

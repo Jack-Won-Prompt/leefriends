@@ -12,6 +12,16 @@ class SupplyProduct extends Model
         'approval_status', 'registered_by', 'approval_note',
     ];
 
+    /** 신규 상품 표시 기간(등록 후 N일 이내면 '신규') */
+    public const NEW_DAYS = 14;
+
+    /** 등록 후 NEW_DAYS 이내에 등록된 신규 상품인지 */
+    public function getIsNewAttribute(): bool
+    {
+        return $this->created_at !== null
+            && $this->created_at->greaterThanOrEqualTo(now()->subDays(self::NEW_DAYS));
+    }
+
     /** 부가세 구분: inc(과세·부가세포함) / exc(과세·부가세별도) / exempt(면세) */
     public const TAX_TYPES = [
         'inc' => '과세 (부가세 포함)',
