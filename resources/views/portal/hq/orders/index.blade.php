@@ -61,136 +61,52 @@
     ])->values();
 @endphp
 
-{{-- 리스트 / 상세보기 탭 --}}
-<div class="flex items-center gap-1 border-b border-neutral-200 mb-4">
-    <button type="button" id="tabBtnList" onclick="switchTab('list')"
-            class="px-4 py-2.5 text-sm font-extrabold border-b-2 border-mango-500 text-mango-600 -mb-px transition">📋 리스트</button>
-    <button type="button" id="tabBtnDetail" onclick="switchTab('detail')" disabled
-            class="px-4 py-2.5 text-sm font-extrabold border-b-2 border-transparent text-neutral-300 -mb-px transition">
-        📄 상세보기<span id="tabDetailLabel" class="ml-1 font-bold"></span>
-    </button>
-</div>
-
-{{-- 탭: 리스트 --}}
-<div id="tabList">
+<x-wwgrid-tabs gid="hqOrdersGrid">
     <x-wms.panel>
-        <div id="hqOrdersGrid" data-empty="발주 내역이 없습니다."></div>
+        <div id="hqOrdersGrid"></div>
     </x-wms.panel>
     <div class="mt-5">{{ $orders->links() }}</div>
-</div>
-
-{{-- 탭: 상세보기 --}}
-<div id="tabDetail" class="hidden">
-    <div class="rounded-2xl bg-white shadow-sm border border-neutral-200 overflow-hidden">
-        <div class="flex items-center justify-between px-4 py-2.5 border-b border-neutral-100 bg-neutral-50">
-            <span id="detailTitle" class="font-extrabold text-sm text-neutral-900">상세</span>
-            <div class="flex items-center gap-1.5">
-                <a id="detailFull" href="#" target="_blank" class="rounded-lg border border-neutral-200 hover:bg-white px-2.5 py-1 text-xs font-bold text-neutral-500">새 탭 ↗</a>
-                <button type="button" onclick="switchTab('list')" class="rounded-lg border border-neutral-200 hover:bg-white px-2.5 py-1 text-xs font-bold text-neutral-500">← 리스트</button>
-            </div>
-        </div>
-        <iframe id="detailFrame" class="w-full bg-white" style="height: calc(100vh - 230px); border: 0;"></iframe>
-    </div>
-</div>
+</x-wwgrid-tabs>
 
 @push('scripts')
 <script>
 (function () {
     const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
-    const rows = @json($gridRows);
-
-    // 공통 배지 노드
-    function badge(text, cls) {
-        const s = document.createElement('span');
-        s.className = 'inline-block text-xs font-bold px-2.5 py-1 rounded-full ' + cls;
-        s.textContent = text;
-        return s;
-    }
     const STATUS_CLS = {
-        pending: 'bg-neutral-100 text-neutral-600',
-        processing: 'bg-amber-100 text-amber-700',
-        shipping: 'bg-sky-100 text-sky-700',
-        completed: 'bg-emerald-100 text-emerald-700',
+        pending: 'bg-neutral-100 text-neutral-600', processing: 'bg-amber-100 text-amber-700',
+        shipping: 'bg-sky-100 text-sky-700', completed: 'bg-emerald-100 text-emerald-700',
         canceled: 'bg-rose-100 text-rose-600',
     };
-    const won = (v) => (Number(v) || 0).toLocaleString() + '원';
+    const grid = ww.grid('hqOrdersGrid', [
+        { header: '주문번호', name: 'order_no', width: 150 },
+        { header: '매장', name: 'store_name', width: 130 },
+        { header: '품목', name: 'items_count', width: 70, align: 'right' },
+        { header: '출고가', name: 'store_amount', width: 110, align: 'right', renderer: (v) => ww.won(v) },
+        { header: '공급가(원가)', name: 'supply_amount', width: 120, align: 'right', renderer: (v) => ww.won(v) },
+        { header: '상태', name: 'status', width: 100, align: 'center',
+          renderer: (v, row) => ww.badge(row.status_label, STATUS_CLS[v] || STATUS_CLS.pending) },
+        { header: '세금계산서', name: 'tax_issued', width: 110, align: 'center',
+          renderer: (v) => v ? ww.badge('발행완료', 'bg-emerald-100 text-emerald-700') : ww.badge('미발행', 'bg-neutral-100 text-neutral-400') },
+        { header: '입금요청', name: 'pay_state', width: 130, align: 'center', sortable: false, exportable: false,
+          renderer: (v, row) => {
+              if (v === 'canceled') return ww.dash();
+              if (v === 'paid') return ww.badge('입금완료', 'bg-emerald-100 text-emerald-700');
+              const form = document.createElement('form');
+              form.method = 'POST'; form.action = row.pay_url;
+              form.addEventListener('submit', (e) => { if (!confirm(row.pay_confirm)) e.preventDefault(); });
+              const t = document.createElement('input'); t.type = 'hidden'; t.name = '_token'; t.value = CSRF; form.appendChild(t);
+              const b = document.createElement('button');
+              b.type = 'submit'; b.textContent = '💬 입금요청';
+              b.className = 'inline-flex items-center gap-1 rounded-lg bg-mango-500 hover:bg-mango-600 disabled:opacity-40 text-white font-bold px-3 py-1.5 text-xs transition';
+              if (!row.pay_phone) b.disabled = true;
+              form.appendChild(b);
+              return form;
+          } },
+        { header: '접수일', name: 'created_at', width: 150 },
+    ], @json($gridRows));
 
-    const grid = new wwGrid({
-        el: document.getElementById('hqOrdersGrid'),
-        editable: false,
-        rowCheckbox: true,
-        rowNumber: true,
-        toolbar: true,
-        footer: { total: true, selected: true, modified: false },
-        columns: [
-            { header: '주문번호', name: 'order_no', width: 150 },
-            { header: '매장', name: 'store_name', width: 130 },
-            { header: '품목', name: 'items_count', width: 70, align: 'right' },
-            { header: '출고가', name: 'store_amount', width: 110, align: 'right',
-              renderer: (v) => won(v) },
-            { header: '공급가(원가)', name: 'supply_amount', width: 120, align: 'right',
-              renderer: (v) => won(v) },
-            { header: '상태', name: 'status', width: 100, align: 'center',
-              renderer: (v, row) => badge(row.status_label, STATUS_CLS[v] || STATUS_CLS.pending) },
-            { header: '세금계산서', name: 'tax_issued', width: 110, align: 'center',
-              renderer: (v) => v ? badge('발행완료', 'bg-emerald-100 text-emerald-700') : badge('미발행', 'bg-neutral-100 text-neutral-400') },
-            { header: '입금요청', name: 'pay_state', width: 130, align: 'center', sortable: false, exportable: false,
-              renderer: (v, row) => {
-                  if (v === 'canceled') { const s = document.createElement('span'); s.className = 'text-xs text-neutral-300'; s.textContent = '—'; return s; }
-                  if (v === 'paid') return badge('입금완료', 'bg-emerald-100 text-emerald-700');
-                  const form = document.createElement('form');
-                  form.method = 'POST'; form.action = row.pay_url;
-                  form.addEventListener('submit', (e) => { if (!confirm(row.pay_confirm)) e.preventDefault(); });
-                  const t = document.createElement('input'); t.type = 'hidden'; t.name = '_token'; t.value = CSRF; form.appendChild(t);
-                  const b = document.createElement('button');
-                  b.type = 'submit'; b.textContent = '💬 입금요청';
-                  b.className = 'inline-flex items-center gap-1 rounded-lg bg-mango-500 hover:bg-mango-600 disabled:opacity-40 text-white font-bold px-3 py-1.5 text-xs transition';
-                  if (!row.pay_phone) b.disabled = true;
-                  form.appendChild(b);
-                  return form;
-              } },
-            { header: '접수일', name: 'created_at', width: 150 },
-        ],
-        data: rows,
-    });
-
-    // 행 클릭 → 상세보기 탭으로 전환 (셀 안 버튼/체크박스 제외)
-    document.getElementById('hqOrdersGrid').addEventListener('click', function (e) {
-        if (e.target.closest('a, button, input, select, form')) return;
-        const cell = e.target.closest('[data-row-index]');
-        if (!cell) return;
-        const row = grid.getData()[parseInt(cell.dataset.rowIndex, 10)];
-        if (!row) return;
-        window.getSelection()?.removeAllRanges();
-        openDetail(row.show_url, row.order_no);
-    });
+    ww.bindRowDetail('hqOrdersGrid', grid, 'show_url', 'order_no');
 })();
-
-function switchTab(which) {
-    const onList = which === 'list';
-    document.getElementById('tabList').classList.toggle('hidden', !onList);
-    document.getElementById('tabDetail').classList.toggle('hidden', onList);
-    const bl = document.getElementById('tabBtnList'), bd = document.getElementById('tabBtnDetail');
-    bl.classList.toggle('border-mango-500', onList);
-    bl.classList.toggle('text-mango-600', onList);
-    bl.classList.toggle('border-transparent', !onList);
-    bl.classList.toggle('text-neutral-400', !onList);
-    bd.classList.toggle('border-mango-500', !onList);
-    bd.classList.toggle('text-mango-600', !onList);
-    bd.classList.toggle('border-transparent', onList);
-    bd.classList.toggle('text-neutral-400', onList);
-}
-function openDetail(url, title) {
-    const sep = url.includes('?') ? '&' : '?';
-    document.getElementById('detailFrame').src = url + sep + 'panel=1';
-    document.getElementById('detailFull').href = url;
-    document.getElementById('detailTitle').textContent = title || '상세';
-    document.getElementById('tabDetailLabel').textContent = title ? (' · ' + title) : '';
-    const bd = document.getElementById('tabBtnDetail');
-    bd.disabled = false;
-    bd.classList.remove('text-neutral-300');
-    switchTab('detail');
-}
 </script>
 @endpush
 @endsection

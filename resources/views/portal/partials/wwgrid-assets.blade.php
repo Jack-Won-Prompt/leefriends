@@ -6,5 +6,6 @@
     @endpush
     @push('scripts')
         <script src="{{ asset('vendor/wwgrid/wwGrid.js') }}?v={{ filemtime(public_path('vendor/wwgrid/wwGrid.js')) }}"></script>
+        <script src="{{ asset('vendor/wwgrid/portal-grid.js') }}?v={{ filemtime(public_path('vendor/wwgrid/portal-grid.js')) }}"></script>
     @endpush
 @endonce
