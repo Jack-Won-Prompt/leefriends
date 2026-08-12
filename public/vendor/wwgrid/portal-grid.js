@@ -56,14 +56,21 @@
                 ww.openDetail(id, row[urlField], titleField ? row[titleField] : '');
             });
         },
-        /** 목록 그리드 기본 옵션 + 사용자 옵션 병합 */
+        /** 목록 그리드 기본 옵션 + 사용자 옵션 병합.
+         *  기본 height:'fit' → 페이지 스크롤 없이 그리드 내부만 스크롤(한 화면에 맞춤).
+         *  (사이드바는 레이아웃에서 sticky h-screen 이라 페이지 높이를 늘리지 않음) */
         grid(id, columns, data, options) {
-            return new wwGrid(Object.assign({
+            const g = new wwGrid(Object.assign({
                 el: document.getElementById(id),
                 editable: false, rowCheckbox: true, rowNumber: true, toolbar: true,
+                height: 'fit',
                 footer: { total: true, selected: true, modified: false },
                 columns: columns, data: data || [],
             }, options || {}));
+            // 초기 렌더/폰트 로딩 이후 fit 높이 재계산(측정 타이밍 보정)
+            requestAnimationFrame(() => window.dispatchEvent(new Event('resize')));
+            setTimeout(() => window.dispatchEvent(new Event('resize')), 250);
+            return g;
         },
     };
     window.ww = ww;

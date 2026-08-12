@@ -165,7 +165,7 @@
 @else
 <div class="flex min-h-screen">
     {{-- Sidebar --}}
-    <aside class="hidden lg:flex w-64 shrink-0 flex-col bg-neutral-900 text-neutral-300">
+    <aside class="hidden lg:flex w-64 shrink-0 flex-col bg-neutral-900 text-neutral-300 sticky top-0 h-screen">
         <a href="{{ route('portal.dashboard') }}" class="flex items-center gap-2 h-16 px-6 border-b border-white/10">
             <span class="text-2xl">🥭</span>
             <span class="font-black text-white"><span class="text-mango-400">LEE</span>FRIENDS</span>
@@ -178,7 +178,7 @@
                 <p class="text-sm text-white/80 mt-2 font-semibold">{{ $user->supplier->name }}</p>
             @endif
         </div>
-        <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
+        <nav class="flex-1 min-h-0 p-3 space-y-1 overflow-y-auto">
             @foreach ($nav as [$groupLabel, $groupIcon, $children])
                 @php $groupActive = collect($children)->contains(fn ($c) => $isChildActive($c)); @endphp
                 @if (count($children) === 1 && empty($children[0][2]) && in_array($children[0][0], ['portal.dashboard', 'portal.chat.index', 'portal.hq.notices.index', 'portal.notices.index', 'portal.staff.index', 'portal.schedules.index'], true))
