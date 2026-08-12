@@ -3,7 +3,7 @@
      사용: <x-wwgrid-tabs gid="fooGrid"> ...그리드+페이지네이션... </x-wwgrid-tabs> --}}
 @props(['gid'])
 
-<div class="flex items-center gap-1 border-b border-neutral-200 mb-4">
+<div class="flex items-center gap-1 border-b border-neutral-200 mb-2">
     <button type="button" id="{{ $gid }}-btnList" onclick="ww.switchTab('{{ $gid }}','list')"
             class="px-4 py-2.5 text-sm font-extrabold border-b-2 border-mango-500 text-mango-600 -mb-px transition">📋 리스트</button>
     <button type="button" id="{{ $gid }}-btnDetail" onclick="ww.switchTab('{{ $gid }}','detail')" disabled

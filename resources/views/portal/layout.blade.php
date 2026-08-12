@@ -295,7 +295,7 @@
             </div>
         </header>
 
-        <main class="flex-1 p-5 lg:p-8">
+        <main class="flex-1 p-3 lg:p-4">
             @if (session('success'))
                 <div class="mb-5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 px-5 py-3.5 text-sm font-medium">{{ session('success') }}</div>
             @endif

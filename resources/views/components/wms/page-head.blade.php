@@ -3,7 +3,7 @@
 @props(['title' => null, 'subtitle' => null, 'icon' => null])
 
 @isset($actions)
-    <div class="flex flex-wrap items-center justify-end gap-2 mb-5">
+    <div class="flex flex-wrap items-center justify-end gap-2 mb-3">
         {{ $actions }}
     </div>
 @endisset

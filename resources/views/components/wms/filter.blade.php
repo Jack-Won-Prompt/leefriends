@@ -2,8 +2,8 @@
 
 {{-- fulfillment 스타일 «검색 조건» 카드 (GET 폼, 접기/펼치기) --}}
 <form method="GET" action="{{ $action }}" x-data="{ open: {{ $open ? 'true' : 'false' }} }"
-      {{ $attributes->merge(['class' => 'rounded-2xl bg-white shadow-sm border border-neutral-100 overflow-hidden mb-5']) }}>
-    <div class="flex items-center justify-between px-5 py-3 border-b border-neutral-100 bg-neutral-50">
+      {{ $attributes->merge(['class' => 'rounded-2xl bg-white shadow-sm border border-neutral-100 overflow-hidden mb-3']) }}>
+    <div class="flex items-center justify-between px-4 py-2 border-b border-neutral-100 bg-neutral-50">
         <span class="font-extrabold text-neutral-800 text-sm flex items-center gap-2">
             <svg class="w-4 h-4 text-mango-500" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M3 4h18M6 8h12M9 12h6M11 16h2"/></svg>
             {{ $title }}
@@ -17,7 +17,7 @@
         </div>
     </div>
     <div x-show="open" x-collapse>
-        <div class="p-5 grid {{ $cols }} gap-x-5 gap-y-4">
+        <div class="p-4 grid {{ $cols }} gap-x-4 gap-y-3">
             {{ $slot }}
         </div>
     </div>
