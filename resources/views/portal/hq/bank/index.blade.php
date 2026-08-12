@@ -29,8 +29,8 @@
     </div>
 @endif
 
-@php $allDepositorNames = $deposits->pluck('depositor')->filter()->unique()->values(); @endphp
-<div x-data="bank({{ $polling ? 'true' : 'false' }}, '{{ $selected->job_id ?? '' }}', {{ \Illuminate\Support\Js::from($allDepositorNames) }})">
+<div x-data="bank({{ $polling ? 'true' : 'false' }}, '{{ $selected->job_id ?? '' }}')"
+     @bank-openmap.window="openMap($event.detail.depositor, $event.detail.storeId)">
 
 {{-- 계좌 선택 + 기간 수집 --}}
 <x-wms.panel class="mb-5">
@@ -77,114 +77,52 @@
 </div>
 @endif
 
+@include('portal.partials.wwgrid-assets')
+@php
+    $gridRows = $deposits->map(function ($d) use ($resolvedStore, $storeById, $candidates, $chargedDepositIds) {
+        $sid = $resolvedStore[$d->id] ?? null;
+        $store = $sid ? ($storeById[$sid] ?? null) : null;
+        $cands = $candidates[$d->id] ?? collect();
+
+        return [
+            'id' => $d->id,
+            'trade_date' => (string) \Illuminate\Support\Str::of((string) $d->trade_date)->replaceMatches('/(\d{4})(\d{2})(\d{2})/', '$1.$2.$3'),
+            'depositor' => $d->depositor,
+            'depositor_label' => $d->depositor ?: '(입금자명 없음)',
+            'remark' => $d->remark,
+            'acc_in' => (int) $d->acc_in,
+            'has_store' => (bool) $store,
+            'store_name' => $store?->name,
+            'store_id' => $sid,
+            'is_matched' => $d->isMatched(),
+            'matched_order_no' => optional($d->matchedOrder)->order_no,
+            'unmatch_url' => route('portal.hq.bank.unmatch', $d),
+            'cands' => $cands->map(fn ($o) => ['id' => $o->id, 'order_no' => $o->order_no, 'order_total' => (int) $o->order_total])->values(),
+            'charged' => isset($chargedDepositIds[$d->id]),
+            'charge_suffix' => $store ? ($store->settlement_type === 'prepaid' ? '' : ' (후불매장)') : '',
+            'charge_confirm' => $store ? ($store->name.' 예치금으로 '.number_format((int) $d->acc_in).'원을 충전할까요?') : '',
+        ];
+    })->values();
+@endphp
+
 {{-- 여러 입금자 → 한 매장 일괄 매핑 툴바 --}}
-<div x-show="picked.length" x-cloak class="mb-3 flex flex-wrap items-center gap-3 rounded-xl bg-mango-50 border border-mango-200 px-4 py-3">
-    <span class="text-sm font-bold text-mango-800">선택한 입금자 <span x-text="picked.length"></span>명</span>
-    <form method="POST" action="{{ route('portal.hq.bank.map_bulk') }}" class="flex flex-wrap items-center gap-2">
+<div id="bankBulkBar" class="mb-3 flex flex-wrap items-center gap-3 rounded-xl bg-mango-50 border border-mango-200 px-4 py-3 hidden">
+    <span class="text-sm font-bold text-mango-800">선택한 입금자 <span id="bankBulkCount"></span>명</span>
+    <form id="bankBulkForm" method="POST" action="{{ route('portal.hq.bank.map_bulk') }}" class="flex flex-wrap items-center gap-2">
         @csrf
         <input type="hidden" name="acc" value="{{ $selAcc }}">
-        <template x-for="name in picked" :key="name"><input type="hidden" name="depositor_names[]" :value="name"></template>
-        <select name="store_id" x-model="bulkStore" class="rounded-xl border-neutral-200 text-sm py-2">
+        <select name="store_id" id="bankBulkStore" class="rounded-xl border-neutral-200 text-sm py-2">
             <option value="">매장 선택…</option>
             @foreach ($stores as $s)<option value="{{ $s->id }}">{{ $s->name }}</option>@endforeach
         </select>
-        <button type="submit" :disabled="!bulkStore" class="rounded-xl bg-mango-500 hover:bg-mango-600 disabled:opacity-40 text-white font-bold px-4 py-2 text-sm transition">선택 매핑</button>
-        <button type="button" @click="picked = []" class="text-xs text-neutral-500 hover:underline">선택 해제</button>
+        <button type="submit" id="bankBulkSubmit" disabled class="rounded-xl bg-mango-500 hover:bg-mango-600 disabled:opacity-40 text-white font-bold px-4 py-2 text-sm transition">선택 매핑</button>
+        <button type="button" id="bankBulkClear" class="text-xs text-neutral-500 hover:underline">선택 해제</button>
     </form>
 </div>
 
 {{-- 입금내역 --}}
 <x-wms.panel>
-    <table class="w-full text-sm">
-        <thead class="bg-neutral-50 text-neutral-500">
-            <tr>
-                <th class="px-4 py-3 w-10"><input type="checkbox" @change="toggleAll($event)" class="rounded border-neutral-300 text-mango-500 focus:ring-mango-400"></th>
-                <th class="text-left font-semibold px-5 py-3 w-28">거래일</th>
-                <th class="text-left font-semibold px-5 py-3">입금자</th>
-                <th class="text-left font-semibold px-5 py-3 w-44">매장(매핑)</th>
-                <th class="text-right font-semibold px-5 py-3 w-28">입금액</th>
-                <th class="text-left font-semibold px-5 py-3 w-72">대사</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-neutral-100">
-            @forelse ($deposits as $d)
-                @php
-                    $sid = $resolvedStore[$d->id] ?? null;
-                    $store = $sid ? ($storeById[$sid] ?? null) : null;
-                    $cands = $candidates[$d->id] ?? collect();
-                @endphp
-                <tr class="hover:bg-neutral-50 align-top">
-                    <td class="px-4 py-3">
-                        @if ($d->depositor)
-                            <input type="checkbox" x-model="picked" value="{{ $d->depositor }}" class="rounded border-neutral-300 text-mango-500 focus:ring-mango-400">
-                        @endif
-                    </td>
-                    <td class="px-5 py-3 text-neutral-600">{{ \Illuminate\Support\Str::of((string) $d->trade_date)->replaceMatches('/(\d{4})(\d{2})(\d{2})/', '$1.$2.$3') }}</td>
-                    <td class="px-5 py-3 font-medium text-neutral-800">
-                        {{ $d->depositor ?: '(입금자명 없음)' }}
-                        @if ($d->remark)<span class="block text-xs text-neutral-400">{{ $d->remark }}</span>@endif
-                    </td>
-                    <td class="px-5 py-3">
-                        @if ($store)
-                            <span class="inline-flex items-center gap-1 text-emerald-700 font-semibold">🏪 {{ $store->name }}</span>
-                            <button type="button" @click="openMap('{{ addslashes($d->depositor) }}', {{ $sid }})" class="block text-xs text-neutral-400 hover:underline mt-0.5">매핑 변경</button>
-                        @else
-                            <button type="button" @click="openMap('{{ addslashes($d->depositor) }}', null)" class="inline-flex items-center gap-1 rounded-lg bg-amber-100 text-amber-700 font-bold px-2.5 py-1 text-xs hover:bg-amber-200">＋ 매장 매핑</button>
-                        @endif
-                    </td>
-                    <td class="px-5 py-3 text-right tabular-nums font-bold text-emerald-600">{{ number_format((int) $d->acc_in) }}</td>
-                    <td class="px-5 py-3">
-                        @if ($d->isMatched())
-                            <div class="flex items-center gap-2">
-                                <span class="inline-flex items-center gap-1 rounded-lg bg-mango-100 text-mango-700 font-bold px-2.5 py-1 text-xs">✔ {{ optional($d->matchedOrder)->order_no }}</span>
-                                <form method="POST" action="{{ route('portal.hq.bank.unmatch', $d) }}" onsubmit="return confirm('대사를 해제할까요?')">
-                                    @csrf @method('DELETE')
-                                    <button class="text-xs text-neutral-400 hover:text-rose-500">해제</button>
-                                </form>
-                            </div>
-                        @elseif (! $store)
-                            <span class="text-xs text-neutral-400">입금자 매핑 후 대사 가능</span>
-                        @elseif ($cands->isEmpty())
-                            <span class="text-xs text-neutral-400">금액이 일치하는 미입금 주문 없음</span>
-                        @else
-                            <div class="flex flex-wrap gap-1.5">
-                                @foreach ($cands as $o)
-                                    <form method="POST" action="{{ route('portal.hq.bank.match') }}">
-                                        @csrf
-                                        <input type="hidden" name="deposit_id" value="{{ $d->id }}">
-                                        <input type="hidden" name="order_id" value="{{ $o->id }}">
-                                        <button class="inline-flex items-center gap-1 rounded-lg border border-mango-300 text-mango-700 hover:bg-mango-50 font-bold px-2.5 py-1 text-xs">
-                                            {{ $o->order_no }} · {{ number_format($o->order_total) }}원 대사
-                                        </button>
-                                    </form>
-                                @endforeach
-                            </div>
-                        @endif
-
-                        {{-- 예치금 충전 (주문 대사와 병행) --}}
-                        @if ($store)
-                            <div class="mt-1.5">
-                                @if (isset($chargedDepositIds[$d->id]))
-                                    <span class="inline-flex items-center gap-1 rounded-lg bg-emerald-100 text-emerald-700 font-bold px-2.5 py-1 text-xs">💰 예치금 충전됨</span>
-                                @else
-                                    <form method="POST" action="{{ route('portal.hq.bank.charge') }}" onsubmit="return confirm('{{ $store->name }} 예치금으로 {{ number_format((int) $d->acc_in) }}원을 충전할까요?')">
-                                        @csrf
-                                        <input type="hidden" name="deposit_id" value="{{ $d->id }}">
-                                        <input type="hidden" name="store_id" value="{{ $sid }}">
-                                        <button class="inline-flex items-center gap-1 rounded-lg border border-emerald-300 text-emerald-700 hover:bg-emerald-50 font-bold px-2.5 py-1 text-xs">💰 예치금 충전{{ $store->settlement_type === 'prepaid' ? '' : ' (후불매장)' }}</button>
-                                    </form>
-                                @endif
-                            </div>
-                        @endif
-                    </td>
-                </tr>
-            @empty
-                <tr><td colspan="6" class="px-5 py-12 text-center text-neutral-400 text-sm">
-                    계좌와 기간을 선택하고 <span class="font-bold text-neutral-500">입금내역 수집</span>을 눌러 입금 거래를 가져오세요.
-                </td></tr>
-            @endforelse
-        </tbody>
-    </table>
+    <div id="hqBankGrid"></div>
 </x-wms.panel>
 
 {{-- 입금자 → 매장 매핑 모달 --}}
@@ -223,12 +161,10 @@
 </div>
 
 <script>
-function bank(polling, jobId, allNames) {
+function bank(polling, jobId) {
     return {
         polling: polling, jobId: jobId, stateLabel: '수집 중…',
         mapOpen: false, mapDepositorName: '', mapStoreId: '',
-        picked: [], bulkStore: '', allNames: allNames || [],
-        toggleAll(e) { this.picked = e.target.checked ? [...this.allNames] : []; },
         init() { if (this.polling && this.jobId) this.poll(); },
         poll() {
             fetch(`{{ url('portal/hq/bank/jobs') }}/${this.jobId}/state`, { headers: { 'Accept': 'application/json' } })
@@ -249,4 +185,151 @@ function bank(polling, jobId, allNames) {
     };
 }
 </script>
+
+@push('scripts')
+<script>
+(function () {
+    const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const MATCH_URL = '{{ route('portal.hq.bank.match') }}';
+    const CHARGE_URL = '{{ route('portal.hq.bank.charge') }}';
+    const openMap = (depositor, storeId) =>
+        window.dispatchEvent(new CustomEvent('bank-openmap', { detail: { depositor: depositor || '', storeId: storeId || null } }));
+
+    const hidden = (name, value) => {
+        const i = document.createElement('input');
+        i.type = 'hidden'; i.name = name; i.value = value;
+        return i;
+    };
+
+    const grid = ww.grid('hqBankGrid', [
+        { header: '거래일', name: 'trade_date', width: 110,
+          renderer: (v) => ww.el('span', 'text-neutral-600', v) },
+        { header: '입금자', name: 'depositor_label', width: 200,
+          renderer: (v, row) => {
+              const box = document.createElement('div');
+              box.appendChild(ww.el('span', 'font-medium text-neutral-800', v));
+              if (row.remark) box.appendChild(ww.el('span', 'block text-xs text-neutral-400', row.remark));
+              return box;
+          } },
+        { header: '매장(매핑)', name: 'has_store', width: 180,
+          renderer: (v, row) => {
+              const box = document.createElement('div');
+              if (v) {
+                  box.appendChild(ww.el('span', 'inline-flex items-center gap-1 text-emerald-700 font-semibold', '🏪 ' + (row.store_name || '')));
+                  const b = document.createElement('button');
+                  b.type = 'button'; b.textContent = '매핑 변경';
+                  b.className = 'block text-xs text-neutral-400 hover:underline mt-0.5';
+                  b.addEventListener('click', () => openMap(row.depositor, row.store_id));
+                  box.appendChild(b);
+              } else {
+                  const b = document.createElement('button');
+                  b.type = 'button'; b.textContent = '＋ 매장 매핑';
+                  b.className = 'inline-flex items-center gap-1 rounded-lg bg-amber-100 text-amber-700 font-bold px-2.5 py-1 text-xs hover:bg-amber-200';
+                  b.addEventListener('click', () => openMap(row.depositor, null));
+                  box.appendChild(b);
+              }
+              return box;
+          } },
+        { header: '입금액', name: 'acc_in', width: 110, align: 'right',
+          renderer: (v) => ww.el('span', 'tabular-nums font-bold text-emerald-600', ww.num(v)) },
+        { header: '대사', name: 'id', width: 290, sortable: false, exportable: false,
+          renderer: (v, row) => {
+              const wrap = document.createElement('div');
+              if (row.is_matched) {
+                  const line = document.createElement('div');
+                  line.className = 'flex items-center gap-2';
+                  line.appendChild(ww.el('span', 'inline-flex items-center gap-1 rounded-lg bg-mango-100 text-mango-700 font-bold px-2.5 py-1 text-xs', '✔ ' + (row.matched_order_no || '')));
+                  const f = document.createElement('form');
+                  f.method = 'POST'; f.action = row.unmatch_url;
+                  f.addEventListener('submit', (e) => { if (!confirm('대사를 해제할까요?')) e.preventDefault(); });
+                  f.appendChild(hidden('_token', CSRF));
+                  f.appendChild(hidden('_method', 'DELETE'));
+                  const ub = document.createElement('button');
+                  ub.type = 'submit'; ub.textContent = '해제';
+                  ub.className = 'text-xs text-neutral-400 hover:text-rose-500';
+                  f.appendChild(ub); line.appendChild(f);
+                  wrap.appendChild(line);
+              } else if (!row.has_store) {
+                  wrap.appendChild(ww.el('span', 'text-xs text-neutral-400', '입금자 매핑 후 대사 가능'));
+              } else if (!row.cands || row.cands.length === 0) {
+                  wrap.appendChild(ww.el('span', 'text-xs text-neutral-400', '금액이 일치하는 미입금 주문 없음'));
+              } else {
+                  const list = document.createElement('div');
+                  list.className = 'flex flex-wrap gap-1.5';
+                  row.cands.forEach((o) => {
+                      const f = document.createElement('form');
+                      f.method = 'POST'; f.action = MATCH_URL;
+                      f.appendChild(hidden('_token', CSRF));
+                      f.appendChild(hidden('deposit_id', row.id));
+                      f.appendChild(hidden('order_id', o.id));
+                      const b = document.createElement('button');
+                      b.type = 'submit';
+                      b.className = 'inline-flex items-center gap-1 rounded-lg border border-mango-300 text-mango-700 hover:bg-mango-50 font-bold px-2.5 py-1 text-xs';
+                      b.textContent = o.order_no + ' · ' + ww.num(o.order_total) + '원 대사';
+                      f.appendChild(b); list.appendChild(f);
+                  });
+                  wrap.appendChild(list);
+              }
+
+              // 예치금 충전 (주문 대사와 병행)
+              if (row.has_store) {
+                  const cw = document.createElement('div');
+                  cw.className = 'mt-1.5';
+                  if (row.charged) {
+                      cw.appendChild(ww.el('span', 'inline-flex items-center gap-1 rounded-lg bg-emerald-100 text-emerald-700 font-bold px-2.5 py-1 text-xs', '💰 예치금 충전됨'));
+                  } else {
+                      const f = document.createElement('form');
+                      f.method = 'POST'; f.action = CHARGE_URL;
+                      f.addEventListener('submit', (e) => { if (!confirm(row.charge_confirm)) e.preventDefault(); });
+                      f.appendChild(hidden('_token', CSRF));
+                      f.appendChild(hidden('deposit_id', row.id));
+                      f.appendChild(hidden('store_id', row.store_id));
+                      const b = document.createElement('button');
+                      b.type = 'submit';
+                      b.className = 'inline-flex items-center gap-1 rounded-lg border border-emerald-300 text-emerald-700 hover:bg-emerald-50 font-bold px-2.5 py-1 text-xs';
+                      b.textContent = '💰 예치금 충전' + (row.charge_suffix || '');
+                      f.appendChild(b); cw.appendChild(f);
+                  }
+                  wrap.appendChild(cw);
+              }
+              return wrap;
+          } },
+    ], @json($gridRows));
+
+    // ── 일괄 매핑 툴바 — 선택 행의 입금자명(중복 제거) 구동 ──
+    const bar = document.getElementById('bankBulkBar');
+    const bulkForm = document.getElementById('bankBulkForm');
+    const cntEl = document.getElementById('bankBulkCount');
+    const storeSel = document.getElementById('bankBulkStore');
+    const submitBtn = document.getElementById('bankBulkSubmit');
+    const gridEl = document.getElementById('hqBankGrid');
+
+    const pickedNames = () => {
+        const names = grid.getCheckedRows().map((r) => r.depositor).filter((n) => n);
+        return Array.from(new Set(names));
+    };
+    function refreshBar() {
+        const names = pickedNames();
+        if (names.length === 0) { bar.classList.add('hidden'); return; }
+        bar.classList.remove('hidden');
+        cntEl.textContent = names.length;
+    }
+    gridEl.addEventListener('change', refreshBar);
+    storeSel.addEventListener('change', function () { submitBtn.disabled = !storeSel.value; });
+
+    document.getElementById('bankBulkClear').addEventListener('click', function () {
+        gridEl.querySelectorAll('input[type="checkbox"]:checked').forEach((c) => {
+            c.checked = false;
+            c.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+        refreshBar();
+    });
+
+    bulkForm.addEventListener('submit', function () {
+        bulkForm.querySelectorAll('input[name="depositor_names[]"]').forEach((n) => n.remove());
+        pickedNames().forEach((name) => bulkForm.appendChild(hidden('depositor_names[]', name)));
+    });
+})();
+</script>
+@endpush
 @endsection
