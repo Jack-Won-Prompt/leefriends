@@ -147,6 +147,22 @@
     $badge = ['hq' => 'bg-mango-500', 'store' => 'bg-emerald-500', 'supplier' => 'bg-sky-500'][$role] ?? 'bg-neutral-500';
 @endphp
 <body class="font-sans bg-neutral-100 text-neutral-800">
+@php $panelMode = request()->boolean('panel'); @endphp
+@if ($panelMode)
+    {{-- 패널(옆 탭) 모드 — 사이드바·헤더 없이 상세 내용만 임베드 --}}
+    <div class="p-5 lg:p-6 min-h-screen">
+        @if (session('success'))
+            <div class="mb-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 px-5 py-3 text-sm font-medium">{{ session('success') }}</div>
+        @endif
+        @if (session('error'))
+            <div class="mb-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 px-5 py-3 text-sm font-medium">{{ session('error') }}</div>
+        @endif
+        @if ($errors->any())
+            <div class="mb-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 px-5 py-3 text-sm"><ul class="list-disc list-inside space-y-1">@foreach ($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>
+        @endif
+        @yield('content')
+    </div>
+@else
 <div class="flex min-h-screen">
     {{-- Sidebar --}}
     <aside class="hidden lg:flex w-64 shrink-0 flex-col bg-neutral-900 text-neutral-300">
@@ -296,6 +312,7 @@
         </main>
     </div>
 </div>
+@endif
 <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 

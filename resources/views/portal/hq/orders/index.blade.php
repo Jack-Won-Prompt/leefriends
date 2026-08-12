@@ -61,11 +61,37 @@
     ])->values();
 @endphp
 
-<x-wms.panel>
-    <div id="hqOrdersGrid" data-empty="발주 내역이 없습니다."></div>
-</x-wms.panel>
+{{-- 리스트 / 상세보기 탭 --}}
+<div class="flex items-center gap-1 border-b border-neutral-200 mb-4">
+    <button type="button" id="tabBtnList" onclick="switchTab('list')"
+            class="px-4 py-2.5 text-sm font-extrabold border-b-2 border-mango-500 text-mango-600 -mb-px transition">📋 리스트</button>
+    <button type="button" id="tabBtnDetail" onclick="switchTab('detail')" disabled
+            class="px-4 py-2.5 text-sm font-extrabold border-b-2 border-transparent text-neutral-300 -mb-px transition">
+        📄 상세보기<span id="tabDetailLabel" class="ml-1 font-bold"></span>
+    </button>
+</div>
 
-<div class="mt-5">{{ $orders->links() }}</div>
+{{-- 탭: 리스트 --}}
+<div id="tabList">
+    <x-wms.panel>
+        <div id="hqOrdersGrid" data-empty="발주 내역이 없습니다."></div>
+    </x-wms.panel>
+    <div class="mt-5">{{ $orders->links() }}</div>
+</div>
+
+{{-- 탭: 상세보기 --}}
+<div id="tabDetail" class="hidden">
+    <div class="rounded-2xl bg-white shadow-sm border border-neutral-200 overflow-hidden">
+        <div class="flex items-center justify-between px-4 py-2.5 border-b border-neutral-100 bg-neutral-50">
+            <span id="detailTitle" class="font-extrabold text-sm text-neutral-900">상세</span>
+            <div class="flex items-center gap-1.5">
+                <a id="detailFull" href="#" target="_blank" class="rounded-lg border border-neutral-200 hover:bg-white px-2.5 py-1 text-xs font-bold text-neutral-500">새 탭 ↗</a>
+                <button type="button" onclick="switchTab('list')" class="rounded-lg border border-neutral-200 hover:bg-white px-2.5 py-1 text-xs font-bold text-neutral-500">← 리스트</button>
+            </div>
+        </div>
+        <iframe id="detailFrame" class="w-full bg-white" style="height: calc(100vh - 230px); border: 0;"></iframe>
+    </div>
+</div>
 
 @push('scripts')
 <script>
@@ -128,17 +154,43 @@
         data: rows,
     });
 
-    // 행 더블클릭 → 발주 상세 (셀 안 버튼/체크박스 제외)
-    document.getElementById('hqOrdersGrid').addEventListener('dblclick', function (e) {
+    // 행 클릭 → 상세보기 탭으로 전환 (셀 안 버튼/체크박스 제외)
+    document.getElementById('hqOrdersGrid').addEventListener('click', function (e) {
         if (e.target.closest('a, button, input, select, form')) return;
         const cell = e.target.closest('[data-row-index]');
         if (!cell) return;
         const row = grid.getData()[parseInt(cell.dataset.rowIndex, 10)];
         if (!row) return;
         window.getSelection()?.removeAllRanges();
-        location.href = row.show_url;
+        openDetail(row.show_url, row.order_no);
     });
 })();
+
+function switchTab(which) {
+    const onList = which === 'list';
+    document.getElementById('tabList').classList.toggle('hidden', !onList);
+    document.getElementById('tabDetail').classList.toggle('hidden', onList);
+    const bl = document.getElementById('tabBtnList'), bd = document.getElementById('tabBtnDetail');
+    bl.classList.toggle('border-mango-500', onList);
+    bl.classList.toggle('text-mango-600', onList);
+    bl.classList.toggle('border-transparent', !onList);
+    bl.classList.toggle('text-neutral-400', !onList);
+    bd.classList.toggle('border-mango-500', !onList);
+    bd.classList.toggle('text-mango-600', !onList);
+    bd.classList.toggle('border-transparent', onList);
+    bd.classList.toggle('text-neutral-400', onList);
+}
+function openDetail(url, title) {
+    const sep = url.includes('?') ? '&' : '?';
+    document.getElementById('detailFrame').src = url + sep + 'panel=1';
+    document.getElementById('detailFull').href = url;
+    document.getElementById('detailTitle').textContent = title || '상세';
+    document.getElementById('tabDetailLabel').textContent = title ? (' · ' + title) : '';
+    const bd = document.getElementById('tabBtnDetail');
+    bd.disabled = false;
+    bd.classList.remove('text-neutral-300');
+    switchTab('detail');
+}
 </script>
 @endpush
 @endsection
