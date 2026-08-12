@@ -41,63 +41,104 @@
     <a href="{{ route('portal.hq.orders.index') }}" class="inline-flex items-center gap-1 rounded-lg bg-white border border-neutral-200 px-3 py-1.5 text-xs font-bold text-neutral-500 hover:bg-neutral-100">새로고침</a>
 </x-wms.toolbar>
 
+@include('portal.partials.wwgrid-assets')
+@php
+    $gridRows = $orders->map(fn ($o) => [
+        'order_no' => $o->order_no,
+        'store_name' => $o->store->name ?? '-',
+        'items_count' => (int) $o->items_count,
+        'store_amount' => (int) $o->store_amount,
+        'supply_amount' => (int) $o->supply_amount,
+        'status' => $o->status,
+        'status_label' => $o->status_label,
+        'tax_issued' => (bool) $o->tax_invoice_id,
+        'pay_state' => $o->status === 'canceled' ? 'canceled' : ($o->paid_at ? 'paid' : 'due'),
+        'pay_url' => route('portal.hq.orders.payment_request', $o),
+        'pay_phone' => (bool) ($o->store?->phone),
+        'pay_confirm' => ($o->store->name ?? '매장').'('.($o->store->phone ?? '번호없음').')에 입금요청 SMS를 전송합니다.\n발주금액 '.number_format($o->order_total).'원\n진행하시겠습니까?',
+        'created_at' => $o->created_at->format('Y.m.d H:i'),
+        'show_url' => route('portal.hq.orders.show', $o),
+    ])->values();
+@endphp
+
 <x-wms.panel>
-    @if ($orders->isEmpty())
-        <p class="px-6 py-16 text-center text-neutral-400">발주 내역이 없습니다.</p>
-    @else
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-neutral-50 text-neutral-500">
-                    <tr>
-                        <th class="text-left font-semibold px-6 py-3">주문번호</th>
-                        <th class="text-left font-semibold px-6 py-3">매장</th>
-                        <th class="text-right font-semibold px-6 py-3 hidden md:table-cell">품목</th>
-                        <th class="text-right font-semibold px-6 py-3">출고가</th>
-                        <th class="text-right font-semibold px-6 py-3 hidden lg:table-cell">공급가(원가)</th>
-                        <th class="text-left font-semibold px-6 py-3">상태</th>
-                        <th class="text-left font-semibold px-6 py-3">세금계산서</th>
-                        <th class="text-left font-semibold px-6 py-3">입금요청</th>
-                        <th class="text-left font-semibold px-6 py-3 hidden md:table-cell">접수일</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-neutral-100">
-                    @foreach ($orders as $o)
-                        <tr class="hover:bg-mango-50/40 transition cursor-pointer" onclick="location.href='{{ route('portal.hq.orders.show', $o) }}'">
-                            <td class="px-6 py-3.5 font-bold text-neutral-900">{{ $o->order_no }}</td>
-                            <td class="px-6 py-3.5">{{ $o->store->name ?? '-' }}</td>
-                            <td class="px-6 py-3.5 text-right hidden md:table-cell text-neutral-500">{{ $o->items_count }}</td>
-                            <td class="px-6 py-3.5 text-right font-semibold">{{ number_format($o->store_amount) }}원</td>
-                            <td class="px-6 py-3.5 text-right hidden lg:table-cell text-neutral-500">{{ number_format($o->supply_amount) }}원</td>
-                            <td class="px-6 py-3.5">@include('portal.partials.order-status', ['status' => $o->status, 'label' => $o->status_label])</td>
-                            <td class="px-6 py-3.5">
-                                @if ($o->tax_invoice_id)
-                                    <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">발행완료</span>
-                                @else
-                                    <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-neutral-100 text-neutral-400">미발행</span>
-                                @endif
-                            </td>
-                            <td class="px-6 py-3.5" onclick="event.stopPropagation()">
-                                @if ($o->status === 'canceled')
-                                    <span class="text-xs text-neutral-300">—</span>
-                                @elseif ($o->paid_at)
-                                    <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">입금완료</span>
-                                @else
-                                    <form method="POST" action="{{ route('portal.hq.orders.payment_request', $o) }}"
-                                          data-confirm="{{ $o->store->name ?? '매장' }}({{ $o->store->phone ?? '번호없음' }})에 입금요청 SMS를 전송합니다.\n발주금액 {{ number_format($o->order_total) }}원\n진행하시겠습니까?">
-                                        @csrf
-                                        <button type="submit" @unless ($o->store?->phone) disabled @endunless
-                                                class="inline-flex items-center gap-1 rounded-lg bg-mango-500 hover:bg-mango-600 disabled:opacity-40 text-white font-bold px-3 py-1.5 text-xs transition">💬 입금요청</button>
-                                    </form>
-                                @endif
-                            </td>
-                            <td class="px-6 py-3.5 hidden md:table-cell text-neutral-400">{{ $o->created_at->format('Y.m.d H:i') }}</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    @endif
+    <div id="hqOrdersGrid" data-empty="발주 내역이 없습니다."></div>
 </x-wms.panel>
 
 <div class="mt-5">{{ $orders->links() }}</div>
+
+@push('scripts')
+<script>
+(function () {
+    const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const rows = @json($gridRows);
+
+    // 공통 배지 노드
+    function badge(text, cls) {
+        const s = document.createElement('span');
+        s.className = 'inline-block text-xs font-bold px-2.5 py-1 rounded-full ' + cls;
+        s.textContent = text;
+        return s;
+    }
+    const STATUS_CLS = {
+        pending: 'bg-neutral-100 text-neutral-600',
+        processing: 'bg-amber-100 text-amber-700',
+        shipping: 'bg-sky-100 text-sky-700',
+        completed: 'bg-emerald-100 text-emerald-700',
+        canceled: 'bg-rose-100 text-rose-600',
+    };
+    const won = (v) => (Number(v) || 0).toLocaleString() + '원';
+
+    const grid = new wwGrid({
+        el: document.getElementById('hqOrdersGrid'),
+        editable: false,
+        rowCheckbox: true,
+        rowNumber: true,
+        toolbar: true,
+        footer: { total: true, selected: true, modified: false },
+        columns: [
+            { header: '주문번호', name: 'order_no', width: 150 },
+            { header: '매장', name: 'store_name', width: 130 },
+            { header: '품목', name: 'items_count', width: 70, align: 'right' },
+            { header: '출고가', name: 'store_amount', width: 110, align: 'right',
+              renderer: (v) => won(v) },
+            { header: '공급가(원가)', name: 'supply_amount', width: 120, align: 'right',
+              renderer: (v) => won(v) },
+            { header: '상태', name: 'status', width: 100, align: 'center',
+              renderer: (v, row) => badge(row.status_label, STATUS_CLS[v] || STATUS_CLS.pending) },
+            { header: '세금계산서', name: 'tax_issued', width: 110, align: 'center',
+              renderer: (v) => v ? badge('발행완료', 'bg-emerald-100 text-emerald-700') : badge('미발행', 'bg-neutral-100 text-neutral-400') },
+            { header: '입금요청', name: 'pay_state', width: 130, align: 'center', sortable: false, exportable: false,
+              renderer: (v, row) => {
+                  if (v === 'canceled') { const s = document.createElement('span'); s.className = 'text-xs text-neutral-300'; s.textContent = '—'; return s; }
+                  if (v === 'paid') return badge('입금완료', 'bg-emerald-100 text-emerald-700');
+                  const form = document.createElement('form');
+                  form.method = 'POST'; form.action = row.pay_url;
+                  form.addEventListener('submit', (e) => { if (!confirm(row.pay_confirm)) e.preventDefault(); });
+                  const t = document.createElement('input'); t.type = 'hidden'; t.name = '_token'; t.value = CSRF; form.appendChild(t);
+                  const b = document.createElement('button');
+                  b.type = 'submit'; b.textContent = '💬 입금요청';
+                  b.className = 'inline-flex items-center gap-1 rounded-lg bg-mango-500 hover:bg-mango-600 disabled:opacity-40 text-white font-bold px-3 py-1.5 text-xs transition';
+                  if (!row.pay_phone) b.disabled = true;
+                  form.appendChild(b);
+                  return form;
+              } },
+            { header: '접수일', name: 'created_at', width: 150 },
+        ],
+        data: rows,
+    });
+
+    // 행 더블클릭 → 발주 상세 (셀 안 버튼/체크박스 제외)
+    document.getElementById('hqOrdersGrid').addEventListener('dblclick', function (e) {
+        if (e.target.closest('a, button, input, select, form')) return;
+        const cell = e.target.closest('[data-row-index]');
+        if (!cell) return;
+        const row = grid.getData()[parseInt(cell.dataset.rowIndex, 10)];
+        if (!row) return;
+        window.getSelection()?.removeAllRanges();
+        location.href = row.show_url;
+    });
+})();
+</script>
+@endpush
 @endsection
