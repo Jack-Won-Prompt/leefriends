@@ -4,7 +4,12 @@
 @section('content')
 <a href="{{ route('portal.hq.store_ledger.index') }}" class="inline-flex items-center gap-1.5 text-sm font-bold text-neutral-500 hover:text-mango-600 mb-5">← 매장 원장</a>
 
-<x-wms.page-head :title="$store->name . ' 원장'" :subtitle="$store->settlement_label . ($store->virtual_account ? ' · 가상계좌 ' . $store->virtual_account : '')" icon="📒" />
+<x-wms.page-head :title="$store->name . ' 원장'" :subtitle="$store->settlement_label . ($store->virtual_account ? ' · 가상계좌 ' . $store->virtual_account : '')" icon="📒">
+    <x-slot:actions>
+        <a href="{{ route('portal.hq.store_payments.excel', $store) }}"
+           class="inline-flex items-center gap-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 text-sm">⬇️ 엑셀 (입금·거래내역)</a>
+    </x-slot:actions>
+</x-wms.page-head>
 
 @if ($errors->any())
     <div class="mb-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 px-5 py-3 text-sm">{{ $errors->first() }}</div>

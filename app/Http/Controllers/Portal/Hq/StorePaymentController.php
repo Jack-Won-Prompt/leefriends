@@ -90,6 +90,45 @@ class StorePaymentController extends Controller
         ]);
     }
 
+    /** 매장별 입금내역 + 거래내역(원장)을 고급 스타일 엑셀(.xlsx)로 다운로드 */
+    public function excel(Request $request, Store $store, \App\Services\Export\StoreLedgerExcel $exporter)
+    {
+        $period = $request->query('period', 'all');
+        $year = (int) $request->query('year', now()->year);
+        $month = (int) $request->query('month');
+        [$from, $to] = $this->dateRange($request);
+        if ($month >= 1 && $month <= 12) {
+            $from = sprintf('%04d-%02d-01', $year, $month);
+            $to = date('Y-m-t', strtotime($from));
+            $period = 'month_sel';
+        }
+
+        // 입금내역 대상 발주 (조회 기간 반영)
+        $orders = $this->apply(
+            Order::where('store_id', $store->id)->where('order_type', 'normal')->where('status', '!=', 'canceled'),
+            $period, $from, $to
+        )->withCount('items')->orderByRaw('paid_at is null desc')->latest()->get();
+
+        // 거래내역(원장)은 전체 타임라인
+        $entries = $store->ledgerEntries()->with('creator')->get();
+
+        $periodLabel = ($from || $to)
+            ? trim(($from ?: '~') . ' ~ ' . ($to ?: '~'))
+            : '전체 기간';
+
+        $book = $exporter->build($store, $orders, $entries, ['period_label' => $periodLabel]);
+
+        $safe = preg_replace('/[\\\\\/:*?"<>|]/', '_', $store->name);
+        $filename = "거래입금내역_{$safe}_" . now()->format('Ymd') . '.xlsx';
+
+        return response()->streamDownload(function () use ($book) {
+            (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($book))->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'no-store, no-cache, must-revalidate',
+        ]);
+    }
+
     /** 매장 미입금 총액을 SMS로 발송 (현재 조회 기간 기준) */
     public function requestUnpaid(Request $request, Store $store, \App\Services\Order\PaymentRequestSms $sms)
     {
