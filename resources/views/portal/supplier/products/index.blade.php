@@ -14,7 +14,8 @@
         mode: '{{ $hasErr ? old('_mode', 'create') : 'create' }}',
         action: '{{ $hasErr ? old('_action') : '' }}',
         method: '{{ $hasErr && old('_mode') === 'edit' ? 'PUT' : 'POST' }}',
-     })">
+     })"
+     @prod-edit-open.window="openEdit($event.detail.action, $event.detail.data)">
 
 <x-wms.page-head title="물품 관리" subtitle="공급할 물품을 등록합니다. 본사 승인 후 매장에서 발주할 수 있습니다." icon="📦">
     <x-slot:actions>
@@ -39,67 +40,29 @@
 
 <x-wms.toolbar :count="$products->total()" />
 
+@include('portal.partials.wwgrid-assets')
+@php
+    $gridRows = $products->map(fn ($p) => [
+        'code' => $p->code,
+        'name' => $p->name,
+        'category' => $p->category,
+        'spec' => $p->spec ?: '-',
+        'unit' => $p->unit,
+        'supply_price' => (int) $p->supply_price,
+        'approval_status' => $p->approval_status,
+        'approval_label' => $p->approval_label,
+        'approval_note' => $p->approval_status === 'rejected' ? $p->approval_note : null,
+        'is_approved' => $p->approval_status === 'approved',
+        'edit' => [
+            'action' => route('portal.supplier.products.update', $p),
+            'data' => ['name' => $p->name, 'code' => $p->code, 'category' => $p->category, 'spec' => $p->spec, 'unit' => $p->unit, 'supply_price' => $p->supply_price, 'sort_order' => $p->sort_order],
+        ],
+        'destroy_url' => route('portal.supplier.products.destroy', $p),
+    ])->values();
+@endphp
+
 <x-wms.panel>
-    @if ($products->isEmpty())
-        <p class="px-6 py-16 text-center text-neutral-400">등록된 물품이 없습니다. «새 물품 등록»으로 추가해 주세요.</p>
-    @else
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm whitespace-nowrap">
-                <thead class="bg-neutral-50 text-neutral-500">
-                    <tr>
-                        <th class="text-left font-semibold px-5 py-3">물품코드</th>
-                        <th class="text-left font-semibold px-5 py-3">물품명</th>
-                        <th class="text-left font-semibold px-5 py-3">대분류</th>
-                        <th class="text-left font-semibold px-5 py-3 hidden md:table-cell">규격</th>
-                        <th class="text-left font-semibold px-5 py-3 hidden md:table-cell">단위</th>
-                        <th class="text-right font-semibold px-5 py-3">공급가</th>
-                        <th class="text-center font-semibold px-5 py-3">승인상태</th>
-                        <th class="text-right font-semibold px-5 py-3 w-28">관리</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-neutral-100">
-                    @foreach ($products as $p)
-                        <tr class="hover:bg-mango-50/40 transition">
-                            <td class="px-5 py-3.5 font-mono font-bold text-neutral-700">{{ $p->code }}</td>
-                            <td class="px-5 py-3.5 font-bold text-neutral-900">{{ $p->name }}</td>
-                            <td class="px-5 py-3.5 text-neutral-600">{{ $p->category }}</td>
-                            <td class="px-5 py-3.5 hidden md:table-cell text-neutral-500">{{ $p->spec ?: '-' }}</td>
-                            <td class="px-5 py-3.5 hidden md:table-cell text-neutral-500">{{ $p->unit }}</td>
-                            <td class="px-5 py-3.5 text-right font-semibold text-sky-700">{{ number_format($p->supply_price) }}원</td>
-                            <td class="px-5 py-3.5 text-center">
-                                @php $ap = $p->approval_status; @endphp
-                                <span class="text-[11px] font-bold px-2 py-0.5 rounded-full
-                                    {{ $ap === 'approved' ? 'bg-emerald-100 text-emerald-700' : ($ap === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-600') }}">
-                                    {{ $p->approval_label }}
-                                </span>
-                                @if ($ap === 'rejected' && $p->approval_note)
-                                    <p class="text-[11px] text-rose-400 mt-1">{{ $p->approval_note }}</p>
-                                @endif
-                            </td>
-                            <td class="px-5 py-3.5">
-                                <div class="flex justify-end gap-2">
-                                    @if ($p->approval_status === 'approved')
-                                        <span class="text-xs text-neutral-400 px-2 py-1.5">승인 완료</span>
-                                    @else
-                                        <button type="button"
-                                                @click="openEdit('{{ route('portal.supplier.products.update', $p) }}', {{ \Illuminate\Support\Js::from([
-                                                    'name' => $p->name, 'code' => $p->code, 'category' => $p->category, 'spec' => $p->spec,
-                                                    'unit' => $p->unit, 'supply_price' => $p->supply_price, 'sort_order' => $p->sort_order,
-                                                ]) }})"
-                                                class="rounded-lg bg-neutral-100 hover:bg-neutral-200 px-3 py-1.5 font-semibold">수정</button>
-                                        <form method="POST" action="{{ route('portal.supplier.products.destroy', $p) }}" onsubmit="return confirm('이 물품을 삭제하시겠습니까?')">
-                                            @csrf @method('DELETE')
-                                            <button class="rounded-lg text-rose-600 hover:bg-rose-50 px-3 py-1.5 font-semibold">삭제</button>
-                                        </form>
-                                    @endif
-                                </div>
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    @endif
+    <div id="supplierProductsGrid"></div>
 </x-wms.panel>
 
 <div class="mt-5">{{ $products->links() }}</div>
@@ -166,4 +129,49 @@
 </div>
 
 @include('portal.partials.crud-modal-script')
+
+@push('scripts')
+<script>
+(function () {
+    const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    ww.grid('supplierProductsGrid', [
+        { header: '물품코드', name: 'code', width: 130,
+          renderer: (v) => ww.el('span', 'font-mono font-bold text-neutral-700', v) },
+        { header: '물품명', name: 'name', width: 200,
+          renderer: (v) => ww.el('span', 'font-bold text-neutral-900', v) },
+        { header: '대분류', name: 'category', width: 110 },
+        { header: '규격', name: 'spec', width: 120 },
+        { header: '단위', name: 'unit', width: 90 },
+        { header: '공급가', name: 'supply_price', width: 120, align: 'right',
+          renderer: (v) => ww.el('span', 'font-semibold text-sky-700', ww.num(v) + '원') },
+        { header: '승인상태', name: 'approval_status', width: 130, align: 'center',
+          renderer: (v, row) => {
+              const cls = v === 'approved' ? 'bg-emerald-100 text-emerald-700' : (v === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-600');
+              const badge = ww.badge(row.approval_label, cls);
+              if (v === 'rejected' && row.approval_note) {
+                  const wrap = ww.el('div'); wrap.appendChild(badge);
+                  wrap.appendChild(ww.el('p', 'text-[11px] text-rose-400 mt-1', row.approval_note));
+                  return wrap;
+              }
+              return badge;
+          } },
+        { header: '관리', name: 'destroy_url', width: 140, align: 'right', sortable: false, exportable: false,
+          renderer: (v, row) => {
+              if (row.is_approved) return ww.el('span', 'text-xs text-neutral-400 px-2 py-1.5', '승인 완료');
+              const wrap = ww.el('div', 'flex justify-end gap-2');
+              const eb = ww.el('button', 'rounded-lg bg-neutral-100 hover:bg-neutral-200 px-3 py-1.5 font-semibold text-xs', '수정'); eb.type = 'button';
+              eb.addEventListener('click', () => window.dispatchEvent(new CustomEvent('prod-edit-open', { detail: row.edit })));
+              wrap.appendChild(eb);
+              const form = document.createElement('form'); form.method = 'POST'; form.action = row.destroy_url;
+              form.addEventListener('submit', (e) => { if (!confirm('이 물품을 삭제하시겠습니까?')) e.preventDefault(); });
+              const t = document.createElement('input'); t.type = 'hidden'; t.name = '_token'; t.value = CSRF; form.appendChild(t);
+              const m = document.createElement('input'); m.type = 'hidden'; m.name = '_method'; m.value = 'DELETE'; form.appendChild(m);
+              const db = ww.el('button', 'rounded-lg text-rose-600 hover:bg-rose-50 px-3 py-1.5 font-semibold text-xs', '삭제'); db.type = 'submit'; form.appendChild(db);
+              wrap.appendChild(form);
+              return wrap;
+          } },
+    ], @json($gridRows));
+})();
+</script>
+@endpush
 @endsection

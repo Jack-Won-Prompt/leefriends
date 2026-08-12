@@ -8,7 +8,8 @@
         openNew() { this.form = { id: null, work_date: '{{ now()->format('Y-m-d') }}', clock_in: '', clock_out: '', isNew: true }; this.open = true; },
         openEdit(rec) { this.form = { id: rec.id, work_date: rec.work_date, clock_in: rec.clock_in, clock_out: rec.clock_out || '', isNew: false }; this.open = true; },
         action() { return this.form.isNew ? '{{ route('portal.attendance.store') }}' : '{{ url('portal/attendance') }}/' + this.form.id + '/own'; },
-     }">
+     }"
+     @att-edit-open.window="openEdit($event.detail)">
 <x-wms.page-head title="출퇴근 관리" subtitle="출근·퇴근을 등록하면 정직원이 승인합니다. 버튼 외에 직접 추가·수정도 가능합니다." icon="🕐">
     <x-slot:actions>
         <button type="button" @click="openNew()" class="inline-flex items-center gap-1 rounded-xl border border-neutral-200 bg-white hover:bg-neutral-50 text-neutral-700 font-bold px-4 py-2 text-sm transition">＋ 출퇴근 추가</button>
@@ -35,48 +36,24 @@
 </div>
 
 {{-- 내 출퇴근 기록 --}}
+@include('portal.partials.wwgrid-assets')
+@php
+    $gridRows = $records->map(fn ($a) => [
+        'work_date' => $a->work_date->format('Y.m.d'),
+        'clock_in' => $a->clock_in_at->format('H:i'),
+        'clock_out' => $a->clock_out_at ? $a->clock_out_at->format('H:i') : '—',
+        'hours' => $a->clock_out_at ? $a->hours().'시간' : '-',
+        'status' => $a->status,
+        'status_label' => $a->statusLabel(),
+        'is_approved' => $a->status === 'approved',
+        'edit' => ['id' => $a->id, 'work_date' => $a->work_date->format('Y-m-d'), 'clock_in' => $a->clock_in_at->format('H:i'), 'clock_out' => $a->clock_out_at?->format('H:i')],
+        'destroy_url' => route('portal.attendance.destroy_own', $a),
+    ])->values();
+@endphp
+
 <x-wms.panel>
     <div class="px-5 py-3 border-b border-neutral-100 text-sm font-bold text-neutral-700">내 출퇴근 기록</div>
-    <table class="w-full text-sm">
-        <thead class="bg-neutral-50 text-neutral-500">
-            <tr>
-                <th class="text-left font-semibold px-5 py-3">근무일</th>
-                <th class="text-left font-semibold px-5 py-3">출근</th>
-                <th class="text-left font-semibold px-5 py-3">퇴근</th>
-                <th class="text-right font-semibold px-5 py-3">근무시간</th>
-                <th class="text-left font-semibold px-5 py-3">상태</th>
-                <th class="text-right font-semibold px-5 py-3 w-28">관리</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-neutral-100">
-            @forelse ($records as $a)
-                @php $rec = ['id'=>$a->id,'work_date'=>$a->work_date->format('Y-m-d'),'clock_in'=>$a->clock_in_at->format('H:i'),'clock_out'=>$a->clock_out_at?->format('H:i')]; @endphp
-                <tr class="hover:bg-neutral-50">
-                    <td class="px-5 py-3 font-medium text-neutral-800">{{ $a->work_date->format('Y.m.d') }}</td>
-                    <td class="px-5 py-3 text-neutral-600">{{ $a->clock_in_at->format('H:i') }}</td>
-                    <td class="px-5 py-3 text-neutral-600">{{ $a->clock_out_at ? $a->clock_out_at->format('H:i') : '—' }}</td>
-                    <td class="px-5 py-3 text-right tabular-nums">{{ $a->clock_out_at ? $a->hours().'시간' : '-' }}</td>
-                    <td class="px-5 py-3">
-                        @php $c = ['pending'=>'bg-amber-100 text-amber-700','approved'=>'bg-emerald-100 text-emerald-700','rejected'=>'bg-rose-100 text-rose-700'][$a->status] ?? 'bg-neutral-100 text-neutral-500'; @endphp
-                        <span class="text-xs font-bold px-2 py-0.5 rounded-full {{ $c }}">{{ $a->statusLabel() }}</span>
-                    </td>
-                    <td class="px-5 py-3 text-right whitespace-nowrap">
-                        @if ($a->status === 'approved')
-                            <span class="text-xs text-neutral-300">승인 완료</span>
-                        @else
-                            <button type="button" @click="openEdit({{ \Illuminate\Support\Js::from($rec) }})" class="text-mango-600 hover:underline text-xs font-bold mr-2">수정</button>
-                            <form method="POST" action="{{ route('portal.attendance.destroy_own', $a) }}" class="inline" onsubmit="return confirm('이 출퇴근 기록을 삭제할까요?')">
-                                @csrf @method('DELETE')
-                                <button class="text-neutral-400 hover:text-rose-500 text-xs font-bold">삭제</button>
-                            </form>
-                        @endif
-                    </td>
-                </tr>
-            @empty
-                <tr><td colspan="6" class="px-5 py-12 text-center text-neutral-400">출퇴근 기록이 없습니다.</td></tr>
-            @endforelse
-        </tbody>
-    </table>
+    <div id="attendanceGrid"></div>
 </x-wms.panel>
 
 {{-- 출퇴근 등록/수정 팝업 --}}
@@ -112,4 +89,39 @@
     </div>
 </div>
 </div>
+
+@push('scripts')
+<script>
+(function () {
+    const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const STATUS_CLS = {
+        pending: 'bg-amber-100 text-amber-700', approved: 'bg-emerald-100 text-emerald-700', rejected: 'bg-rose-100 text-rose-700',
+    };
+    ww.grid('attendanceGrid', [
+        { header: '근무일', name: 'work_date', width: 140,
+          renderer: (v) => ww.el('span', 'font-medium text-neutral-800', v) },
+        { header: '출근', name: 'clock_in', width: 110 },
+        { header: '퇴근', name: 'clock_out', width: 110 },
+        { header: '근무시간', name: 'hours', width: 120, align: 'right' },
+        { header: '상태', name: 'status', width: 110, align: 'center',
+          renderer: (v, row) => ww.badge(row.status_label, STATUS_CLS[v] || 'bg-neutral-100 text-neutral-500') },
+        { header: '관리', name: 'destroy_url', width: 130, align: 'right', sortable: false, exportable: false,
+          renderer: (v, row) => {
+              if (row.is_approved) return ww.el('span', 'text-xs text-neutral-300', '승인 완료');
+              const wrap = ww.el('div', 'flex items-center justify-end gap-2');
+              const eb = ww.el('button', 'text-mango-600 hover:underline text-xs font-bold', '수정'); eb.type = 'button';
+              eb.addEventListener('click', () => window.dispatchEvent(new CustomEvent('att-edit-open', { detail: row.edit })));
+              wrap.appendChild(eb);
+              const form = document.createElement('form'); form.method = 'POST'; form.action = row.destroy_url;
+              form.addEventListener('submit', (e) => { if (!confirm('이 출퇴근 기록을 삭제할까요?')) e.preventDefault(); });
+              const t = document.createElement('input'); t.type = 'hidden'; t.name = '_token'; t.value = CSRF; form.appendChild(t);
+              const m = document.createElement('input'); m.type = 'hidden'; m.name = '_method'; m.value = 'DELETE'; form.appendChild(m);
+              const db = ww.el('button', 'text-neutral-400 hover:text-rose-500 text-xs font-bold', '삭제'); db.type = 'submit'; form.appendChild(db);
+              wrap.appendChild(form);
+              return wrap;
+          } },
+    ], @json($gridRows));
+})();
+</script>
+@endpush
 @endsection

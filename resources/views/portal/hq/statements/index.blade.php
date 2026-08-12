@@ -2,7 +2,7 @@
 @section('title', '거래명세서')
 
 @section('content')
-<div x-data="{ open: null }">
+<div x-data="{ open: null }" @stmt-open.window="open = $event.detail">
 <x-wms.page-head title="거래명세서" subtitle="작성·발송한 거래명세서 이력입니다. PDF 재보기·재전송할 수 있습니다." icon="🧾">
     <x-slot:actions>
         <a href="{{ route('portal.hq.statements.create') }}" class="inline-flex items-center gap-1 rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm transition">＋ 거래명세서 작성</a>
@@ -13,77 +13,38 @@
 
 <x-wms.toolbar :count="$statements->total()" label="발송 이력" />
 
+@include('portal.partials.wwgrid-assets')
+@php
+    $gridRows = $statements->map(function ($s) {
+        $issuable = ! $s->tax_invoice_id && optional($s->store)->biz_no;
+        return [
+            'transmit_label' => '전송됨' . ($s->resend_count > 0 ? ' (재전송 ' . $s->resend_count . ')' : ''),
+            'sent_at' => $s->sent_at->format('Y.m.d H:i'),
+            'store_name' => $s->store_name,
+            'order_no' => $s->order ? $s->order->order_no : null,
+            'email' => $s->email ?: '-',
+            'item_count' => (int) $s->item_count,
+            'total' => (int) $s->total,
+            'sender_name' => optional($s->sender)->name ?? '본사',
+            'receipt_status' => $s->receiptStatus(),
+            'receipt_label' => $s->receiptLabel(),
+            'confirmed_at' => $s->confirmed_at ? $s->confirmed_at->format('m.d H:i') : null,
+            'tax_state' => $s->tax_invoice_id ? 'issued' : ($issuable ? 'issuable' : 'no_biz'),
+            'tax_invoice_no' => $s->tax_invoice_id ? optional($s->taxInvoice)->invoice_no : null,
+            'tax_issue_url' => route('portal.hq.tax_invoices.issue_statement', $s),
+            'tax_issue_confirm' => "이 거래명세서로 세금계산서를 발행합니다.\n수신: {$s->store_name} ({$s->email})\n진행하시겠습니까?",
+            'id' => $s->id,
+            'pdf_url' => route('portal.hq.statements.pdf', $s),
+            'excel_url' => route('portal.hq.statements.excel', $s),
+            'resend_url' => route('portal.hq.statements.resend', $s),
+            'resend_confirm' => "«{$s->store_name}»({$s->email})로 거래명세서를 재전송할까요?",
+            'has_email' => (bool) $s->email,
+        ];
+    })->values();
+@endphp
+
 <x-wms.panel>
-    @if ($statements->isEmpty())
-        <p class="px-6 py-16 text-center text-neutral-400">발송한 거래명세서가 없습니다. «거래명세서 작성»으로 발행해 보세요.</p>
-    @else
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-neutral-50 text-neutral-500">
-                    <tr>
-                        <th class="text-left font-semibold px-6 py-3">거래명세서 매장 전송</th>
-                        <th class="text-left font-semibold px-6 py-3">매장</th>
-                        <th class="text-left font-semibold px-6 py-3 hidden md:table-cell">수신 이메일</th>
-                        <th class="text-right font-semibold px-6 py-3">품목</th>
-                        <th class="text-right font-semibold px-6 py-3">합계</th>
-                        <th class="text-left font-semibold px-6 py-3 hidden lg:table-cell">발송자</th>
-                        <th class="text-left font-semibold px-6 py-3">매장 확인</th>
-                        <th class="text-left font-semibold px-6 py-3">세금계산서</th>
-                        <th class="text-right font-semibold px-6 py-3 w-40">관리</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-neutral-100">
-                    @foreach ($statements as $s)
-                        <tr class="hover:bg-mango-50/40 transition">
-                            <td class="px-6 py-3.5 whitespace-nowrap">
-                                <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-sky-100 text-sky-700">전송됨@if ($s->resend_count > 0) (재전송 {{ $s->resend_count }})@endif</span>
-                                <span class="block text-[11px] text-neutral-400 mt-0.5">{{ $s->sent_at->format('Y.m.d H:i') }}</span>
-                            </td>
-                            <td class="px-6 py-3.5 font-bold text-mango-700">
-                                <button type="button" @click="open = {{ $s->id }}" class="hover:underline">{{ $s->store_name }}</button>
-                                @if ($s->order)<span class="block text-[11px] text-sky-600 font-bold mt-0.5">발주 {{ $s->order->order_no }}</span>@endif
-                            </td>
-                            <td class="px-6 py-3.5 hidden md:table-cell text-neutral-500">{{ $s->email ?: '-' }}</td>
-                            <td class="px-6 py-3.5 text-right text-neutral-500">{{ number_format($s->item_count) }}건</td>
-                            <td class="px-6 py-3.5 text-right font-black text-mango-700">{{ number_format($s->total) }}원</td>
-                            <td class="px-6 py-3.5 hidden lg:table-cell text-neutral-500">{{ optional($s->sender)->name ?? '본사' }}</td>
-                            @php $rc = ['pending'=>'bg-neutral-100 text-neutral-400','viewed'=>'bg-amber-100 text-amber-700','confirmed'=>'bg-emerald-100 text-emerald-700'][$s->receiptStatus()]; @endphp
-                            <td class="px-6 py-3.5 whitespace-nowrap">
-                                <span class="text-xs font-bold px-2 py-0.5 rounded-full {{ $rc }}">{{ $s->receiptLabel() }}</span>
-                                @if ($s->confirmed_at)<span class="block text-[11px] text-neutral-400 mt-0.5">{{ $s->confirmed_at->format('m.d H:i') }}</span>@endif
-                            </td>
-                            <td class="px-6 py-3.5 whitespace-nowrap">
-                                @if ($s->tax_invoice_id)
-                                    <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-700">발행완료</span>
-                                    <span class="block text-[11px] text-neutral-400 mt-0.5">{{ optional($s->taxInvoice)->invoice_no }}</span>
-                                @elseif (! optional($s->store)->biz_no)
-                                    <span class="text-[11px] text-amber-600" title="매장 사업자등록번호 필요">사업자정보 없음</span>
-                                @else
-                                    <form method="POST" action="{{ route('portal.hq.tax_invoices.issue_statement', $s) }}"
-                                          onsubmit="return confirm('이 거래명세서로 세금계산서를 발행합니다.\n수신: {{ $s->store_name }} ({{ $s->email }})\n진행하시겠습니까?')">
-                                        @csrf
-                                        <button type="submit" class="text-xs font-bold text-mango-600 hover:text-mango-700">🧾 발행</button>
-                                    </form>
-                                @endif
-                            </td>
-                            <td class="px-6 py-3.5 text-right whitespace-nowrap">
-                                <button type="button" @click="open = {{ $s->id }}" class="text-xs font-bold text-neutral-500 hover:text-mango-600 mr-3">상세</button>
-                                <a href="{{ route('portal.hq.statements.pdf', $s) }}" target="_blank"
-                                   class="text-xs font-bold text-neutral-700 hover:text-mango-600 mr-3">PDF</a>
-                                <a href="{{ route('portal.hq.statements.excel', $s) }}"
-                                   class="text-xs font-bold text-emerald-600 hover:text-emerald-700 mr-3">엑셀</a>
-                                <form method="POST" action="{{ route('portal.hq.statements.resend', $s) }}" class="inline"
-                                      onsubmit="return confirm('«{{ $s->store_name }}»({{ $s->email }})로 거래명세서를 재전송할까요?')">
-                                    @csrf
-                                    <button class="text-xs font-bold text-mango-600 hover:text-mango-700" @disabled(! $s->email)>재전송</button>
-                                </form>
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    @endif
+    <div id="hqStatementsGrid"></div>
 </x-wms.panel>
 
 @if ($statements->hasPages())
@@ -109,4 +70,119 @@
     </x-detail-modal>
 @endforeach
 </div>
+
+@push('scripts')
+<script>
+(function () {
+    const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const RECEIPT_CLS = {
+        pending: 'bg-neutral-100 text-neutral-400',
+        viewed: 'bg-amber-100 text-amber-700',
+        confirmed: 'bg-emerald-100 text-emerald-700',
+    };
+    const openModal = (id) => window.dispatchEvent(new CustomEvent('stmt-open', { detail: id }));
+
+    ww.grid('hqStatementsGrid', [
+        { header: '거래명세서 매장 전송', name: 'transmit_label', width: 170,
+          renderer: (v, row) => {
+              const box = document.createElement('div');
+              box.appendChild(ww.badge(v, 'bg-sky-100 text-sky-700'));
+              const sub = document.createElement('span');
+              sub.className = 'block text-[11px] text-neutral-400 mt-0.5';
+              sub.textContent = row.sent_at;
+              box.appendChild(sub);
+              return box;
+          } },
+        { header: '매장', name: 'store_name', width: 150,
+          renderer: (v, row) => {
+              const box = document.createElement('div');
+              const b = document.createElement('button');
+              b.type = 'button'; b.textContent = v;
+              b.className = 'font-bold text-mango-700 hover:underline';
+              b.addEventListener('click', () => openModal(row.id));
+              box.appendChild(b);
+              if (row.order_no) {
+                  const sub = document.createElement('span');
+                  sub.className = 'block text-[11px] text-sky-600 font-bold mt-0.5';
+                  sub.textContent = '발주 ' + row.order_no;
+                  box.appendChild(sub);
+              }
+              return box;
+          } },
+        { header: '수신 이메일', name: 'email', width: 200,
+          renderer: (v) => ww.el('span', 'text-neutral-500', v) },
+        { header: '품목', name: 'item_count', width: 90, align: 'right', renderer: (v) => ww.num(v) + '건' },
+        { header: '합계', name: 'total', width: 120, align: 'right',
+          renderer: (v) => ww.el('span', 'font-black text-mango-700', ww.won(v)) },
+        { header: '발송자', name: 'sender_name', width: 110,
+          renderer: (v) => ww.el('span', 'text-neutral-500', v) },
+        { header: '매장 확인', name: 'receipt_label', width: 120,
+          renderer: (v, row) => {
+              const box = document.createElement('div');
+              box.appendChild(ww.badge(v, RECEIPT_CLS[row.receipt_status] || RECEIPT_CLS.pending));
+              if (row.confirmed_at) {
+                  const sub = document.createElement('span');
+                  sub.className = 'block text-[11px] text-neutral-400 mt-0.5';
+                  sub.textContent = row.confirmed_at;
+                  box.appendChild(sub);
+              }
+              return box;
+          } },
+        { header: '세금계산서', name: 'tax_state', width: 140,
+          renderer: (v, row) => {
+              if (v === 'issued') {
+                  const box = document.createElement('div');
+                  box.appendChild(ww.badge('발행완료', 'bg-emerald-100 text-emerald-700'));
+                  const sub = document.createElement('span');
+                  sub.className = 'block text-[11px] text-neutral-400 mt-0.5';
+                  sub.textContent = row.tax_invoice_no || '';
+                  box.appendChild(sub);
+                  return box;
+              }
+              if (v === 'no_biz') {
+                  return ww.el('span', 'text-[11px] text-amber-600', '사업자정보 없음');
+              }
+              const form = document.createElement('form');
+              form.method = 'POST'; form.action = row.tax_issue_url;
+              form.addEventListener('submit', (e) => { if (!confirm(row.tax_issue_confirm)) e.preventDefault(); });
+              const t = document.createElement('input'); t.type = 'hidden'; t.name = '_token'; t.value = CSRF; form.appendChild(t);
+              const b = document.createElement('button');
+              b.type = 'submit'; b.textContent = '🧾 발행';
+              b.className = 'text-xs font-bold text-mango-600 hover:text-mango-700';
+              form.appendChild(b);
+              return form;
+          } },
+        { header: '관리', name: 'id', width: 180, align: 'right', sortable: false, exportable: false,
+          renderer: (v, row) => {
+              const wrap = document.createElement('div');
+              wrap.className = 'flex items-center justify-end gap-3';
+              const detail = document.createElement('button');
+              detail.type = 'button'; detail.textContent = '상세';
+              detail.className = 'text-xs font-bold text-neutral-500 hover:text-mango-600';
+              detail.addEventListener('click', () => openModal(row.id));
+              wrap.appendChild(detail);
+              const pdf = document.createElement('a');
+              pdf.href = row.pdf_url; pdf.target = '_blank'; pdf.textContent = 'PDF';
+              pdf.className = 'text-xs font-bold text-neutral-700 hover:text-mango-600';
+              wrap.appendChild(pdf);
+              const excel = document.createElement('a');
+              excel.href = row.excel_url; excel.textContent = '엑셀';
+              excel.className = 'text-xs font-bold text-emerald-600 hover:text-emerald-700';
+              wrap.appendChild(excel);
+              const form = document.createElement('form');
+              form.method = 'POST'; form.action = row.resend_url; form.className = 'inline';
+              form.addEventListener('submit', (e) => { if (!confirm(row.resend_confirm)) e.preventDefault(); });
+              const t = document.createElement('input'); t.type = 'hidden'; t.name = '_token'; t.value = CSRF; form.appendChild(t);
+              const rb = document.createElement('button');
+              rb.type = 'submit'; rb.textContent = '재전송';
+              rb.className = 'text-xs font-bold text-mango-600 hover:text-mango-700';
+              if (!row.has_email) { rb.disabled = true; rb.classList.add('opacity-30', 'cursor-not-allowed'); }
+              form.appendChild(rb);
+              wrap.appendChild(form);
+              return wrap;
+          } },
+    ], @json($gridRows));
+})();
+</script>
+@endpush
 @endsection

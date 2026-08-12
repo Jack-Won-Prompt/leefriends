@@ -2,7 +2,8 @@
 @section('title', '재고 관리')
 
 @section('content')
-<div x-data="{ useModal: false, invId: null, invName: '', invUnit: '', max: 0 }">
+<div x-data="{ useModal: false, invId: null, invName: '', invUnit: '', max: 0 }"
+     @inv-use-open.window="useModal = true; invId = $event.detail.id; invName = $event.detail.name; invUnit = $event.detail.unit; max = $event.detail.max">
 
 <x-wms.page-head title="재고 관리" subtitle="현재 재고 조회 및 바코드 사용 출고" icon="📦">
     <x-slot:actions>
@@ -31,35 +32,19 @@
     <button class="rounded-xl bg-neutral-900 text-white font-bold px-5">검색</button>
 </form>
 
+@include('portal.partials.wwgrid-assets')
+@php
+    $gridRows = $inventories->map(fn ($inv) => [
+        'product_name' => $inv->product_name,
+        'unit_name' => $inv->unit_name,
+        'qty' => (int) $inv->qty,
+        'use' => ['id' => $inv->id, 'name' => $inv->product_name, 'unit' => $inv->unit_name, 'max' => (int) $inv->qty],
+    ])->values();
+@endphp
+
 <div class="rounded-2xl bg-white shadow-sm border border-neutral-100 overflow-hidden">
     <div class="px-6 py-4 border-b border-neutral-100 font-extrabold text-neutral-900">현재 재고</div>
-    @if ($inventories->isEmpty())
-        <p class="px-6 py-16 text-center text-neutral-400">보유 재고가 없습니다. 입고가 완료되면 표시됩니다.</p>
-    @else
-        <table class="w-full text-sm">
-            <thead class="bg-neutral-50 text-neutral-500">
-                <tr>
-                    <th class="text-left font-semibold px-6 py-3">품목</th>
-                    <th class="text-left font-semibold px-6 py-3">단위</th>
-                    <th class="text-right font-semibold px-6 py-3">현재 수량</th>
-                    <th class="text-right font-semibold px-6 py-3 w-28">출고</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-neutral-100">
-                @foreach ($inventories as $inv)
-                    <tr class="hover:bg-mango-50/40 transition {{ $inv->qty <= 0 ? 'opacity-50' : '' }}">
-                        <td class="px-6 py-3.5 font-bold text-neutral-900">{{ $inv->product_name }}</td>
-                        <td class="px-6 py-3.5 text-neutral-500">{{ $inv->unit_name }}</td>
-                        <td class="px-6 py-3.5 text-right font-black {{ $inv->qty <= 0 ? 'text-neutral-400' : 'text-neutral-900' }}">{{ number_format($inv->qty) }}</td>
-                        <td class="px-6 py-3.5 text-right">
-                            <button type="button" @click="useModal=true; invId={{ $inv->id }}; invName='{{ $inv->product_name }}'; invUnit='{{ $inv->unit_name }}'; max={{ $inv->qty }}"
-                                    class="rounded-lg bg-neutral-100 hover:bg-neutral-200 px-3 py-1.5 font-semibold" {{ $inv->qty <= 0 ? 'disabled' : '' }}>출고</button>
-                        </td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-    @endif
+    <div id="storeInventoryGrid"></div>
 </div>
 
 {{-- 출고 모달 --}}
@@ -86,4 +71,25 @@
 </div>
 
 </div>
+
+@push('scripts')
+<script>
+(function () {
+    ww.grid('storeInventoryGrid', [
+        { header: '품목', name: 'product_name', width: 260,
+          renderer: (v) => ww.el('span', 'font-bold text-neutral-900', v) },
+        { header: '단위', name: 'unit_name', width: 120 },
+        { header: '현재 수량', name: 'qty', width: 140, align: 'right',
+          renderer: (v) => ww.el('span', 'font-black ' + (v <= 0 ? 'text-neutral-400' : 'text-neutral-900'), ww.num(v)) },
+        { header: '출고', name: 'use', width: 110, align: 'right', sortable: false, exportable: false,
+          renderer: (v, row) => {
+              const b = ww.el('button', 'rounded-lg bg-neutral-100 hover:bg-neutral-200 px-3 py-1.5 font-semibold text-xs', '출고'); b.type = 'button';
+              if (row.qty <= 0) { b.disabled = true; b.classList.add('opacity-40', 'cursor-not-allowed'); }
+              else b.addEventListener('click', () => window.dispatchEvent(new CustomEvent('inv-use-open', { detail: row.use })));
+              return b;
+          } },
+    ], @json($gridRows));
+})();
+</script>
+@endpush
 @endsection

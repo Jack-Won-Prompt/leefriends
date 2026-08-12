@@ -7,7 +7,8 @@
         editOpen: false,
         editForm: { id: null, name: '', region: '', phone: '', email: '', postcode: '', address: '', address_detail: '', biz_no: '', ceo: '', biz_type: '', biz_class: '', is_active: true },
         openEdit(s) { this.editForm = Object.assign({ postcode:'', address:'', address_detail:'', biz_no:'', ceo:'', biz_type:'', biz_class:'' }, s); this.editOpen = true; },
-     }">
+     }"
+     @store-edit-open.window="openEdit($event.detail)">
 
 <x-wms.page-head title="매장 관리" subtitle="가맹 매장을 이메일로 초대하고 계정 상태를 관리합니다" icon="🏪">
     <x-slot:actions>
@@ -18,65 +19,33 @@
 
 <x-wms.toolbar :count="$stores->total()" />
 
+@include('portal.partials.wwgrid-assets')
+@php
+    $gridRows = $stores->map(function ($st) {
+        $acc = $st->account;
+        $state = ($acc && ! $acc->invite_token) ? 'active' : (($acc && $acc->invite_token) ? 'invited' : 'none');
+        return [
+            'name' => $st->name,
+            'region' => $st->region ?: '',
+            'phone' => $st->phone ?: '',
+            'email' => $st->email ?: '',
+            'acc_state' => $state,
+            'has_email' => (bool) $st->email,
+            'reinvite_url' => route('portal.hq.stores.reinvite', $st),
+            'destroy_url' => route('portal.hq.stores.destroy', $st),
+            'confirm' => '매장 «'.$st->name.'»을(를) 삭제할까요? 계정·채팅·재고도 함께 삭제되며 되돌릴 수 없습니다.',
+            'edit' => [
+                'id' => $st->id, 'name' => $st->name, 'region' => $st->region, 'phone' => $st->phone, 'email' => $st->email,
+                'postcode' => $st->postcode, 'address' => $st->address, 'address_detail' => $st->address_detail,
+                'biz_no' => $st->biz_no, 'ceo' => $st->ceo, 'biz_type' => $st->biz_type, 'biz_class' => $st->biz_class,
+                'is_active' => (bool) $st->is_active,
+            ],
+        ];
+    })->values();
+@endphp
+
 <x-wms.panel>
-    @if ($stores->isEmpty())
-        <p class="px-6 py-16 text-center text-neutral-400">등록된 매장이 없습니다. «이메일로 매장 초대»로 추가해 주세요.</p>
-    @else
-        <table class="w-full text-sm">
-            <thead class="bg-neutral-50 text-neutral-500">
-                <tr>
-                    <th class="text-left font-semibold px-6 py-3">매장명</th>
-                    <th class="text-left font-semibold px-6 py-3 hidden md:table-cell">지역</th>
-                    <th class="text-left font-semibold px-6 py-3">연락처</th>
-                    <th class="text-left font-semibold px-6 py-3 hidden lg:table-cell">이메일</th>
-                    <th class="text-center font-semibold px-6 py-3">계정상태</th>
-                    <th class="text-center font-semibold px-6 py-3 w-20">관리</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-neutral-100">
-                @foreach ($stores as $st)
-                    <tr class="hover:bg-mango-50/40 transition {{ $st->is_active ? '' : 'opacity-50' }}">
-                        <td class="px-6 py-3.5 font-bold text-neutral-900">{{ $st->name }}</td>
-                        <td class="px-6 py-3.5 hidden md:table-cell text-neutral-500">{{ $st->region ?: '-' }}</td>
-                        <td class="px-6 py-3.5 text-neutral-600">{{ $st->phone ?: '-' }}</td>
-                        <td class="px-6 py-3.5 hidden lg:table-cell text-neutral-500">{{ $st->email ?: '-' }}</td>
-                        <td class="px-6 py-3.5 text-center">
-                            @php $acc = $st->account; @endphp
-                            @if ($acc && ! $acc->invite_token)
-                                <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">활성</span>
-                            @elseif ($acc && $acc->invite_token)
-                                <div class="flex flex-col items-center gap-1">
-                                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">초대됨 · 대기</span>
-                                    <form method="POST" action="{{ route('portal.hq.stores.reinvite', $st) }}">@csrf
-                                        <button class="text-[11px] font-semibold text-emerald-600 hover:underline">재발송</button>
-                                    </form>
-                                </div>
-                            @else
-                                <div class="flex flex-col items-center gap-1">
-                                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-400">계정 없음</span>
-                                    @if ($st->email)
-                                        <form method="POST" action="{{ route('portal.hq.stores.reinvite', $st) }}">@csrf
-                                            <button class="text-[11px] font-semibold text-emerald-600 hover:underline">초대 메일 발송</button>
-                                        </form>
-                                    @endif
-                                </div>
-                            @endif
-                        </td>
-                        <td class="px-6 py-3.5 text-center whitespace-nowrap">
-                            <button type="button"
-                                    @click="openEdit({ id: {{ $st->id }}, name: {{ Illuminate\Support\Js::from($st->name) }}, region: {{ Illuminate\Support\Js::from($st->region) }}, phone: {{ Illuminate\Support\Js::from($st->phone) }}, email: {{ Illuminate\Support\Js::from($st->email) }}, postcode: {{ Illuminate\Support\Js::from($st->postcode) }}, address: {{ Illuminate\Support\Js::from($st->address) }}, address_detail: {{ Illuminate\Support\Js::from($st->address_detail) }}, biz_no: {{ Illuminate\Support\Js::from($st->biz_no) }}, ceo: {{ Illuminate\Support\Js::from($st->ceo) }}, biz_type: {{ Illuminate\Support\Js::from($st->biz_type) }}, biz_class: {{ Illuminate\Support\Js::from($st->biz_class) }}, is_active: {{ $st->is_active ? 'true' : 'false' }} })"
-                                    class="text-xs font-bold text-mango-600 hover:text-mango-700 mr-3">수정</button>
-                            <form method="POST" action="{{ route('portal.hq.stores.destroy', $st) }}" class="inline"
-                                  onsubmit="return confirm('매장 «{{ $st->name }}»을(를) 삭제할까요? 계정·채팅·재고도 함께 삭제되며 되돌릴 수 없습니다.')">
-                                @csrf @method('DELETE')
-                                <button class="text-xs font-bold text-rose-500 hover:text-rose-600">삭제</button>
-                            </form>
-                        </td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-    @endif
+    <div id="hqStoresGrid"></div>
 </x-wms.panel>
 
 <div class="mt-5">{{ $stores->links() }}</div>
@@ -207,4 +176,53 @@
 
 </div>
 @include('portal.partials.postcode-search')
+
+@push('scripts')
+<script>
+(function () {
+    const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const reinviteForm = (action, label) => {
+        const f = document.createElement('form'); f.method = 'POST'; f.action = action;
+        const t = document.createElement('input'); t.type = 'hidden'; t.name = '_token'; t.value = CSRF; f.appendChild(t);
+        const b = document.createElement('button'); b.textContent = label; b.className = 'text-[11px] font-semibold text-emerald-600 hover:underline'; f.appendChild(b);
+        return f;
+    };
+    ww.grid('hqStoresGrid', [
+        { header: '매장명', name: 'name', width: 180, renderer: (v) => ww.el('span', 'font-bold text-neutral-900', v) },
+        { header: '지역', name: 'region', width: 110, renderer: (v) => v ? v : ww.dash() },
+        { header: '연락처', name: 'phone', width: 140, renderer: (v) => v ? v : ww.dash() },
+        { header: '이메일', name: 'email', width: 200, renderer: (v) => v ? v : ww.dash() },
+        { header: '계정상태', name: 'acc_state', width: 130, align: 'center', exportable: false,
+          renderer: (v, row) => {
+              if (v === 'active') return ww.badge('활성', 'bg-emerald-100 text-emerald-700');
+              if (v === 'invited') {
+                  const wrap = ww.el('div', 'flex flex-col items-center gap-1');
+                  wrap.appendChild(ww.badge('초대됨 · 대기', 'bg-amber-100 text-amber-700'));
+                  wrap.appendChild(reinviteForm(row.reinvite_url, '재발송'));
+                  return wrap;
+              }
+              const wrap = ww.el('div', 'flex flex-col items-center gap-1');
+              wrap.appendChild(ww.badge('계정 없음', 'bg-neutral-100 text-neutral-400'));
+              if (row.has_email) wrap.appendChild(reinviteForm(row.reinvite_url, '초대 메일 발송'));
+              return wrap;
+          } },
+        { header: '관리', name: 'destroy_url', width: 110, align: 'center', sortable: false, exportable: false,
+          renderer: (v, row) => {
+              const wrap = ww.el('div', 'flex items-center justify-center whitespace-nowrap');
+              const eb = document.createElement('button'); eb.type = 'button'; eb.textContent = '수정';
+              eb.className = 'text-xs font-bold text-mango-600 hover:text-mango-700 mr-3';
+              eb.addEventListener('click', () => window.dispatchEvent(new CustomEvent('store-edit-open', { detail: row.edit })));
+              wrap.appendChild(eb);
+              const form = document.createElement('form'); form.method = 'POST'; form.action = row.destroy_url; form.className = 'inline';
+              form.addEventListener('submit', (e) => { if (!confirm(row.confirm)) e.preventDefault(); });
+              const t = document.createElement('input'); t.type = 'hidden'; t.name = '_token'; t.value = CSRF; form.appendChild(t);
+              const m = document.createElement('input'); m.type = 'hidden'; m.name = '_method'; m.value = 'DELETE'; form.appendChild(m);
+              const db = document.createElement('button'); db.textContent = '삭제'; db.className = 'text-xs font-bold text-rose-500 hover:text-rose-600'; form.appendChild(db);
+              wrap.appendChild(form);
+              return wrap;
+          } },
+    ], @json($gridRows));
+})();
+</script>
+@endpush
 @endsection

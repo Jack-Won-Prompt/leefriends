@@ -9,7 +9,8 @@
         openNew(date) { this.form = { id: null, work_date: date, clock_in: '', clock_out: '', approve: true, isNew: true }; this.open = true; },
         openEdit(rec) { this.form = { id: rec.id, work_date: rec.work_date, clock_in: rec.clock_in, clock_out: rec.clock_out || '', approve: rec.status !== 'approved', isNew: false }; this.open = true; },
         action() { return this.form.isNew ? '{{ route('portal.attendance.manage_store', $user) }}' : '{{ url('portal/attendance') }}/' + this.form.id + '/times'; },
-     }">
+     }"
+     @att-mng-edit-open.window="openEdit($event.detail)">
 
 <x-wms.page-head :title="$user->name.' 출퇴근 관리'" :subtitle="'시급 '.number_format($user->hourly_wage).'원 · 날짜별 출퇴근 시간 등록·수정·승인'" icon="🕐">
     <x-slot:actions>
@@ -27,47 +28,25 @@
     <button class="rounded-xl bg-neutral-800 hover:bg-neutral-900 text-white font-bold px-4 py-2 text-sm">조회</button>
 </form>
 
+@include('portal.partials.wwgrid-assets')
+@php
+    $gridRows = $records->map(fn ($a) => [
+        'work_date' => $a->work_date->format('Y.m.d (D)'),
+        'clock_in' => $a->clock_in_at->format('H:i'),
+        'clock_out' => $a->clock_out_at ? $a->clock_out_at->format('H:i') : '—',
+        'hours_label' => $a->clock_out_at ? $a->hours().'시간' : '0시간',
+        'has_out' => (bool) $a->clock_out_at,
+        'wage' => $a->clock_out_at ? number_format($a->wage()).'원' : '-',
+        'status' => $a->status,
+        'status_label' => $a->statusLabel(),
+        'edit' => ['id' => $a->id, 'work_date' => $a->work_date->format('Y-m-d'), 'clock_in' => $a->clock_in_at->format('H:i'), 'clock_out' => $a->clock_out_at?->format('H:i'), 'status' => $a->status],
+        'approve_url' => route('portal.attendance.approve', $a),
+        'can_approve' => $a->status !== 'approved' && $a->clock_out_at,
+    ])->values();
+@endphp
+
 <x-wms.panel>
-    <table class="w-full text-sm">
-        <thead class="bg-neutral-50 text-neutral-500">
-            <tr>
-                <th class="text-left font-semibold px-5 py-3 w-40">날짜</th>
-                <th class="text-left font-semibold px-5 py-3">출근</th>
-                <th class="text-left font-semibold px-5 py-3">퇴근</th>
-                <th class="text-left font-semibold px-5 py-3 w-32">근무시간</th>
-                <th class="text-right font-semibold px-5 py-3">일당</th>
-                <th class="text-left font-semibold px-5 py-3">상태</th>
-                <th class="text-right font-semibold px-5 py-3 w-24">관리</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-neutral-100">
-            @forelse ($records as $a)
-                @php $rec = ['id'=>$a->id,'work_date'=>$a->work_date->format('Y-m-d'),'clock_in'=>$a->clock_in_at->format('H:i'),'clock_out'=>$a->clock_out_at?->format('H:i'),'status'=>$a->status]; @endphp
-                <tr class="hover:bg-neutral-50">
-                    <td class="px-5 py-3 font-bold text-neutral-900">{{ $a->work_date->format('Y.m.d (D)') }}</td>
-                    <td class="px-5 py-3 text-neutral-600">{{ $a->clock_in_at->format('H:i') }}</td>
-                    <td class="px-5 py-3 text-neutral-600">{{ $a->clock_out_at ? $a->clock_out_at->format('H:i') : '—' }}</td>
-                    <td class="px-5 py-3">
-                        {{-- 근무시간(0시간) 클릭 → 팝업으로 출퇴근 등록/수정 --}}
-                        <button type="button" @click="openEdit({{ \Illuminate\Support\Js::from($rec) }})"
-                                class="inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-bold {{ $a->clock_out_at ? 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200' : 'bg-amber-100 text-amber-700 hover:bg-amber-200' }}">
-                            🕐 {{ $a->clock_out_at ? $a->hours().'시간' : '0시간' }}
-                        </button>
-                    </td>
-                    <td class="px-5 py-3 text-right tabular-nums font-semibold">{{ $a->clock_out_at ? number_format($a->wage()).'원' : '-' }}</td>
-                    <td class="px-5 py-3"><span class="text-xs font-bold px-2 py-0.5 rounded-full {{ $statusChip[$a->status] ?? '' }}">{{ $a->statusLabel() }}</span></td>
-                    <td class="px-5 py-3 text-right whitespace-nowrap">
-                        @if ($a->status !== 'approved' && $a->clock_out_at)
-                            <form method="POST" action="{{ route('portal.attendance.approve', $a) }}" class="inline">@csrf @method('PATCH')
-                                <button class="text-emerald-600 hover:underline text-xs font-bold">승인</button></form>
-                        @endif
-                    </td>
-                </tr>
-            @empty
-                <tr><td colspan="7" class="px-5 py-12 text-center text-neutral-400">해당 기간 출퇴근 기록이 없습니다. <span class="text-mango-600 font-semibold cursor-pointer" @click="openNew('{{ now()->format('Y-m-d') }}')">출퇴근 등록</span>으로 추가하세요.</td></tr>
-            @endforelse
-        </tbody>
-    </table>
+    <div id="attendanceManageGrid"></div>
 </x-wms.panel>
 
 {{-- 출퇴근 시간 등록/수정 팝업 --}}
@@ -105,4 +84,41 @@
     </div>
 </div>
 </div>
+
+@push('scripts')
+<script>
+(function () {
+    const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const STATUS_CLS = {
+        pending: 'bg-amber-100 text-amber-700', approved: 'bg-emerald-100 text-emerald-700', rejected: 'bg-rose-100 text-rose-700',
+    };
+    ww.grid('attendanceManageGrid', [
+        { header: '날짜', name: 'work_date', width: 160,
+          renderer: (v) => ww.el('span', 'font-bold text-neutral-900', v) },
+        { header: '출근', name: 'clock_in', width: 100 },
+        { header: '퇴근', name: 'clock_out', width: 100 },
+        { header: '근무시간', name: 'hours_label', width: 130, sortable: false, exportable: false,
+          renderer: (v, row) => {
+              const cls = row.has_out ? 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200' : 'bg-amber-100 text-amber-700 hover:bg-amber-200';
+              const b = ww.el('button', 'inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-bold ' + cls, '🕐 ' + row.hours_label); b.type = 'button';
+              b.addEventListener('click', () => window.dispatchEvent(new CustomEvent('att-mng-edit-open', { detail: row.edit })));
+              return b;
+          } },
+        { header: '일당', name: 'wage', width: 120, align: 'right',
+          renderer: (v) => ww.el('span', 'font-semibold', v) },
+        { header: '상태', name: 'status', width: 110, align: 'center',
+          renderer: (v, row) => ww.badge(row.status_label, STATUS_CLS[v] || 'bg-neutral-100 text-neutral-500') },
+        { header: '관리', name: 'approve_url', width: 100, align: 'right', sortable: false, exportable: false,
+          renderer: (v, row) => {
+              if (!row.can_approve) return '';
+              const form = document.createElement('form'); form.method = 'POST'; form.action = row.approve_url;
+              const t = document.createElement('input'); t.type = 'hidden'; t.name = '_token'; t.value = CSRF; form.appendChild(t);
+              const m = document.createElement('input'); m.type = 'hidden'; m.name = '_method'; m.value = 'PATCH'; form.appendChild(m);
+              const b = ww.el('button', 'text-emerald-600 hover:underline text-xs font-bold', '승인'); b.type = 'submit'; form.appendChild(b);
+              return form;
+          } },
+    ], @json($gridRows));
+})();
+</script>
+@endpush
 @endsection

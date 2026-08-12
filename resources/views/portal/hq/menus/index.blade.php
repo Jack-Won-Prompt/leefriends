@@ -16,7 +16,8 @@
         method: '{{ $hasErr && old('_mode') === 'edit' ? 'PUT' : 'POST' }}',
         assetBase: '{{ $assetBase }}',
         filePreview: '',
-     })">
+     })"
+     @menu-edit-open.window="filePreview=''; openEdit($event.detail.action, $event.detail.data)">
 
 <x-wms.page-head title="메뉴 관리" subtitle="홈페이지에 노출되는 메뉴를 등록·수정합니다. 이미지는 파일 업로드 또는 기존 목록에서 선택할 수 있습니다." icon="🍧">
     <x-slot:actions>
@@ -25,51 +26,27 @@
     </x-slot:actions>
 </x-wms.page-head>
 
+@include('portal.partials.wwgrid-assets')
+@php
+    $gridRows = $menus->map(fn ($m) => [
+        'image' => asset($m->image),
+        'name' => $m->name,
+        'badge' => $m->badge ? strtoupper($m->badge) : '',
+        'category_label' => $m->category_label,
+        'price' => (int) $m->price,
+        'is_active' => (bool) $m->is_active,
+        'update_url' => route('portal.hq.menus.update', $m),
+        'destroy_url' => route('portal.hq.menus.destroy', $m),
+        'edit' => [
+            'category' => $m->category, 'badge' => $m->badge ?? '', 'name' => $m->name, 'name_en' => $m->name_en,
+            'price' => $m->price, 'sort_order' => $m->sort_order, 'description' => $m->description,
+            'image' => $m->image, 'is_active' => (bool) $m->is_active,
+        ],
+    ])->values();
+@endphp
+
 <x-wms.panel>
-    <table class="w-full text-sm">
-        <thead class="bg-neutral-50 text-neutral-500">
-            <tr class="whitespace-nowrap">
-                <th class="text-left font-semibold px-6 py-3 w-20">이미지</th>
-                <th class="text-left font-semibold px-6 py-3">메뉴명</th>
-                <th class="text-left font-semibold px-6 py-3 hidden md:table-cell">분류</th>
-                <th class="text-left font-semibold px-6 py-3">가격</th>
-                <th class="text-left font-semibold px-6 py-3 hidden md:table-cell">노출</th>
-                <th class="text-right font-semibold px-6 py-3 w-36">관리</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-neutral-100">
-            @forelse ($menus as $m)
-                <tr class="hover:bg-mango-50/40 transition">
-                    <td class="px-6 py-3"><img src="{{ asset($m->image) }}" class="w-12 h-12 rounded-lg object-cover" alt=""></td>
-                    <td class="px-6 py-3 font-bold text-neutral-900">{{ $m->name }}
-                        @if ($m->badge)<span class="ml-1 text-[10px] font-bold text-mango-600">[{{ strtoupper($m->badge) }}]</span>@endif
-                    </td>
-                    <td class="px-6 py-3 hidden md:table-cell text-neutral-500 whitespace-nowrap">{{ $m->category_label }}</td>
-                    <td class="px-6 py-3 font-bold text-mango-700 whitespace-nowrap">{{ number_format($m->price) }}원</td>
-                    <td class="px-6 py-3 hidden md:table-cell whitespace-nowrap">
-                        <span class="inline-block text-xs font-bold px-2 py-1 rounded-full whitespace-nowrap {{ $m->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-neutral-100 text-neutral-400' }}">{{ $m->is_active ? '노출' : '숨김' }}</span>
-                    </td>
-                    <td class="px-6 py-3 whitespace-nowrap">
-                        <div class="flex justify-end gap-2">
-                            <button type="button"
-                                    @click="filePreview=''; openEdit('{{ route('portal.hq.menus.update', $m) }}', {{ Illuminate\Support\Js::from([
-                                        'category' => $m->category, 'badge' => $m->badge ?? '', 'name' => $m->name, 'name_en' => $m->name_en,
-                                        'price' => $m->price, 'sort_order' => $m->sort_order, 'description' => $m->description,
-                                        'image' => $m->image, 'is_active' => (bool) $m->is_active,
-                                    ]) }})"
-                                    class="rounded-lg bg-neutral-100 hover:bg-neutral-200 px-3 py-1.5 font-semibold whitespace-nowrap">수정</button>
-                            <form method="POST" action="{{ route('portal.hq.menus.destroy', $m) }}" onsubmit="return confirm('삭제하시겠습니까?')">
-                                @csrf @method('DELETE')
-                                <button class="rounded-lg text-rose-600 hover:bg-rose-50 px-3 py-1.5 font-semibold whitespace-nowrap">삭제</button>
-                            </form>
-                        </div>
-                    </td>
-                </tr>
-            @empty
-                <tr><td colspan="6" class="px-6 py-12 text-center text-neutral-400">등록된 메뉴가 없습니다.</td></tr>
-            @endforelse
-        </tbody>
-    </table>
+    <div id="hqMenusGrid"></div>
 </x-wms.panel>
 
 <div class="mt-6">{{ $menus->links() }}</div>
@@ -157,4 +134,42 @@
 </div>
 
 @include('portal.partials.crud-modal-script')
+
+@push('scripts')
+<script>
+(function () {
+    const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    ww.grid('hqMenusGrid', [
+        { header: '이미지', name: 'image', width: 80, sortable: false, exportable: false,
+          renderer: (v) => { const i = document.createElement('img'); i.src = v; i.className = 'w-12 h-12 rounded-lg object-cover'; i.alt = ''; return i; } },
+        { header: '메뉴명', name: 'name', width: 200,
+          renderer: (v, row) => {
+              const wrap = ww.el('div', 'font-bold text-neutral-900');
+              wrap.appendChild(document.createTextNode(v));
+              if (row.badge) wrap.appendChild(ww.el('span', 'ml-1 text-[10px] font-bold text-mango-600', '[' + row.badge + ']'));
+              return wrap;
+          } },
+        { header: '분류', name: 'category_label', width: 120 },
+        { header: '가격', name: 'price', width: 110, renderer: (v) => ww.won(v) },
+        { header: '노출', name: 'is_active', width: 90, align: 'center',
+          renderer: (v) => v ? ww.badge('노출', 'bg-emerald-100 text-emerald-700') : ww.badge('숨김', 'bg-neutral-100 text-neutral-400') },
+        { header: '관리', name: 'update_url', width: 140, align: 'right', sortable: false, exportable: false,
+          renderer: (v, row) => {
+              const wrap = ww.el('div', 'flex justify-end gap-2');
+              const eb = document.createElement('button'); eb.type = 'button'; eb.textContent = '수정';
+              eb.className = 'rounded-lg bg-neutral-100 hover:bg-neutral-200 px-3 py-1.5 font-semibold whitespace-nowrap';
+              eb.addEventListener('click', () => window.dispatchEvent(new CustomEvent('menu-edit-open', { detail: { action: row.update_url, data: row.edit } })));
+              wrap.appendChild(eb);
+              const form = document.createElement('form'); form.method = 'POST'; form.action = row.destroy_url;
+              form.addEventListener('submit', (e) => { if (!confirm('삭제하시겠습니까?')) e.preventDefault(); });
+              const t = document.createElement('input'); t.type = 'hidden'; t.name = '_token'; t.value = CSRF; form.appendChild(t);
+              const m = document.createElement('input'); m.type = 'hidden'; m.name = '_method'; m.value = 'DELETE'; form.appendChild(m);
+              const db = document.createElement('button'); db.textContent = '삭제'; db.className = 'rounded-lg text-rose-600 hover:bg-rose-50 px-3 py-1.5 font-semibold whitespace-nowrap'; form.appendChild(db);
+              wrap.appendChild(form);
+              return wrap;
+          } },
+    ], @json($gridRows));
+})();
+</script>
+@endpush
 @endsection

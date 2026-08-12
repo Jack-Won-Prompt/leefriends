@@ -12,7 +12,8 @@
         action: '{{ $hasErr ? old('_action') : '' }}',
         method: '{{ $hasErr && old('_mode') === 'edit' ? 'PUT' : 'POST' }}',
         inviteOpen: {{ $errors->has('email') && old('_invite') ? 'true' : 'false' }},
-     })">
+     })"
+     @supplier-edit-open.window="openEdit($event.detail.action, $event.detail.data)">
 
 <div class="flex justify-end gap-2 mb-5">
     <button type="button" @click="inviteOpen = true"
@@ -21,77 +22,36 @@
             class="rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-5 py-2.5 transition">+ 새 공급처 추가</button>
 </div>
 
-<div class="rounded-2xl bg-white shadow-sm border border-neutral-100 overflow-hidden">
-    @if ($suppliers->isEmpty())
-        <p class="px-6 py-16 text-center text-neutral-400">등록된 공급처가 없습니다.</p>
-    @else
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-neutral-50 text-neutral-500">
-                    <tr>
-                        <th class="text-left font-semibold px-6 py-3">공급처명</th>
-                        <th class="text-left font-semibold px-6 py-3 hidden md:table-cell">사업자번호</th>
-                        <th class="text-left font-semibold px-6 py-3 hidden md:table-cell">대표자</th>
-                        <th class="text-left font-semibold px-6 py-3">연락처</th>
-                        <th class="text-right font-semibold px-6 py-3 hidden lg:table-cell">공급품목</th>
-                        <th class="text-center font-semibold px-6 py-3">계정상태</th>
-                        <th class="text-right font-semibold px-4 py-3 w-32 whitespace-nowrap">관리</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-neutral-100">
-                    @foreach ($suppliers as $s)
-                        <tr class="hover:bg-mango-50/40 transition {{ $s->is_active ? '' : 'opacity-50' }}">
-                            <td class="px-6 py-3.5 font-bold text-neutral-900">{{ $s->name }}</td>
-                            <td class="px-6 py-3.5 hidden md:table-cell text-neutral-500">{{ $s->biz_no ?: '-' }}</td>
-                            <td class="px-6 py-3.5 hidden md:table-cell text-neutral-500">{{ $s->ceo ?: '-' }}</td>
-                            <td class="px-6 py-3.5 text-neutral-600">{{ $s->phone ?: '-' }}</td>
-                            <td class="px-6 py-3.5 text-right hidden lg:table-cell text-neutral-500">{{ $s->products_count }}개</td>
-                            <td class="px-6 py-3.5 text-center">
-                                @php $acc = $s->account; @endphp
-                                @if ($acc && ! $acc->invite_token)
-                                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">활성</span>
-                                @elseif ($acc && $acc->invite_token)
-                                    <div class="flex flex-col items-center gap-1">
-                                        <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">초대됨 · 대기</span>
-                                        <form method="POST" action="{{ route('portal.hq.suppliers.reinvite', $s) }}">@csrf
-                                            <button class="text-[11px] font-semibold text-emerald-600 hover:underline">재발송</button>
-                                        </form>
-                                    </div>
-                                @else
-                                    <div class="flex flex-col items-center gap-1">
-                                        <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-400">계정 없음</span>
-                                        @if ($s->email)
-                                            <form method="POST" action="{{ route('portal.hq.suppliers.reinvite', $s) }}">@csrf
-                                                <button class="text-[11px] font-semibold text-emerald-600 hover:underline">초대 메일 발송</button>
-                                            </form>
-                                        @endif
-                                    </div>
-                                @endif
-                            </td>
-                            <td class="px-4 py-3.5">
-                                <div class="flex justify-end gap-1.5 whitespace-nowrap">
-                                    <button type="button"
-                                            @click="openEdit('{{ route('portal.hq.suppliers.update', $s) }}', {{ Illuminate\Support\Js::from([
-                                                'name' => $s->name, 'biz_no' => $s->biz_no, 'ceo' => $s->ceo,
-                                                'phone' => $s->phone, 'email' => $s->email,
-                                                'address' => $s->address, 'postcode' => $s->postcode, 'address_detail' => $s->address_detail,
-                                                'return_postcode' => $s->return_postcode, 'return_address' => $s->return_address, 'return_address_detail' => $s->return_address_detail,
-                                                'is_active' => (bool) $s->is_active,
-                                            ]) }})"
-                                            class="rounded-lg bg-neutral-100 hover:bg-neutral-200 px-3 py-1.5 font-semibold whitespace-nowrap">수정</button>
-                                    <form method="POST" action="{{ route('portal.hq.suppliers.destroy', $s) }}" onsubmit="return confirm('삭제하시겠습니까?')">
-                                        @csrf @method('DELETE')
-                                        <button class="rounded-lg text-rose-600 hover:bg-rose-50 px-3 py-1.5 font-semibold whitespace-nowrap">삭제</button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    @endif
-</div>
+@include('portal.partials.wwgrid-assets')
+@php
+    $gridRows = $suppliers->map(function ($s) {
+        $acc = $s->account;
+        $state = ($acc && ! $acc->invite_token) ? 'active' : (($acc && $acc->invite_token) ? 'invited' : 'none');
+        return [
+            'name' => $s->name,
+            'biz_no' => $s->biz_no ?: '',
+            'ceo' => $s->ceo ?: '',
+            'phone' => $s->phone ?: '',
+            'products_count' => (int) $s->products_count,
+            'acc_state' => $state,
+            'has_email' => (bool) $s->email,
+            'reinvite_url' => route('portal.hq.suppliers.reinvite', $s),
+            'update_url' => route('portal.hq.suppliers.update', $s),
+            'destroy_url' => route('portal.hq.suppliers.destroy', $s),
+            'edit' => [
+                'name' => $s->name, 'biz_no' => $s->biz_no, 'ceo' => $s->ceo,
+                'phone' => $s->phone, 'email' => $s->email,
+                'address' => $s->address, 'postcode' => $s->postcode, 'address_detail' => $s->address_detail,
+                'return_postcode' => $s->return_postcode, 'return_address' => $s->return_address, 'return_address_detail' => $s->return_address_detail,
+                'is_active' => (bool) $s->is_active,
+            ],
+        ];
+    })->values();
+@endphp
+
+<x-wms.panel>
+    <div id="hqSuppliersGrid"></div>
+</x-wms.panel>
 
 <div class="mt-6">{{ $suppliers->links() }}</div>
 
@@ -210,4 +170,54 @@
 
 @include('portal.partials.crud-modal-script')
 @include('portal.partials.postcode-search')
+
+@push('scripts')
+<script>
+(function () {
+    const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const reinviteForm = (action, label) => {
+        const f = document.createElement('form'); f.method = 'POST'; f.action = action;
+        const t = document.createElement('input'); t.type = 'hidden'; t.name = '_token'; t.value = CSRF; f.appendChild(t);
+        const b = document.createElement('button'); b.textContent = label; b.className = 'text-[11px] font-semibold text-emerald-600 hover:underline'; f.appendChild(b);
+        return f;
+    };
+    ww.grid('hqSuppliersGrid', [
+        { header: '공급처명', name: 'name', width: 180, renderer: (v) => ww.el('span', 'font-bold text-neutral-900', v) },
+        { header: '사업자번호', name: 'biz_no', width: 140, renderer: (v) => v ? v : ww.dash() },
+        { header: '대표자', name: 'ceo', width: 110, renderer: (v) => v ? v : ww.dash() },
+        { header: '연락처', name: 'phone', width: 140, renderer: (v) => v ? v : ww.dash() },
+        { header: '공급품목', name: 'products_count', width: 100, align: 'right', renderer: (v) => ww.num(v) + '개' },
+        { header: '계정상태', name: 'acc_state', width: 130, align: 'center', exportable: false,
+          renderer: (v, row) => {
+              if (v === 'active') return ww.badge('활성', 'bg-emerald-100 text-emerald-700');
+              if (v === 'invited') {
+                  const wrap = ww.el('div', 'flex flex-col items-center gap-1');
+                  wrap.appendChild(ww.badge('초대됨 · 대기', 'bg-amber-100 text-amber-700'));
+                  wrap.appendChild(reinviteForm(row.reinvite_url, '재발송'));
+                  return wrap;
+              }
+              const wrap = ww.el('div', 'flex flex-col items-center gap-1');
+              wrap.appendChild(ww.badge('계정 없음', 'bg-neutral-100 text-neutral-400'));
+              if (row.has_email) wrap.appendChild(reinviteForm(row.reinvite_url, '초대 메일 발송'));
+              return wrap;
+          } },
+        { header: '관리', name: 'destroy_url', width: 130, align: 'right', sortable: false, exportable: false,
+          renderer: (v, row) => {
+              const wrap = ww.el('div', 'flex justify-end gap-1.5 whitespace-nowrap');
+              const eb = document.createElement('button'); eb.type = 'button'; eb.textContent = '수정';
+              eb.className = 'rounded-lg bg-neutral-100 hover:bg-neutral-200 px-3 py-1.5 font-semibold whitespace-nowrap';
+              eb.addEventListener('click', () => window.dispatchEvent(new CustomEvent('supplier-edit-open', { detail: { action: row.update_url, data: row.edit } })));
+              wrap.appendChild(eb);
+              const form = document.createElement('form'); form.method = 'POST'; form.action = row.destroy_url;
+              form.addEventListener('submit', (e) => { if (!confirm('삭제하시겠습니까?')) e.preventDefault(); });
+              const t = document.createElement('input'); t.type = 'hidden'; t.name = '_token'; t.value = CSRF; form.appendChild(t);
+              const m = document.createElement('input'); m.type = 'hidden'; m.name = '_method'; m.value = 'DELETE'; form.appendChild(m);
+              const db = document.createElement('button'); db.textContent = '삭제'; db.className = 'rounded-lg text-rose-600 hover:bg-rose-50 px-3 py-1.5 font-semibold whitespace-nowrap'; form.appendChild(db);
+              wrap.appendChild(form);
+              return wrap;
+          } },
+    ], @json($gridRows));
+})();
+</script>
+@endpush
 @endsection

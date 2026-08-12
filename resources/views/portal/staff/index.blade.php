@@ -9,7 +9,8 @@
         openCreate() { this.mode = 'create'; this.form = { id: null, name: '', email: '', phone: '', password: '', employment_type: 'regular', hourly_wage: '' }; this.open = true; },
         openEdit(u) { this.mode = 'edit'; this.form = { id: u.id, name: u.name, email: u.email, phone: u.phone || '', password: '', employment_type: u.employment_type || 'regular', hourly_wage: u.hourly_wage || '' }; this.open = true; },
         action() { return this.mode === 'create' ? '{{ route('portal.staff.store') }}' : '{{ url('portal/staff') }}/' + this.form.id; },
-     }">
+     }"
+     @staff-edit-open.window="openEdit($event.detail)">
 
 <x-wms.page-head title="직원 관리" subtitle="우리 조직 소속 직원의 로그인 계정을 등록·관리합니다. 이메일이 로그인 ID입니다." icon="👥">
     <x-slot:actions>
@@ -17,52 +18,25 @@
     </x-slot:actions>
 </x-wms.page-head>
 
+@include('portal.partials.wwgrid-assets')
+@php
+    $gridRows = $staff->map(fn ($u) => [
+        'name' => $u->name,
+        'is_me' => $u->id === $meId,
+        'email' => $u->email,
+        'employment_type' => $u->employment_type,
+        'is_part' => $u->employment_type === 'part_time',
+        'hourly_wage' => (int) $u->hourly_wage,
+        'phone' => $u->phone ?: '-',
+        'created_at' => $u->created_at->format('Y.m.d'),
+        'edit' => ['id' => $u->id, 'name' => $u->name, 'email' => $u->email, 'phone' => $u->phone, 'employment_type' => $u->employment_type, 'hourly_wage' => (int) $u->hourly_wage],
+        'destroy_url' => route('portal.staff.destroy', $u),
+        'can_delete' => $u->id !== $meId,
+    ])->values();
+@endphp
+
 <x-wms.panel>
-    <table class="w-full text-sm">
-        <thead class="bg-neutral-50 text-neutral-500">
-            <tr>
-                <th class="text-left font-semibold px-6 py-3">이름</th>
-                <th class="text-left font-semibold px-6 py-3">이메일 (로그인 ID)</th>
-                <th class="text-left font-semibold px-6 py-3">구분</th>
-                <th class="text-right font-semibold px-6 py-3">시급</th>
-                <th class="text-left font-semibold px-6 py-3 hidden md:table-cell">휴대폰</th>
-                <th class="text-left font-semibold px-6 py-3 hidden md:table-cell">등록일</th>
-                <th class="text-right font-semibold px-6 py-3 w-32">관리</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-neutral-100">
-            @forelse ($staff as $u)
-                <tr class="hover:bg-mango-50/40">
-                    <td class="px-6 py-3.5 font-bold text-neutral-900">
-                        {{ $u->name }}
-                        @if ($u->id === $meId)<span class="ml-1 text-[11px] font-bold px-1.5 py-0.5 rounded bg-mango-100 text-mango-700">나</span>@endif
-                    </td>
-                    <td class="px-6 py-3.5 text-neutral-600">{{ $u->email }}</td>
-                    <td class="px-6 py-3.5">
-                        @if ($u->employment_type === 'part_time')
-                            <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-sky-100 text-sky-700">아르바이트</span>
-                        @else
-                            <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-500">정직원</span>
-                        @endif
-                    </td>
-                    <td class="px-6 py-3.5 text-right tabular-nums text-neutral-600">{{ $u->employment_type === 'part_time' ? number_format($u->hourly_wage).'원' : '-' }}</td>
-                    <td class="px-6 py-3.5 hidden md:table-cell text-neutral-500">{{ $u->phone ?: '-' }}</td>
-                    <td class="px-6 py-3.5 hidden md:table-cell text-neutral-400">{{ $u->created_at->format('Y.m.d') }}</td>
-                    <td class="px-6 py-3.5 text-right whitespace-nowrap">
-                        <button type="button" @click="openEdit({ id: {{ $u->id }}, name: {{ Illuminate\Support\Js::from($u->name) }}, email: {{ Illuminate\Support\Js::from($u->email) }}, phone: {{ Illuminate\Support\Js::from($u->phone) }}, employment_type: {{ Illuminate\Support\Js::from($u->employment_type) }}, hourly_wage: {{ (int) $u->hourly_wage }} })" class="text-mango-600 hover:text-mango-700 text-xs font-bold mr-2">수정</button>
-                        @if ($u->id !== $meId)
-                            <form method="POST" action="{{ route('portal.staff.destroy', $u) }}" class="inline" onsubmit="return confirm('«{{ $u->name }}» 직원 계정을 삭제할까요? 로그인이 즉시 차단됩니다.')">
-                                @csrf @method('DELETE')
-                                <button class="text-rose-500 hover:text-rose-600 text-xs font-bold">삭제</button>
-                            </form>
-                        @endif
-                    </td>
-                </tr>
-            @empty
-                <tr><td colspan="7" class="px-6 py-12 text-center text-neutral-400">등록된 직원이 없습니다.</td></tr>
-            @endforelse
-        </tbody>
-    </table>
+    <div id="staffGrid"></div>
 </x-wms.panel>
 
 {{-- 추가/수정 모달 --}}
@@ -121,4 +95,43 @@
     </div>
 </div>
 </div>
+
+@push('scripts')
+<script>
+(function () {
+    const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    ww.grid('staffGrid', [
+        { header: '이름', name: 'name', width: 170,
+          renderer: (v, row) => {
+              const wrap = ww.el('span', 'font-bold text-neutral-900'); wrap.textContent = v;
+              if (row.is_me) wrap.appendChild(ww.el('span', 'ml-1 text-[11px] font-bold px-1.5 py-0.5 rounded bg-mango-100 text-mango-700', '나'));
+              return wrap;
+          } },
+        { header: '이메일 (로그인 ID)', name: 'email', width: 220 },
+        { header: '구분', name: 'employment_type', width: 110, align: 'center',
+          renderer: (v) => v === 'part_time' ? ww.badge('아르바이트', 'bg-sky-100 text-sky-700') : ww.badge('정직원', 'bg-neutral-100 text-neutral-500') },
+        { header: '시급', name: 'hourly_wage', width: 110, align: 'right',
+          renderer: (v, row) => row.is_part ? ww.num(v) + '원' : '-' },
+        { header: '휴대폰', name: 'phone', width: 150 },
+        { header: '등록일', name: 'created_at', width: 120 },
+        { header: '관리', name: 'destroy_url', width: 130, align: 'right', sortable: false, exportable: false,
+          renderer: (v, row) => {
+              const wrap = ww.el('div', 'flex items-center justify-end gap-2');
+              const eb = ww.el('button', 'text-mango-600 hover:text-mango-700 text-xs font-bold', '수정'); eb.type = 'button';
+              eb.addEventListener('click', () => window.dispatchEvent(new CustomEvent('staff-edit-open', { detail: row.edit })));
+              wrap.appendChild(eb);
+              if (row.can_delete) {
+                  const form = document.createElement('form'); form.method = 'POST'; form.action = row.destroy_url;
+                  form.addEventListener('submit', (e) => { if (!confirm('«' + row.name + '» 직원 계정을 삭제할까요? 로그인이 즉시 차단됩니다.')) e.preventDefault(); });
+                  const t = document.createElement('input'); t.type = 'hidden'; t.name = '_token'; t.value = CSRF; form.appendChild(t);
+                  const m = document.createElement('input'); m.type = 'hidden'; m.name = '_method'; m.value = 'DELETE'; form.appendChild(m);
+                  const db = ww.el('button', 'text-rose-500 hover:text-rose-600 text-xs font-bold', '삭제'); db.type = 'submit'; form.appendChild(db);
+                  wrap.appendChild(form);
+              }
+              return wrap;
+          } },
+    ], @json($gridRows));
+})();
+</script>
+@endpush
 @endsection

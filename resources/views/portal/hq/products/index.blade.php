@@ -20,7 +20,9 @@
             this.approveSupply = supply; this.approveStore = store || supply;
             this.approveOpen = true;
         },
-     })">
+     })"
+     @product-edit-open.window="openEdit($event.detail.action, $event.detail.data)"
+     @product-approve-open.window="openApprove($event.detail.action, $event.detail.name, $event.detail.supply, $event.detail.store)">
 
 <x-wms.page-head title="품목 관리" subtitle="매장이 발주하는 품목(마카롱·쿠키·재료)과 단가를 관리합니다" icon="🍧">
     <x-slot:actions>
@@ -58,108 +60,41 @@
 
 <x-wms.toolbar :count="$products->total()" />
 
+@include('portal.partials.wwgrid-assets')
+@php
+    $gridRows = $products->map(fn ($p) => [
+        'image' => $p->image ? asset($p->image) : null,
+        'code' => $p->code,
+        'name' => $p->name,
+        'category' => $p->category,
+        'spec' => $p->spec ?: '',
+        'unit' => $p->unit,
+        'supply_type' => $p->supply_type,
+        'supplier_name' => optional($p->supplier)->name ?? '-',
+        'store_price' => (int) $p->store_price,
+        'supply_price' => (int) $p->supply_price,
+        'margin' => (int) $p->margin,
+        'margin_pct' => $p->store_price > 0 ? (int) round($p->margin / $p->store_price * 100) : null,
+        'approval_status' => $p->approval_status,
+        'approval_label' => $p->approval_label,
+        'registered_by' => $p->registered_by,
+        'is_active' => (bool) $p->is_active,
+        'approve_url' => route('portal.hq.products.approve', $p),
+        'reject_url' => route('portal.hq.products.reject', $p),
+        'update_url' => route('portal.hq.products.update', $p),
+        'destroy_url' => route('portal.hq.products.destroy', $p),
+        'edit' => [
+            'name' => $p->name, 'code' => $p->code, 'category' => $p->category, 'spec' => $p->spec, 'unit' => $p->unit,
+            'store_price' => $p->store_price, 'tax_type' => $p->tax_type ?: 'inc', 'sort_order' => $p->sort_order, 'is_active' => (bool) $p->is_active,
+            'is_market_price' => (bool) $p->is_market_price,
+            'supply_type' => $p->supply_type, 'supplier_id' => $p->supplier_id, 'supply_price' => $p->supply_price,
+            'image' => $p->image ? asset($p->image) : null,
+        ],
+    ])->values();
+@endphp
+
 <x-wms.panel>
-    @if ($products->isEmpty())
-        <p class="px-6 py-16 text-center text-neutral-400">등록된 품목이 없습니다.</p>
-    @else
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm whitespace-nowrap">
-                <thead class="bg-neutral-50 text-neutral-500">
-                    <tr>
-                        <th class="text-center font-semibold px-5 py-3 w-16">이미지</th>
-                        <th class="text-left font-semibold px-5 py-3">품목코드</th>
-                        <th class="text-left font-semibold px-5 py-3">품목명</th>
-                        <th class="text-left font-semibold px-5 py-3">분류</th>
-                        <th class="text-left font-semibold px-5 py-3 hidden md:table-cell">규격</th>
-                        <th class="text-left font-semibold px-5 py-3 hidden md:table-cell">단위</th>
-                        <th class="text-left font-semibold px-5 py-3">공급구분</th>
-                        <th class="text-right font-semibold px-5 py-3">판매가</th>
-                        <th class="text-right font-semibold px-5 py-3 hidden lg:table-cell">원가 · 마진</th>
-                        <th class="text-center font-semibold px-5 py-3">승인상태</th>
-                        <th class="text-center font-semibold px-5 py-3 hidden md:table-cell">노출</th>
-                        <th class="text-right font-semibold px-5 py-3 w-28">관리</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-neutral-100">
-                    @foreach ($products as $p)
-                        <tr class="hover:bg-mango-50/40 transition {{ $p->is_active ? '' : 'opacity-50' }}">
-                            <td class="px-5 py-3.5 text-center">
-                                @if ($p->image)
-                                    <img src="{{ asset($p->image) }}" alt="{{ $p->name }}" class="w-11 h-11 rounded-lg object-cover ring-1 ring-neutral-200 inline-block">
-                                @else
-                                    <span class="w-11 h-11 rounded-lg bg-neutral-100 text-neutral-300 grid place-items-center text-lg inline-grid">🍧</span>
-                                @endif
-                            </td>
-                            <td class="px-5 py-3.5 font-mono font-bold text-neutral-700">{{ $p->code }}</td>
-                            <td class="px-5 py-3.5 font-bold text-neutral-900">{{ $p->name }}</td>
-                            <td class="px-5 py-3.5 text-neutral-600">{{ $p->category }}</td>
-                            <td class="px-5 py-3.5 hidden md:table-cell text-neutral-500">{{ $p->spec ?: '-' }}</td>
-                            <td class="px-5 py-3.5 hidden md:table-cell text-neutral-500">{{ $p->unit }}</td>
-                            <td class="px-5 py-3.5">
-                                @if ($p->supply_type === 'supplier')
-                                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-sky-100 text-sky-700">공급사 발송</span>
-                                    <span class="text-xs text-neutral-500 ml-1">{{ optional($p->supplier)->name ?? '-' }}</span>
-                                @else
-                                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-mango-100 text-mango-700">본사 직공급</span>
-                                @endif
-                            </td>
-                            <td class="px-5 py-3.5 text-right font-semibold text-mango-700">{{ number_format($p->store_price) }}원</td>
-                            <td class="px-5 py-3.5 text-right hidden lg:table-cell">
-                                @if ($p->supply_type === 'supplier' && $p->supply_price > 0)
-                                    <span class="font-semibold text-neutral-700">{{ number_format($p->supply_price) }}원</span>
-                                    <span class="block text-[11px] text-emerald-600">마진 {{ number_format($p->margin) }}@if ($p->store_price > 0) ({{ round($p->margin / $p->store_price * 100) }}%)@endif</span>
-                                @else
-                                    <span class="text-neutral-300">-</span>
-                                @endif
-                            </td>
-                            <td class="px-5 py-3.5 text-center">
-                                @php $ap = $p->approval_status; @endphp
-                                <div class="flex flex-col items-center gap-1.5">
-                                    <span class="text-[11px] font-bold px-2 py-0.5 rounded-full
-                                        {{ $ap === 'approved' ? 'bg-emerald-100 text-emerald-700' : ($ap === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-600') }}">
-                                        {{ $p->approval_label }}@if ($p->registered_by === 'supplier') · 공급처등록@endif
-                                    </span>
-                                    @if ($ap !== 'approved')
-                                        <div class="flex gap-1">
-                                            <button type="button"
-                                                    @click="openApprove('{{ route('portal.hq.products.approve', $p) }}', {{ \Illuminate\Support\Js::from($p->name) }}, {{ (int) $p->supply_price }}, {{ (int) $p->store_price }})"
-                                                    class="rounded-md bg-emerald-500 hover:bg-emerald-600 text-white px-2 py-1 text-[11px] font-bold">승인</button>
-                                            @if ($ap !== 'rejected')
-                                                <form method="POST" action="{{ route('portal.hq.products.reject', $p) }}" onsubmit="return confirm('이 물품을 반려하시겠습니까?')">
-                                                    @csrf @method('PATCH')
-                                                    <button class="rounded-md bg-neutral-100 hover:bg-rose-50 text-rose-600 px-2 py-1 text-[11px] font-bold">반려</button>
-                                                </form>
-                                            @endif
-                                        </div>
-                                    @endif
-                                </div>
-                            </td>
-                            <td class="px-5 py-3.5 text-center hidden md:table-cell">
-                                <span class="text-xs font-bold px-2 py-0.5 rounded-full {{ $p->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-neutral-100 text-neutral-400' }}">{{ $p->is_active ? '노출' : '숨김' }}</span>
-                            </td>
-                            <td class="px-5 py-3.5">
-                                <div class="flex justify-end gap-2">
-                                    <button type="button"
-                                            @click="openEdit('{{ route('portal.hq.products.update', $p) }}', {{ Illuminate\Support\Js::from([
-                                                'name' => $p->name, 'code' => $p->code, 'category' => $p->category, 'spec' => $p->spec, 'unit' => $p->unit,
-                                                'store_price' => $p->store_price, 'tax_type' => $p->tax_type ?: 'inc', 'sort_order' => $p->sort_order, 'is_active' => (bool) $p->is_active,
-                                                'is_market_price' => (bool) $p->is_market_price,
-                                                'supply_type' => $p->supply_type, 'supplier_id' => $p->supplier_id, 'supply_price' => $p->supply_price,
-                                                'image' => $p->image ? asset($p->image) : null,
-                                            ]) }})"
-                                            class="rounded-lg bg-neutral-100 hover:bg-neutral-200 px-3 py-1.5 font-semibold">수정</button>
-                                    <form method="POST" action="{{ route('portal.hq.products.destroy', $p) }}" onsubmit="return confirm('삭제하시겠습니까? 단가·재고 이력도 함께 삭제됩니다.')">
-                                        @csrf @method('DELETE')
-                                        <button class="rounded-lg text-rose-600 hover:bg-rose-50 px-3 py-1.5 font-semibold">삭제</button>
-                                    </form>
-                                </div>
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    @endif
+    <div id="hqProductsGrid"></div>
 </x-wms.panel>
 
 <div class="mt-5">{{ $products->links() }}</div>
@@ -327,4 +262,81 @@
 </div>
 
 @include('portal.partials.crud-modal-script')
+
+@push('scripts')
+<script>
+(function () {
+    const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const hidden = (n, v) => { const i = document.createElement('input'); i.type = 'hidden'; i.name = n; i.value = v; return i; };
+    ww.grid('hqProductsGrid', [
+        { header: '이미지', name: 'image', width: 70, align: 'center', sortable: false, exportable: false,
+          renderer: (v, row) => {
+              if (v) { const i = document.createElement('img'); i.src = v; i.alt = row.name; i.className = 'w-11 h-11 rounded-lg object-cover ring-1 ring-neutral-200 inline-block'; return i; }
+              return ww.el('span', 'w-11 h-11 rounded-lg bg-neutral-100 text-neutral-300 grid place-items-center text-lg inline-grid', '🍧');
+          } },
+        { header: '품목코드', name: 'code', width: 120, renderer: (v) => ww.el('span', 'font-mono font-bold text-neutral-700', v) },
+        { header: '품목명', name: 'name', width: 160, renderer: (v) => ww.el('span', 'font-bold text-neutral-900', v) },
+        { header: '분류', name: 'category', width: 100 },
+        { header: '규격', name: 'spec', width: 110, renderer: (v) => v ? v : ww.dash() },
+        { header: '단위', name: 'unit', width: 80 },
+        { header: '공급구분', name: 'supply_type', width: 160, sortable: false,
+          renderer: (v, row) => {
+              const wrap = ww.el('div', 'flex items-center gap-1');
+              if (v === 'supplier') { wrap.appendChild(ww.badge('공급사 발송', 'bg-sky-100 text-sky-700')); wrap.appendChild(ww.el('span', 'text-xs text-neutral-500', row.supplier_name)); }
+              else wrap.appendChild(ww.badge('본사 직공급', 'bg-mango-100 text-mango-700'));
+              return wrap;
+          } },
+        { header: '판매가', name: 'store_price', width: 110, align: 'right', renderer: (v) => ww.won(v) },
+        { header: '원가 · 마진', name: 'supply_price', width: 140, align: 'right', exportable: false,
+          renderer: (v, row) => {
+              if (row.supply_type === 'supplier' && row.supply_price > 0) {
+                  const wrap = ww.el('div', 'text-right');
+                  wrap.appendChild(ww.el('span', 'font-semibold text-neutral-700', ww.won(row.supply_price)));
+                  wrap.appendChild(ww.el('span', 'block text-[11px] text-emerald-600', '마진 ' + ww.num(row.margin) + (row.margin_pct != null ? ' (' + row.margin_pct + '%)' : '')));
+                  return wrap;
+              }
+              return ww.dash();
+          } },
+        { header: '승인상태', name: 'approval_status', width: 140, align: 'center', exportable: false,
+          renderer: (v, row) => {
+              const wrap = ww.el('div', 'flex flex-col items-center gap-1.5');
+              const cls = v === 'approved' ? 'bg-emerald-100 text-emerald-700' : (v === 'pending' ? 'bg-amber-100 text-amber-700' : 'bg-rose-100 text-rose-600');
+              wrap.appendChild(ww.badge(row.approval_label + (row.registered_by === 'supplier' ? ' · 공급처등록' : ''), cls));
+              if (v !== 'approved') {
+                  const bts = ww.el('div', 'flex gap-1');
+                  const ab = document.createElement('button'); ab.type = 'button'; ab.textContent = '승인';
+                  ab.className = 'rounded-md bg-emerald-500 hover:bg-emerald-600 text-white px-2 py-1 text-[11px] font-bold';
+                  ab.addEventListener('click', () => window.dispatchEvent(new CustomEvent('product-approve-open', { detail: { action: row.approve_url, name: row.name, supply: row.supply_price, store: row.store_price } })));
+                  bts.appendChild(ab);
+                  if (v !== 'rejected') {
+                      const form = document.createElement('form'); form.method = 'POST'; form.action = row.reject_url;
+                      form.addEventListener('submit', (e) => { if (!confirm('이 물품을 반려하시겠습니까?')) e.preventDefault(); });
+                      form.appendChild(hidden('_token', CSRF)); form.appendChild(hidden('_method', 'PATCH'));
+                      const rb = document.createElement('button'); rb.textContent = '반려'; rb.className = 'rounded-md bg-neutral-100 hover:bg-rose-50 text-rose-600 px-2 py-1 text-[11px] font-bold'; form.appendChild(rb);
+                      bts.appendChild(form);
+                  }
+                  wrap.appendChild(bts);
+              }
+              return wrap;
+          } },
+        { header: '노출', name: 'is_active', width: 90, align: 'center',
+          renderer: (v) => v ? ww.badge('노출', 'bg-emerald-100 text-emerald-700') : ww.badge('숨김', 'bg-neutral-100 text-neutral-400') },
+        { header: '관리', name: 'update_url', width: 120, align: 'right', sortable: false, exportable: false,
+          renderer: (v, row) => {
+              const wrap = ww.el('div', 'flex justify-end gap-2');
+              const eb = document.createElement('button'); eb.type = 'button'; eb.textContent = '수정';
+              eb.className = 'rounded-lg bg-neutral-100 hover:bg-neutral-200 px-3 py-1.5 font-semibold text-neutral-700';
+              eb.addEventListener('click', () => window.dispatchEvent(new CustomEvent('product-edit-open', { detail: { action: row.update_url, data: row.edit } })));
+              wrap.appendChild(eb);
+              const form = document.createElement('form'); form.method = 'POST'; form.action = row.destroy_url;
+              form.addEventListener('submit', (e) => { if (!confirm('삭제하시겠습니까? 단가·재고 이력도 함께 삭제됩니다.')) e.preventDefault(); });
+              form.appendChild(hidden('_token', CSRF)); form.appendChild(hidden('_method', 'DELETE'));
+              const db = document.createElement('button'); db.textContent = '삭제'; db.className = 'rounded-lg text-rose-600 hover:bg-rose-50 px-3 py-1.5 font-semibold'; form.appendChild(db);
+              wrap.appendChild(form);
+              return wrap;
+          } },
+    ], @json($gridRows));
+})();
+</script>
+@endpush
 @endsection
