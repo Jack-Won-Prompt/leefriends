@@ -210,6 +210,7 @@ Route::prefix('portal')->name('portal.')->group(function () {
 
             // 매장별 입금현황
             Route::get('store-payments', [Portal\Hq\StorePaymentController::class, 'index'])->name('store_payments.index');
+            Route::get('store-payments/excel', [Portal\Hq\StorePaymentController::class, 'excelAll'])->name('store_payments.excel_all');
             Route::get('store-payments/{store}', [Portal\Hq\StorePaymentController::class, 'show'])->name('store_payments.show');
             Route::get('store-payments/{store}/excel', [Portal\Hq\StorePaymentController::class, 'excel'])->name('store_payments.excel');
             Route::post('store-payments/{store}/request-unpaid', [Portal\Hq\StorePaymentController::class, 'requestUnpaid'])->name('store_payments.request_unpaid');

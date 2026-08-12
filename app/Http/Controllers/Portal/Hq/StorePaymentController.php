@@ -90,6 +90,56 @@ class StorePaymentController extends Controller
         ]);
     }
 
+    /** 조회 기간의 전 매장 주문서 리스트를 하나의 엑셀(.xlsx) 파일로 다운로드 */
+    public function excelAll(Request $request, \App\Services\Export\StoreLedgerExcel $exporter)
+    {
+        $period = $request->query('period', 'all');
+        $year = (int) $request->query('year', now()->year);
+        $month = (int) $request->query('month');
+        [$from, $to] = $this->dateRange($request);
+        if ($month >= 1 && $month <= 12) {
+            $from = sprintf('%04d-%02d-01', $year, $month);
+            $to = date('Y-m-t', strtotime($from));
+            $period = 'month_sel';
+        }
+
+        // 전 매장 발주 (기간 반영) — 매장 → 발주일 순
+        $orders = $this->apply(
+            Order::with('store')->withCount('items')
+                ->where('order_type', 'normal')->where('status', '!=', 'canceled'),
+            $period, $from, $to
+        )->orderBy('store_id')->orderByDesc('created_at')->get();
+
+        // 매장별 집계 (index 와 동일 산식)
+        $byStore = $this->apply(
+            Order::query()->where('orders.order_type', 'normal'),
+            $period, $from, $to
+        )
+            ->join('stores', 'stores.id', '=', 'orders.store_id')
+            ->where('orders.status', '!=', 'canceled')
+            ->selectRaw('stores.id, stores.name, stores.region,
+                count(*) as cnt,
+                sum(orders.store_amount + orders.store_vat + orders.shipping_fee) as total,
+                sum(case when orders.paid_at is not null then orders.store_amount + orders.store_vat + orders.shipping_fee else 0 end) as paid,
+                sum(case when orders.paid_at is null then 1 else 0 end) as unpaid_cnt')
+            ->groupBy('stores.id', 'stores.name', 'stores.region')
+            ->orderByDesc('unpaid_cnt')->orderByDesc('total')
+            ->get();
+
+        $periodLabel = ($from || $to) ? trim(($from ?: '~') . ' ~ ' . ($to ?: '~')) : '전체 기간';
+        $book = $exporter->buildOrderList($orders, $byStore, ['period_label' => $periodLabel]);
+
+        $tag = ($from || $to) ? (($from ?: '') . '_' . ($to ?: '')) : now()->format('Ymd');
+        $filename = "매장주문서리스트_{$tag}.xlsx";
+
+        return response()->streamDownload(function () use ($book) {
+            (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($book))->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'no-store, no-cache, must-revalidate',
+        ]);
+    }
+
     /** 매장별 입금내역 + 거래내역(원장)을 고급 스타일 엑셀(.xlsx)로 다운로드 */
     public function excel(Request $request, Store $store, \App\Services\Export\StoreLedgerExcel $exporter)
     {

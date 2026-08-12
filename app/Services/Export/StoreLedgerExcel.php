@@ -48,6 +48,170 @@ class StoreLedgerExcel
         return $book;
     }
 
+    /**
+     * 조회 기간의 전 매장 주문서 리스트를 한 워크북으로.
+     *  - 시트1 «주문서 리스트»: 전 매장 발주 상세
+     *  - 시트2 «매장별 요약»: 매장 단위 집계
+     *
+     * @param  Collection  $orders   store 관계 + items_count 포함, 기간 필터 적용됨
+     * @param  Collection  $byStore  매장별 집계 (id,name,region,cnt,total,paid,unpaid_cnt)
+     */
+    public function buildOrderList(Collection $orders, Collection $byStore, array $meta = []): Spreadsheet
+    {
+        $book = new Spreadsheet();
+        $book->getProperties()
+            ->setCreator('LEEFRIENDS 본사')
+            ->setTitle('매장 주문서 리스트')
+            ->setCompany('주식회사 오다네트웍스');
+
+        $this->orderListSheet($book->getActiveSheet(), $orders, $meta);
+        $this->storeSummarySheet($book->createSheet(), $byStore, $meta);
+        $book->setActiveSheetIndex(0);
+
+        return $book;
+    }
+
+    /** 시트: 주문서 리스트 (전 매장) */
+    private function orderListSheet(Worksheet $s, Collection $orders, array $meta): void
+    {
+        $s->setTitle('주문서 리스트');
+        $s->setShowGridlines(false);
+        $last = 'K';
+
+        $total = 0;
+        $paid = 0;
+        foreach ($orders as $o) {
+            $amt = (int) $o->store_amount + (int) $o->store_vat + (int) $o->shipping_fee;
+            $total += $amt;
+            if ($o->paid_at) {
+                $paid += $amt;
+            }
+        }
+
+        $period = $meta['period_label'] ?? '전체 기간';
+        $this->titleBlockText($s, $last, '주 문 서 리 스 트', "기간: {$period}    |    발행: " . now()->format('Y-m-d H:i') . "    |    총 " . $orders->count() . '건');
+
+        $this->summaryRow($s, 5, [
+            ['총 발주액', $total, self::DARK],
+            ['입금완료', $paid, self::GREEN],
+            ['미입금', $total - $paid, self::RED],
+            ['발주건수', $orders->count() . ' 건', self::MANGO, true],
+        ], $last);
+
+        $head = 7;
+        $cols = ['매장', '지역', '발주일', '발주번호', '품목수', '공급가액', '부가세', '택배비', '합계', '입금', '입금일'];
+        foreach ($cols as $i => $label) {
+            $s->setCellValue([$i + 1, $head], $label);
+        }
+        $this->headerRow($s, "A{$head}:{$last}{$head}");
+
+        $r = $head + 1;
+        foreach ($orders as $idx => $o) {
+            $amt = (int) $o->store_amount + (int) $o->store_vat + (int) $o->shipping_fee;
+            $s->setCellValue([1, $r], optional($o->store)->name ?? '-');
+            $s->setCellValue([2, $r], optional($o->store)->region ?: '-');
+            $s->setCellValue([3, $r], optional($o->created_at)->format('Y-m-d'));
+            $s->setCellValue([4, $r], $o->order_no);
+            $s->setCellValue([5, $r], (int) ($o->items_count ?? 0));
+            $s->setCellValue([6, $r], (int) $o->store_amount);
+            $s->setCellValue([7, $r], (int) $o->store_vat);
+            $s->setCellValue([8, $r], (int) $o->shipping_fee);
+            $s->setCellValue([9, $r], $amt);
+            $s->setCellValue([10, $r], $o->paid_at ? '입금완료' : '미입금');
+            $s->setCellValue([11, $r], $o->paid_at ? \Illuminate\Support\Carbon::parse($o->paid_at)->format('Y-m-d') : '-');
+
+            $this->bodyRow($s, $r, $last, $idx);
+            $s->getStyle("A{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+            $s->getStyle("J{$r}")->getFont()->setBold(true)->getColor()->setARGB($o->paid_at ? self::GREEN : self::RED);
+            $s->getStyle("J{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+            $r++;
+        }
+        if ($orders->isEmpty()) {
+            $this->emptyRow($s, $r, $last, '해당 기간의 발주 내역이 없습니다.');
+            $r++;
+        }
+
+        // 합계
+        $s->setCellValue("A{$r}", '합계');
+        $s->mergeCells("A{$r}:E{$r}");
+        $s->setCellValue("F{$r}", $orders->sum(fn ($o) => (int) $o->store_amount));
+        $s->setCellValue("G{$r}", $orders->sum(fn ($o) => (int) $o->store_vat));
+        $s->setCellValue("H{$r}", $orders->sum(fn ($o) => (int) $o->shipping_fee));
+        $s->setCellValue("I{$r}", $total);
+        $s->setCellValue("J{$r}", number_format($total) . '원');
+        $s->mergeCells("J{$r}:K{$r}");
+        $this->totalRow($s, $r, $last);
+        $s->getStyle("A{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        $s->getStyle("E8:I{$r}")->getNumberFormat()->setFormatCode('#,##0');
+        $this->finishSheet($s, $last, $head, [16, 10, 13, 18, 8, 13, 11, 11, 14, 11, 13]);
+        $s->freezePane("A" . ($head + 1));
+    }
+
+    /** 시트: 매장별 요약 */
+    private function storeSummarySheet(Worksheet $s, Collection $byStore, array $meta): void
+    {
+        $s->setTitle('매장별 요약');
+        $s->setShowGridlines(false);
+        $last = 'G';
+
+        $sumTotal = (int) $byStore->sum('total');
+        $sumPaid = (int) $byStore->sum('paid');
+
+        $period = $meta['period_label'] ?? '전체 기간';
+        $this->titleBlockText($s, $last, '매 장 별 요 약', "기간: {$period}    |    발행: " . now()->format('Y-m-d H:i') . '    |    ' . $byStore->count() . '개 매장');
+
+        $this->summaryRow($s, 5, [
+            ['매장 수', $byStore->count() . ' 개', self::DARK, true],
+            ['총 발주액', $sumTotal, self::DARK],
+            ['입금완료', $sumPaid, self::GREEN],
+            ['미입금', $sumTotal - $sumPaid, self::RED],
+        ], $last);
+
+        $head = 7;
+        $cols = ['매장', '지역', '발주건수', '총 발주액', '입금완료', '미입금', '미입금건수'];
+        foreach ($cols as $i => $label) {
+            $s->setCellValue([$i + 1, $head], $label);
+        }
+        $this->headerRow($s, "A{$head}:{$last}{$head}");
+
+        $r = $head + 1;
+        foreach ($byStore as $idx => $b) {
+            $unpaidAmt = (int) $b->total - (int) $b->paid;
+            $s->setCellValue([1, $r], $b->name);
+            $s->setCellValue([2, $r], $b->region ?: '-');
+            $s->setCellValue([3, $r], (int) $b->cnt);
+            $s->setCellValue([4, $r], (int) $b->total);
+            $s->setCellValue([5, $r], (int) $b->paid);
+            $s->setCellValue([6, $r], $unpaidAmt);
+            $s->setCellValue([7, $r], (int) $b->unpaid_cnt);
+
+            $this->bodyRow($s, $r, $last, $idx);
+            $s->getStyle("A{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+            if ($unpaidAmt > 0) {
+                $s->getStyle("F{$r}")->getFont()->setBold(true)->getColor()->setARGB(self::RED);
+            }
+            $r++;
+        }
+        if ($byStore->isEmpty()) {
+            $this->emptyRow($s, $r, $last, '해당 기간의 매장 집계가 없습니다.');
+            $r++;
+        }
+
+        $s->setCellValue("A{$r}", '합계');
+        $s->mergeCells("A{$r}:C{$r}");
+        $s->setCellValue("D{$r}", $sumTotal);
+        $s->setCellValue("E{$r}", $sumPaid);
+        $s->setCellValue("F{$r}", $sumTotal - $sumPaid);
+        $s->setCellValue("G{$r}", (int) $byStore->sum('unpaid_cnt'));
+        $this->totalRow($s, $r, $last);
+        $s->getStyle("A{$r}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        $s->getStyle("C8:F{$r}")->getNumberFormat()->setFormatCode('#,##0');
+        $this->finishSheet($s, $last, $head, [20, 12, 12, 15, 15, 15, 12]);
+        $s->freezePane("A" . ($head + 1));
+    }
+
     /* ============================ 시트1: 입금내역 ============================ */
 
     private function buildPaymentsSheet(Worksheet $s, Store $store, Collection $orders, array $meta): void
@@ -180,8 +344,16 @@ class StoreLedgerExcel
 
     /* ============================ 공통 스타일 헬퍼 ============================ */
 
-    /** 상단 타이틀 블록 (1~4행) */
+    /** 상단 타이틀 블록 (1~4행) — 매장 단위 */
     private function titleBlock(Worksheet $s, string $last, Store $store, string $docTitle, array $meta): void
+    {
+        $period = $meta['period_label'] ?? '전체 기간';
+        $subtitle = "매장: {$store->name}" . ($store->region ? " ({$store->region})" : '') . "    |    기간: {$period}    |    발행: " . now()->format('Y-m-d H:i');
+        $this->titleBlockText($s, $last, $docTitle, $subtitle);
+    }
+
+    /** 상단 타이틀 블록 (1~4행) — 자유 부제 */
+    private function titleBlockText(Worksheet $s, string $last, string $docTitle, string $subtitle): void
     {
         $s->mergeCells("A1:{$last}1");
         $s->setCellValue('A1', 'LEEFRIENDS · 리프렌즈 본사');
@@ -196,8 +368,7 @@ class StoreLedgerExcel
         $s->getRowDimension(2)->setRowHeight(38);
 
         $s->mergeCells("A3:{$last}3");
-        $period = $meta['period_label'] ?? '전체 기간';
-        $s->setCellValue('A3', "매장: {$store->name}" . ($store->region ? " ({$store->region})" : '') . "    |    기간: {$period}    |    발행: " . now()->format('Y-m-d H:i'));
+        $s->setCellValue('A3', $subtitle);
         $s->getStyle('A3')->getFont()->setSize(10)->getColor()->setARGB(self::MUTED);
         $s->getStyle('A3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $s->getRowDimension(3)->setRowHeight(20);

@@ -2,7 +2,12 @@
 @section('title', '매장별 입금현황')
 
 @section('content')
-<x-wms.page-head title="매장별 입금현황" subtitle="매장별 총 발주액 대비 입금완료·미입금 집계 (계좌 대사 기준)" icon="💳" />
+<x-wms.page-head title="매장별 입금현황" subtitle="매장별 총 발주액 대비 입금완료·미입금 집계 (계좌 대사 기준)" icon="💳">
+    <x-slot:actions>
+        <a href="{{ route('portal.hq.store_payments.excel_all', ['period' => $period, 'from' => $from, 'to' => $to, 'year' => $year, 'month' => $month]) }}"
+           class="inline-flex items-center gap-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 text-sm">⬇️ 엑셀 (조회기간 전체 주문서)</a>
+    </x-slot:actions>
+</x-wms.page-head>
 
 {{-- 전체 + 월별(1~12월) + 기간 조회 --}}
 @php
