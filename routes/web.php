@@ -347,6 +347,7 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::post('statements/preview', [Portal\Hq\StatementController::class, 'preview'])->name('statements.preview');
             Route::post('statements/send', [Portal\Hq\StatementController::class, 'send'])->name('statements.send');
             Route::get('statements/{statement}/pdf', [Portal\Hq\StatementController::class, 'pdf'])->name('statements.pdf');
+            Route::get('statements/{statement}/excel', [Portal\Hq\StatementController::class, 'excel'])->name('statements.excel');
             Route::get('statements/{statement}/print', [Portal\Hq\StatementController::class, 'print'])->name('statements.print');
             Route::post('statements/{statement}/resend', [Portal\Hq\StatementController::class, 'resend'])->name('statements.resend');
             Route::delete('statements/{statement}/items/{index}', [Portal\Hq\StatementController::class, 'deleteItem'])->name('statements.items.destroy');

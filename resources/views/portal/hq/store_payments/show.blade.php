@@ -17,6 +17,36 @@
     </x-slot:actions>
 </x-wms.page-head>
 
+{{-- 날짜 필터: 전체 + 월별(1~12월) + 기간 조회 (엑셀 다운로드에도 반영됨) --}}
+@php
+    $btn = 'inline-flex items-center justify-center rounded-xl px-3.5 py-2 text-sm font-bold transition';
+    $isRange = ! $month && ($from || $to);
+@endphp
+<div class="flex flex-wrap items-end justify-between gap-4 mb-6">
+    <div class="flex flex-wrap items-center gap-1.5">
+        <a href="{{ route('portal.hq.store_payments.show', $store) }}"
+           class="{{ $btn }} {{ ! $month && ! $isRange ? 'bg-mango-500 text-white' : 'bg-white border border-neutral-200 text-neutral-600 hover:bg-neutral-50' }}">전체</a>
+        <span class="mx-1 text-neutral-300">|</span>
+        <span class="text-sm font-bold text-neutral-500 mr-1">{{ $year }}년</span>
+        @for ($m = 1; $m <= 12; $m++)
+            <a href="{{ route('portal.hq.store_payments.show', ['store' => $store, 'year' => $year, 'month' => $m]) }}"
+               class="{{ $btn }} {{ (int) $month === $m ? 'bg-mango-500 text-white' : 'bg-white border border-neutral-200 text-neutral-600 hover:bg-neutral-50' }}">{{ $m }}월</a>
+        @endfor
+    </div>
+    <form method="GET" action="{{ route('portal.hq.store_payments.show', $store) }}"
+          class="flex items-end gap-2 {{ $isRange ? 'ring-2 ring-mango-300 rounded-xl p-2' : '' }}">
+        <div>
+            <label class="block text-xs font-semibold text-neutral-500 mb-1">시작일</label>
+            <input type="date" name="from" value="{{ $isRange ? $from : '' }}" class="rounded-xl border-neutral-200 text-sm py-2">
+        </div>
+        <div>
+            <label class="block text-xs font-semibold text-neutral-500 mb-1">종료일</label>
+            <input type="date" name="to" value="{{ $isRange ? $to : '' }}" class="rounded-xl border-neutral-200 text-sm py-2">
+        </div>
+        <button type="submit" class="rounded-xl bg-neutral-800 hover:bg-neutral-900 text-white font-bold px-4 py-2 text-sm transition">기간 조회</button>
+    </form>
+</div>
+
 <div class="grid grid-cols-3 gap-4 mb-6">
     <x-wms.stat label="총 발주액" :value="number_format($orders->sum(fn($o)=>$o->order_total)).'원'" variant="default" />
     <x-wms.stat label="입금완료" :value="number_format($paidAmt).'원'" variant="success" icon="💰" />

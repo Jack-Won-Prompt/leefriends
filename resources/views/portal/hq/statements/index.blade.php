@@ -70,6 +70,8 @@
                                 <button type="button" @click="open = {{ $s->id }}" class="text-xs font-bold text-neutral-500 hover:text-mango-600 mr-3">상세</button>
                                 <a href="{{ route('portal.hq.statements.pdf', $s) }}" target="_blank"
                                    class="text-xs font-bold text-neutral-700 hover:text-mango-600 mr-3">PDF</a>
+                                <a href="{{ route('portal.hq.statements.excel', $s) }}"
+                                   class="text-xs font-bold text-emerald-600 hover:text-emerald-700 mr-3">엑셀</a>
                                 <form method="POST" action="{{ route('portal.hq.statements.resend', $s) }}" class="inline"
                                       onsubmit="return confirm('«{{ $s->store_name }}»({{ $s->email }})로 거래명세서를 재전송할까요?')">
                                     @csrf
@@ -93,6 +95,7 @@
     <x-detail-modal :id="$s->id">
         <x-slot:actions>
             <a href="{{ route('portal.hq.statements.pdf', $s) }}" target="_blank" class="rounded-xl bg-white/90 hover:bg-white text-neutral-700 font-bold px-4 py-2 text-sm shadow">PDF</a>
+            <a href="{{ route('portal.hq.statements.excel', $s) }}" class="rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 text-sm shadow">⬇️ 엑셀</a>
             @if (! $s->tax_invoice_id && optional($s->store)->biz_no)
                 <form method="POST" action="{{ route('portal.hq.tax_invoices.issue_statement', $s) }}"
                       onsubmit="return confirm('이 거래명세서로 세금계산서를 발행합니다.\n수신: {{ $s->store_name }} ({{ $s->email }})\n진행하시겠습니까?')">

@@ -103,6 +103,23 @@ class StatementController extends Controller
             ->stream(\App\Support\StatementFile::name($statement->store_name, $statement->issueDate(), max(1, $seq)));
     }
 
+    /** 거래명세서 1건을 고급 스타일 엑셀(.xlsx)로 다운로드 */
+    public function excel(Statement $statement, \App\Services\Export\StatementExcel $exporter)
+    {
+        $book = $exporter->build($statement);
+
+        $date = optional($statement->issueDate())->format('Ymd') ?: now()->format('Ymd');
+        $safe = preg_replace('/[\\\\\/:*?"<>|]/', '_', $statement->store_name);
+        $filename = "거래명세서_{$safe}_{$date}.xlsx";
+
+        return response()->streamDownload(function () use ($book) {
+            (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($book))->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'no-store, no-cache, must-revalidate',
+        ]);
+    }
+
     /** 이력 재전송 */
     public function resend(Statement $statement)
     {
