@@ -82,7 +82,8 @@
     </form>
 </x-wms.panel>
 
-<div x-data="hometax({{ $polling ? 'true' : 'false' }}, '{{ $selected->job_id ?? '' }}')">
+<div x-data="hometax({{ $polling ? 'true' : 'false' }}, '{{ $selected->job_id ?? '' }}')"
+     @open-hometax-detail.window="openDetail($event.detail.nts)">
 
 {{-- 수집 이력 --}}
 @if ($jobs->isNotEmpty())
@@ -137,46 +138,60 @@
 
 {{-- 결과 목록 --}}
 @if ($list)
+@include('portal.partials.wwgrid-assets')
+@php
+    $gridRows = collect($list->list ?? [])->map(function ($r) use ($isBuy) {
+        return [
+            'write_date' => (string) \Illuminate\Support\Str::of((string) ($r->writeDate ?? ''))->replaceMatches('/(\d{4})(\d{2})(\d{2})/', '$1.$2.$3'),
+            'counter_name' => ($isBuy ? ($r->invoicerCorpName ?? '') : ($r->invoiceeCorpName ?? '')) ?: '-',
+            'tax_type' => $r->taxType ?? '',
+            'counter_num' => ($isBuy ? ($r->invoicerCorpNum ?? '') : ($r->invoiceeCorpNum ?? '')) ?: '-',
+            'supply' => (int) ($r->supplyCostTotal ?? 0),
+            'tax' => (int) ($r->taxTotal ?? 0),
+            'total' => (int) ($r->totalAmount ?? 0),
+            'nts' => $r->ntsconfirmNum ?? '',
+        ];
+    })->values();
+@endphp
 <x-wms.panel>
-    <table class="w-full text-sm">
-        <thead class="bg-neutral-50 text-neutral-500">
-            <tr>
-                <th class="text-left font-semibold px-5 py-3 w-28">작성일</th>
-                <th class="text-left font-semibold px-5 py-3">{{ $isBuy ? '공급자(매입처)' : '공급받는자(매출처)' }}</th>
-                <th class="text-left font-semibold px-5 py-3 w-32">사업자번호</th>
-                <th class="text-right font-semibold px-5 py-3 w-28">공급가액</th>
-                <th class="text-right font-semibold px-5 py-3 w-24">세액</th>
-                <th class="text-right font-semibold px-5 py-3 w-28">합계</th>
-                <th class="text-right font-semibold px-5 py-3 w-20">상세</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-neutral-100">
-            @forelse ($list->list as $r)
-                @php
-                    $counterName = $isBuy ? ($r->invoicerCorpName ?? '') : ($r->invoiceeCorpName ?? '');
-                    $counterNum = $isBuy ? ($r->invoicerCorpNum ?? '') : ($r->invoiceeCorpNum ?? '');
-                @endphp
-                <tr class="hover:bg-neutral-50">
-                    <td class="px-5 py-3 text-neutral-600">{{ \Illuminate\Support\Str::of((string) $r->writeDate)->replaceMatches('/(\d{4})(\d{2})(\d{2})/', '$1.$2.$3') }}</td>
-                    <td class="px-5 py-3 font-medium text-neutral-800">
-                        {{ $counterName ?: '-' }}
-                        @if (($r->taxType ?? '') && $r->taxType !== '과세')
-                            <span class="ml-1 text-xs text-neutral-400">({{ $r->taxType }})</span>
-                        @endif
-                    </td>
-                    <td class="px-5 py-3 text-neutral-500">{{ $counterNum ?: '-' }}</td>
-                    <td class="px-5 py-3 text-right tabular-nums">{{ number_format((int) ($r->supplyCostTotal ?? 0)) }}</td>
-                    <td class="px-5 py-3 text-right tabular-nums text-neutral-500">{{ number_format((int) ($r->taxTotal ?? 0)) }}</td>
-                    <td class="px-5 py-3 text-right tabular-nums font-bold">{{ number_format((int) ($r->totalAmount ?? 0)) }}</td>
-                    <td class="px-5 py-3 text-right">
-                        <button type="button" @click="openDetail('{{ $r->ntsconfirmNum }}')" class="text-mango-600 hover:underline font-semibold">보기</button>
-                    </td>
-                </tr>
-            @empty
-                <tr><td colspan="7" class="px-5 py-10 text-center text-neutral-400">수집된 세금계산서가 없습니다.</td></tr>
-            @endforelse
-        </tbody>
-    </table>
+    <div id="hqHometaxGrid"></div>
+
+    @push('scripts')
+    <script>
+    (function () {
+        ww.grid('hqHometaxGrid', [
+            { header: '작성일', name: 'write_date', width: 120 },
+            { header: '{{ $isBuy ? "공급자(매입처)" : "공급받는자(매출처)" }}', name: 'counter_name', width: 220,
+              renderer: (v, row) => {
+                  const box = document.createElement('span');
+                  box.className = 'font-medium text-neutral-800';
+                  box.appendChild(document.createTextNode(v));
+                  if (row.tax_type && row.tax_type !== '과세') {
+                      const t = document.createElement('span');
+                      t.className = 'ml-1 text-xs text-neutral-400'; t.textContent = '(' + row.tax_type + ')';
+                      box.appendChild(t);
+                  }
+                  return box;
+              } },
+            { header: '사업자번호', name: 'counter_num', width: 140,
+              renderer: (v) => ww.el('span', 'text-neutral-500', v) },
+            { header: '공급가액', name: 'supply', width: 120, align: 'right', renderer: (v) => ww.num(v) },
+            { header: '세액', name: 'tax', width: 110, align: 'right',
+              renderer: (v) => ww.el('span', 'text-neutral-500', ww.num(v)) },
+            { header: '합계', name: 'total', width: 120, align: 'right',
+              renderer: (v) => ww.el('span', 'font-bold', ww.num(v)) },
+            { header: '상세', name: 'nts', width: 90, align: 'right', sortable: false, exportable: false,
+              renderer: (v) => {
+                  const b = document.createElement('button');
+                  b.type = 'button'; b.textContent = '보기';
+                  b.className = 'text-mango-600 hover:underline font-semibold';
+                  b.addEventListener('click', () => window.dispatchEvent(new CustomEvent('open-hometax-detail', { detail: { nts: v } })));
+                  return b;
+              } },
+        ], @json($gridRows));
+    })();
+    </script>
+    @endpush
 
     {{-- 페이지네이션 --}}
     @php $totalPages = $list->pageCount ?? 1; @endphp

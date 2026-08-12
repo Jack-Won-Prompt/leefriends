@@ -9,6 +9,7 @@
         openEdit(c) { this.mode = 'edit'; this.form = { id: c.id, name: c.name, code: c.code, sort_order: c.sort_order }; this.open = true; },
         action() { return this.mode === 'create' ? '{{ route('portal.hq.categories.store') }}' : '{{ url('portal/hq/categories') }}/' + this.form.id; },
      }"
+     @cat-edit-open.window="openEdit($event.detail)"
      @if ($errors->any()) x-init="open = true; mode = '{{ old('id') ? 'edit' : 'create' }}'; form = { id: '{{ old('id') }}', name: '{{ old('name') }}', code: '{{ old('code') }}', sort_order: {{ (int) old('sort_order', 0) }} }" @endif>
 
 <x-wms.page-head title="카테고리 관리" subtitle="품목 대분류(카테고리)를 추가·수정·정렬합니다. 정렬 순서는 카탈로그/발주 화면에 반영됩니다." icon="🗂️">
@@ -19,37 +20,20 @@
 
 @error('category')<div class="mb-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 px-5 py-3 text-sm">{{ $message }}</div>@enderror
 
+@include('portal.partials.wwgrid-assets')
+@php
+    $gridRows = $categories->map(fn ($c) => [
+        'sort_order' => (int) $c->sort_order,
+        'name' => $c->name,
+        'code' => $c->code,
+        'product_count' => (int) $c->product_count,
+        'destroy_url' => route('portal.hq.categories.destroy', $c),
+        'edit' => ['id' => $c->id, 'name' => $c->name, 'code' => $c->code, 'sort_order' => (int) $c->sort_order],
+    ])->values();
+@endphp
+
 <x-wms.panel>
-    <table class="w-full text-sm">
-        <thead class="bg-neutral-50 text-neutral-500">
-            <tr>
-                <th class="text-left font-semibold px-6 py-3 w-20">순서</th>
-                <th class="text-left font-semibold px-6 py-3">카테고리명</th>
-                <th class="text-left font-semibold px-6 py-3">코드</th>
-                <th class="text-right font-semibold px-6 py-3">품목 수</th>
-                <th class="text-right font-semibold px-6 py-3 w-32">관리</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-neutral-100">
-            @forelse ($categories as $c)
-                <tr class="hover:bg-mango-50/40">
-                    <td class="px-6 py-3.5 text-neutral-400">{{ $c->sort_order }}</td>
-                    <td class="px-6 py-3.5 font-bold text-neutral-900">{{ $c->name }}</td>
-                    <td class="px-6 py-3.5"><span class="font-mono text-xs font-bold px-2 py-1 rounded bg-neutral-100 text-neutral-600">{{ $c->code }}</span></td>
-                    <td class="px-6 py-3.5 text-right text-neutral-600">{{ number_format($c->product_count) }}개</td>
-                    <td class="px-6 py-3.5 text-right">
-                        <button type="button" @click="openEdit({ id: {{ $c->id }}, name: {{ Illuminate\Support\Js::from($c->name) }}, code: {{ Illuminate\Support\Js::from($c->code) }}, sort_order: {{ (int) $c->sort_order }} })" class="text-mango-600 hover:text-mango-700 text-xs font-bold mr-2">수정</button>
-                        <form method="POST" action="{{ route('portal.hq.categories.destroy', $c) }}" class="inline" onsubmit="return confirm('이 카테고리를 삭제할까요?')">
-                            @csrf @method('DELETE')
-                            <button class="text-rose-500 hover:text-rose-600 text-xs font-bold" @if ($c->product_count > 0) disabled title="품목이 있어 삭제 불가" @endif :class="{{ $c->product_count }} > 0 ? 'opacity-30 cursor-not-allowed' : ''">삭제</button>
-                        </form>
-                    </td>
-                </tr>
-            @empty
-                <tr><td colspan="5" class="px-6 py-12 text-center text-neutral-400">카테고리가 없습니다.</td></tr>
-            @endforelse
-        </tbody>
-    </table>
+    <div id="hqCategoriesGrid"></div>
 </x-wms.panel>
 
 {{-- 추가/수정 모달 --}}
@@ -89,4 +73,36 @@
     </div>
 </div>
 </div>
+
+@push('scripts')
+<script>
+(function () {
+    const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    ww.grid('hqCategoriesGrid', [
+        { header: '순서', name: 'sort_order', width: 80, align: 'right' },
+        { header: '카테고리명', name: 'name', width: 220 },
+        { header: '코드', name: 'code', width: 120,
+          renderer: (v) => { const s = document.createElement('span'); s.className = 'font-mono text-xs font-bold px-2 py-1 rounded bg-neutral-100 text-neutral-600'; s.textContent = v; return s; } },
+        { header: '품목 수', name: 'product_count', width: 100, align: 'right', renderer: (v) => ww.num(v) + '개' },
+        { header: '관리', name: 'destroy_url', width: 120, align: 'right', sortable: false, exportable: false,
+          renderer: (v, row) => {
+              const wrap = document.createElement('div'); wrap.className = 'flex items-center justify-end gap-2';
+              const eb = document.createElement('button'); eb.type = 'button'; eb.textContent = '수정';
+              eb.className = 'text-mango-600 hover:text-mango-700 text-xs font-bold';
+              eb.addEventListener('click', () => window.dispatchEvent(new CustomEvent('cat-edit-open', { detail: row.edit })));
+              wrap.appendChild(eb);
+              const form = document.createElement('form'); form.method = 'POST'; form.action = row.destroy_url;
+              form.addEventListener('submit', (e) => { if (!confirm('이 카테고리를 삭제할까요?')) e.preventDefault(); });
+              const t = document.createElement('input'); t.type = 'hidden'; t.name = '_token'; t.value = CSRF; form.appendChild(t);
+              const m = document.createElement('input'); m.type = 'hidden'; m.name = '_method'; m.value = 'DELETE'; form.appendChild(m);
+              const db = document.createElement('button'); db.type = 'submit'; db.textContent = '삭제';
+              db.className = 'text-rose-500 hover:text-rose-600 text-xs font-bold';
+              if (row.product_count > 0) { db.disabled = true; db.title = '품목이 있어 삭제 불가'; db.classList.add('opacity-30', 'cursor-not-allowed'); }
+              form.appendChild(db); wrap.appendChild(form);
+              return wrap;
+          } },
+    ], @json($gridRows));
+})();
+</script>
+@endpush
 @endsection

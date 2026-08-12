@@ -4,47 +4,50 @@
 @section('content')
 <x-wms.page-head title="세금계산서" subtitle="본사가 우리 매장 앞으로 발행한 세금계산서" icon="🧾" />
 
-<div class="rounded-2xl bg-white shadow-sm border border-neutral-100 overflow-hidden">
-    @if ($invoices->isEmpty())
-        <p class="px-6 py-16 text-center text-neutral-400">발행된 세금계산서가 없습니다.</p>
-    @else
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-neutral-50 text-neutral-500">
-                    <tr>
-                        <th class="text-left font-semibold px-6 py-3">계산서번호</th>
-                        <th class="text-left font-semibold px-6 py-3">구분</th>
-                        <th class="text-left font-semibold px-6 py-3">공급자</th>
-                        <th class="text-right font-semibold px-6 py-3">공급가액</th>
-                        <th class="text-right font-semibold px-6 py-3">부가세</th>
-                        <th class="text-right font-semibold px-6 py-3">합계</th>
-                        <th class="text-left font-semibold px-6 py-3">발행일</th>
-                        <th class="text-left font-semibold px-6 py-3">상태</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-neutral-100">
-                    @foreach ($invoices as $inv)
-                        @php($isExempt = str_contains($inv->note ?? '', '면세'))
-                        <tr class="hover:bg-mango-50/40 transition cursor-pointer" onclick="location.href='{{ route('portal.store.tax_invoices.show', $inv) }}'">
-                            <td class="px-6 py-3.5 font-bold text-neutral-900">{{ $inv->invoice_no }}</td>
-                            <td class="px-6 py-3.5">
-                                <span class="text-xs font-bold px-2 py-1 rounded-full {{ $isExempt ? 'bg-sky-100 text-sky-700' : 'bg-mango-100 text-mango-700' }}">{{ $isExempt ? '계산서(면세)' : '세금계산서' }}</span>
-                            </td>
-                            <td class="px-6 py-3.5">{{ $inv->invoicer_corp_name }}</td>
-                            <td class="px-6 py-3.5 text-right">{{ number_format($inv->supply_amount) }}원</td>
-                            <td class="px-6 py-3.5 text-right text-neutral-500">{{ number_format($inv->vat) }}원</td>
-                            <td class="px-6 py-3.5 text-right font-black text-mango-700">{{ number_format($inv->total_amount) }}원</td>
-                            <td class="px-6 py-3.5 text-neutral-400">{{ $inv->issue_date?->format('Y.m.d') }}</td>
-                            <td class="px-6 py-3.5">
-                                <span class="text-xs font-bold px-2.5 py-1 rounded-full {{ $inv->status === 'canceled' ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700' }}">{{ $inv->status_label }}</span>
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    @endif
-</div>
+@include('portal.partials.wwgrid-assets')
+@php
+    $gridRows = $invoices->map(function ($inv) {
+        $isExempt = str_contains($inv->note ?? '', '면세');
+        return [
+            'invoice_no' => $inv->invoice_no,
+            'is_exempt' => $isExempt,
+            'invoicer_corp_name' => $inv->invoicer_corp_name,
+            'supply_amount' => (int) $inv->supply_amount,
+            'vat' => (int) $inv->vat,
+            'total_amount' => (int) $inv->total_amount,
+            'issue_date' => $inv->issue_date?->format('Y.m.d') ?? '',
+            'status' => $inv->status,
+            'status_label' => $inv->status_label,
+            'show_url' => route('portal.store.tax_invoices.show', $inv),
+        ];
+    })->values();
+@endphp
 
-<div class="mt-6">{{ $invoices->links() }}</div>
+<x-wwgrid-tabs gid="storeTaxInvoicesGrid">
+    <x-wms.panel>
+        <div id="storeTaxInvoicesGrid"></div>
+    </x-wms.panel>
+    <div class="mt-6">{{ $invoices->links() }}</div>
+</x-wwgrid-tabs>
+
+@push('scripts')
+<script>
+(function () {
+    const grid = ww.grid('storeTaxInvoicesGrid', [
+        { header: '계산서번호', name: 'invoice_no', width: 170 },
+        { header: '구분', name: 'is_exempt', width: 120, align: 'center',
+          renderer: (v) => v ? ww.badge('계산서(면세)', 'bg-sky-100 text-sky-700') : ww.badge('세금계산서', 'bg-mango-100 text-mango-700') },
+        { header: '공급자', name: 'invoicer_corp_name', width: 160 },
+        { header: '공급가액', name: 'supply_amount', width: 120, align: 'right', renderer: (v) => ww.won(v) },
+        { header: '부가세', name: 'vat', width: 110, align: 'right', renderer: (v) => ww.won(v) },
+        { header: '합계', name: 'total_amount', width: 130, align: 'right', renderer: (v) => ww.won(v) },
+        { header: '발행일', name: 'issue_date', width: 110 },
+        { header: '상태', name: 'status', width: 100, align: 'center',
+          renderer: (v, row) => ww.badge(row.status_label, v === 'canceled' ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700') },
+    ], @json($gridRows));
+
+    ww.bindRowDetail('storeTaxInvoicesGrid', grid, 'show_url', 'invoice_no');
+})();
+</script>
+@endpush
 @endsection

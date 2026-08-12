@@ -3,7 +3,7 @@
 
 @section('content')
 @php $chip = ['ordered'=>'bg-sky-100 text-sky-700','confirmed'=>'bg-amber-100 text-amber-700','received'=>'bg-emerald-100 text-emerald-700','canceled'=>'bg-neutral-100 text-neutral-400']; @endphp
-<div x-data="{ open: null }">
+<div x-data="{ open: null }" @po-open.window="open = $event.detail.id">
 <x-wms.page-head title="본사 구매발주" subtitle="본사가 우리 공급처에 등록한 매입 발주입니다. 발주번호를 클릭하면 상세가 열립니다." icon="🧾" />
 
 <form method="GET" class="flex flex-wrap items-center gap-2 mb-4">
@@ -18,38 +18,50 @@
     @if ($status !== 'all' || $from || $to)<a href="{{ url()->current() }}" class="rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-500 font-bold px-3 py-2 text-sm">초기화</a>@endif
 </form>
 
+@include('portal.partials.wwgrid-assets')
+@php
+    $gridRows = $orders->map(fn ($o) => [
+        'id' => $o->id,
+        'po_no' => $o->po_no,
+        'items_count' => $o->items->count(),
+        'total_amount' => (int) $o->total_amount,
+        'status' => $o->status,
+        'status_label' => $o->status_label,
+        'created_at' => $o->created_at->format('Y-m-d'),
+    ])->values();
+@endphp
+
 <x-wms.panel>
-    <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-            <thead class="bg-neutral-50 text-neutral-500">
-                <tr>
-                    <th class="text-left font-semibold px-5 py-3">발주번호</th>
-                    <th class="text-right font-semibold px-5 py-3">품목</th>
-                    <th class="text-right font-semibold px-5 py-3">합계</th>
-                    <th class="text-left font-semibold px-5 py-3">상태</th>
-                    <th class="text-left font-semibold px-5 py-3 hidden md:table-cell">등록일</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-neutral-100">
-                @forelse ($orders as $o)
-                    <tr class="hover:bg-mango-50/40">
-                        <td class="px-5 py-3.5 whitespace-nowrap">
-                            <button type="button" @click="open = {{ $o->id }}" class="font-bold text-mango-700 hover:underline">{{ $o->po_no }}</button>
-                        </td>
-                        <td class="px-5 py-3.5 text-right text-neutral-500">{{ $o->items->count() }}건</td>
-                        <td class="px-5 py-3.5 text-right font-black text-neutral-800 whitespace-nowrap">{{ number_format($o->total_amount) }}원</td>
-                        <td class="px-5 py-3.5 whitespace-nowrap"><span class="text-xs font-bold px-2.5 py-1 rounded-full {{ $chip[$o->status] ?? '' }}">{{ $o->status_label }}</span></td>
-                        <td class="px-5 py-3.5 hidden md:table-cell text-neutral-500 whitespace-nowrap">{{ $o->created_at->format('Y-m-d') }}</td>
-                    </tr>
-                @empty
-                    <tr><td colspan="5" class="px-5 py-12 text-center text-neutral-400">수신한 구매발주가 없습니다.</td></tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
+    <div id="supplierPurchaseOrdersGrid"></div>
 </x-wms.panel>
 
 <div class="mt-5">{{ $orders->links() }}</div>
+
+@push('scripts')
+<script>
+(function () {
+    const CHIP = {
+        ordered: 'bg-sky-100 text-sky-700', confirmed: 'bg-amber-100 text-amber-700',
+        received: 'bg-emerald-100 text-emerald-700', canceled: 'bg-neutral-100 text-neutral-400',
+    };
+    ww.grid('supplierPurchaseOrdersGrid', [
+        { header: '발주번호', name: 'po_no', width: 160, sortable: false,
+          renderer: (v, row) => {
+              const b = document.createElement('button');
+              b.type = 'button'; b.textContent = v;
+              b.className = 'font-bold text-mango-700 hover:underline';
+              b.addEventListener('click', () => window.dispatchEvent(new CustomEvent('po-open', { detail: { id: row.id } })));
+              return b;
+          } },
+        { header: '품목', name: 'items_count', width: 90, align: 'right', renderer: (v) => ww.num(v) + '건' },
+        { header: '합계', name: 'total_amount', width: 130, align: 'right', renderer: (v) => ww.won(v) },
+        { header: '상태', name: 'status', width: 110, align: 'center',
+          renderer: (v, row) => ww.badge(row.status_label, CHIP[v] || '') },
+        { header: '등록일', name: 'created_at', width: 120 },
+    ], @json($gridRows));
+})();
+</script>
+@endpush
 
 {{-- 상세 모달 --}}
 @foreach ($orders as $o)

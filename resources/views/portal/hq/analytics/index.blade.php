@@ -91,42 +91,50 @@
 </div>
 
 {{-- 방문 이력 --}}
+@include('portal.partials.wwgrid-assets')
+@php
+    $visitRows = $recent->map(fn ($v) => [
+        'visited_at' => $v->created_at->format('Y-m-d H:i:s'),
+        'page_name' => $v->page_name ?? $v->path,
+        'path' => $v->path,
+        'source_label' => \App\Models\PageVisit::SOURCE_LABELS[$v->source] ?? $v->source,
+        'referrer' => $v->referrer,
+        'device' => $v->device === 'mobile' ? '📱 모바일' : '💻 PC',
+        'visitor' => substr($v->visitor_hash, 0, 8),
+    ])->values();
+@endphp
 <x-wms.panel>
     <div class="px-6 py-4 border-b border-neutral-100"><h3 class="font-extrabold text-neutral-900">방문 이력</h3></div>
-    <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-            <thead class="bg-neutral-50 text-neutral-500">
-                <tr>
-                    <th class="text-left font-semibold px-5 py-3">방문 시각</th>
-                    <th class="text-left font-semibold px-5 py-3">페이지</th>
-                    <th class="text-left font-semibold px-5 py-3">유입 경로</th>
-                    <th class="text-left font-semibold px-5 py-3 hidden md:table-cell">기기</th>
-                    <th class="text-left font-semibold px-5 py-3 hidden lg:table-cell">방문자</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-neutral-100">
-                @forelse ($recent as $v)
-                    <tr class="hover:bg-mango-50/40">
-                        <td class="px-5 py-3 whitespace-nowrap text-neutral-500">{{ $v->created_at->format('Y-m-d H:i:s') }}</td>
-                        <td class="px-5 py-3">
-                            <span class="font-bold text-neutral-800">{{ $v->page_name ?? $v->path }}</span>
-                            <span class="block text-[11px] text-neutral-400">{{ $v->path }}</span>
-                        </td>
-                        <td class="px-5 py-3 whitespace-nowrap">
-                            <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600">{{ \App\Models\PageVisit::SOURCE_LABELS[$v->source] ?? $v->source }}</span>
-                            @if ($v->referrer)<span class="block text-[11px] text-neutral-400 mt-0.5">{{ $v->referrer }}</span>@endif
-                        </td>
-                        <td class="px-5 py-3 hidden md:table-cell text-neutral-500">{{ $v->device === 'mobile' ? '📱 모바일' : '💻 PC' }}</td>
-                        <td class="px-5 py-3 hidden lg:table-cell text-neutral-400 font-mono text-xs">{{ substr($v->visitor_hash, 0, 8) }}</td>
-                    </tr>
-                @empty
-                    <tr><td colspan="5" class="px-5 py-12 text-center text-neutral-400">방문 기록이 없습니다.</td></tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
+    <div id="hqAnalyticsVisitsGrid"></div>
 </x-wms.panel>
 
 <div class="mt-5">{{ $recent->links() }}</div>
 <p class="mt-4 text-xs text-neutral-400">※ 방문자 식별은 세션 기반 익명 해시이며, IP는 해시로만 저장되어 개인을 식별하지 않습니다.</p>
+
+@push('scripts')
+<script>
+(function () {
+    ww.grid('hqAnalyticsVisitsGrid', [
+        { header: '방문 시각', name: 'visited_at', width: 170 },
+        { header: '페이지', name: 'page_name', width: 260,
+          renderer: (v, row) => {
+              const d = document.createElement('div');
+              const n = document.createElement('span'); n.className = 'font-bold text-neutral-800'; n.textContent = row.page_name; d.appendChild(n);
+              const p = document.createElement('span'); p.className = 'block text-[11px] text-neutral-400'; p.textContent = row.path; d.appendChild(p);
+              return d;
+          } },
+        { header: '유입 경로', name: 'source_label', width: 180,
+          renderer: (v, row) => {
+              const d = document.createElement('div');
+              d.appendChild(ww.badge(row.source_label, 'bg-neutral-100 text-neutral-600'));
+              if (row.referrer) { const r = document.createElement('span'); r.className = 'block text-[11px] text-neutral-400 mt-0.5'; r.textContent = row.referrer; d.appendChild(r); }
+              return d;
+          } },
+        { header: '기기', name: 'device', width: 110 },
+        { header: '방문자', name: 'visitor', width: 120,
+          renderer: (v) => { const s = document.createElement('span'); s.className = 'text-neutral-400 font-mono text-xs'; s.textContent = v; return s; } },
+    ], @json($visitRows));
+})();
+</script>
+@endpush
 @endsection

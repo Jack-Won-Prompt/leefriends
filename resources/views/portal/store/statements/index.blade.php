@@ -6,49 +6,65 @@
 
 <x-date-filter :from="$from" :to="$to" label="발송일 기간" />
 
+@include('portal.partials.wwgrid-assets')
+@php
+    $rcMap = ['pending'=>'bg-neutral-100 text-neutral-500','viewed'=>'bg-amber-100 text-amber-700','confirmed'=>'bg-emerald-100 text-emerald-700'];
+    $gridRows = $statements->map(fn ($s) => [
+        'issue_date' => $s->issueDate()->format('Y.m.d'),
+        'item_count' => (int) $s->item_count,
+        'total' => (int) $s->total,
+        'sent_at' => optional($s->sent_at)->format('Y.m.d H:i') ?? '',
+        'receipt_cls' => $rcMap[$s->receiptStatus()],
+        'receipt_label' => $s->receiptLabel(),
+        'confirmed_at' => $s->confirmed_at?->format('m.d H:i'),
+        'confirmed' => (bool) $s->confirmed_at,
+        'pdf_url' => route('portal.store.statements.pdf', $s),
+        'confirm_url' => route('portal.store.statements.confirm', $s),
+    ])->values();
+@endphp
+
 <x-wms.panel>
-    <table class="w-full text-sm">
-        <thead class="bg-neutral-50 text-neutral-500">
-            <tr>
-                <th class="text-left font-semibold px-6 py-3">발행일자</th>
-                <th class="text-right font-semibold px-6 py-3 hidden md:table-cell">품목수</th>
-                <th class="text-right font-semibold px-6 py-3">금액</th>
-                <th class="text-left font-semibold px-6 py-3 hidden md:table-cell">수신일시</th>
-                <th class="text-left font-semibold px-6 py-3">상태</th>
-                <th class="text-right font-semibold px-6 py-3 w-44">명세서</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-neutral-100">
-            @forelse ($statements as $s)
-                @php $rc = ['pending'=>'bg-neutral-100 text-neutral-500','viewed'=>'bg-amber-100 text-amber-700','confirmed'=>'bg-emerald-100 text-emerald-700'][$s->receiptStatus()]; @endphp
-                <tr class="hover:bg-mango-50/40">
-                    <td class="px-6 py-3.5 font-bold text-neutral-900">{{ $s->issueDate()->format('Y.m.d') }}</td>
-                    <td class="px-6 py-3.5 text-right hidden md:table-cell text-neutral-500">{{ number_format($s->item_count) }}</td>
-                    <td class="px-6 py-3.5 text-right font-bold text-mango-700 tabular-nums">{{ number_format($s->total) }}원</td>
-                    <td class="px-6 py-3.5 hidden md:table-cell text-neutral-400">{{ optional($s->sent_at)->format('Y.m.d H:i') }}</td>
-                    <td class="px-6 py-3.5">
-                        <span class="text-xs font-bold px-2 py-0.5 rounded-full {{ $rc }}">{{ $s->receiptLabel() }}</span>
-                        @if ($s->confirmed_at)<span class="block text-[11px] text-neutral-400 mt-0.5">{{ $s->confirmed_at->format('m.d H:i') }}</span>@endif
-                    </td>
-                    <td class="px-6 py-3.5 text-right whitespace-nowrap">
-                        <a href="{{ route('portal.store.statements.pdf', $s) }}" target="_blank"
-                           class="inline-flex items-center gap-1 rounded-lg bg-mango-500 hover:bg-mango-600 text-white font-bold px-3 py-1.5 text-xs transition">🧾 PDF 보기</a>
-                        @unless ($s->confirmed_at)
-                            <form method="POST" action="{{ route('portal.store.statements.confirm', $s) }}" class="inline"
-                                  onsubmit="return confirm('이 거래명세서를 확인 처리할까요? 본사에 통보됩니다.')">
-                                @csrf
-                                <button class="inline-flex items-center gap-1 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-3 py-1.5 text-xs transition ml-1">✔ 확인</button>
-                            </form>
-                        @endunless
-                    </td>
-                </tr>
-            @empty
-                <tr><td colspan="6" class="px-6 py-12 text-center text-neutral-400">수취한 거래명세서가 없습니다.</td></tr>
-            @endforelse
-        </tbody>
-    </table>
-    @if ($statements->hasPages())
-        <div class="px-6 py-3 border-t border-neutral-100">{{ $statements->links() }}</div>
-    @endif
+    <div id="storeStatementsGrid"></div>
 </x-wms.panel>
+@if ($statements->hasPages())
+    <div class="mt-5">{{ $statements->links() }}</div>
+@endif
+
+@push('scripts')
+<script>
+(function () {
+    const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    ww.grid('storeStatementsGrid', [
+        { header: '발행일자', name: 'issue_date', width: 120 },
+        { header: '품목수', name: 'item_count', width: 90, align: 'right', renderer: (v) => ww.num(v) },
+        { header: '금액', name: 'total', width: 130, align: 'right', renderer: (v) => ww.won(v) },
+        { header: '수신일시', name: 'sent_at', width: 150 },
+        { header: '상태', name: 'receipt_label', width: 130, sortable: false,
+          renderer: (v, row) => {
+              const wrap = ww.el('div');
+              wrap.appendChild(ww.badge(row.receipt_label, row.receipt_cls));
+              if (row.confirmed_at) wrap.appendChild(ww.el('span', 'block text-[11px] text-neutral-400 mt-0.5', row.confirmed_at));
+              return wrap;
+          } },
+        { header: '명세서', name: 'actions', width: 190, align: 'right', sortable: false, exportable: false,
+          renderer: (v, row) => {
+              const wrap = ww.el('div', 'flex items-center justify-end gap-1');
+              const a = ww.el('a', 'inline-flex items-center gap-1 rounded-lg bg-mango-500 hover:bg-mango-600 text-white font-bold px-3 py-1.5 text-xs transition', '🧾 PDF 보기');
+              a.href = row.pdf_url; a.target = '_blank';
+              wrap.appendChild(a);
+              if (!row.confirmed) {
+                  const form = document.createElement('form');
+                  form.method = 'POST'; form.action = row.confirm_url; form.className = 'inline';
+                  form.addEventListener('submit', (e) => { if (!confirm('이 거래명세서를 확인 처리할까요? 본사에 통보됩니다.')) e.preventDefault(); });
+                  const t = ww.el('input'); t.type = 'hidden'; t.name = '_token'; t.value = CSRF; form.appendChild(t);
+                  const b = ww.el('button', 'inline-flex items-center gap-1 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-3 py-1.5 text-xs transition', '✔ 확인');
+                  b.type = 'submit'; form.appendChild(b);
+                  wrap.appendChild(form);
+              }
+              return wrap;
+          } },
+    ], @json($gridRows));
+})();
+</script>
+@endpush
 @endsection

@@ -9,39 +9,20 @@
     </x-slot:actions>
 </x-wms.page-head>
 
+@include('portal.partials.wwgrid-assets')
+@php
+    $gridRows = $leaves->map(fn ($l) => [
+        'leave_date' => $l->leave_date->format('Y.m.d (D)'),
+        'reason' => $l->reason ?: '-',
+        'status' => $l->status,
+        'status_label' => $l->statusLabel(),
+        'can_cancel' => $l->status !== 'approved',
+        'destroy_url' => route('portal.leaves.destroy', $l),
+    ])->values();
+@endphp
+
 <x-wms.panel>
-    <table class="w-full text-sm">
-        <thead class="bg-neutral-50 text-neutral-500">
-            <tr>
-                <th class="text-left font-semibold px-5 py-3">휴무일</th>
-                <th class="text-left font-semibold px-5 py-3">사유</th>
-                <th class="text-left font-semibold px-5 py-3">상태</th>
-                <th class="text-right font-semibold px-5 py-3 w-24">관리</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-neutral-100">
-            @forelse ($leaves as $l)
-                <tr class="hover:bg-neutral-50">
-                    <td class="px-5 py-3 font-medium text-neutral-800">{{ $l->leave_date->format('Y.m.d (D)') }}</td>
-                    <td class="px-5 py-3 text-neutral-500">{{ $l->reason ?: '-' }}</td>
-                    <td class="px-5 py-3">
-                        @php $c = ['pending'=>'bg-amber-100 text-amber-700','approved'=>'bg-emerald-100 text-emerald-700','rejected'=>'bg-rose-100 text-rose-700'][$l->status] ?? 'bg-neutral-100 text-neutral-500'; @endphp
-                        <span class="text-xs font-bold px-2 py-0.5 rounded-full {{ $c }}">{{ $l->statusLabel() }}</span>
-                    </td>
-                    <td class="px-5 py-3 text-right">
-                        @if ($l->status !== 'approved')
-                            <form method="POST" action="{{ route('portal.leaves.destroy', $l) }}" onsubmit="return confirm('휴무 신청을 취소할까요?')">
-                                @csrf @method('DELETE')
-                                <button class="text-xs text-neutral-400 hover:text-rose-500 font-bold">취소</button>
-                            </form>
-                        @endif
-                    </td>
-                </tr>
-            @empty
-                <tr><td colspan="4" class="px-5 py-12 text-center text-neutral-400">휴무 신청 내역이 없습니다.</td></tr>
-            @endforelse
-        </tbody>
-    </table>
+    <div id="leavesGrid"></div>
 </x-wms.panel>
 
 {{-- 휴무 신청 모달 --}}
@@ -71,4 +52,37 @@
     </div>
 </div>
 </div>
+
+@push('scripts')
+<script>
+(function () {
+    const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const STATUS_CLS = {
+        pending: 'bg-amber-100 text-amber-700',
+        approved: 'bg-emerald-100 text-emerald-700',
+        rejected: 'bg-rose-100 text-rose-700',
+    };
+    ww.grid('leavesGrid', [
+        { header: '휴무일', name: 'leave_date', width: 180 },
+        { header: '사유', name: 'reason', width: 260 },
+        { header: '상태', name: 'status', width: 110,
+          renderer: (v, row) => ww.badge(row.status_label, STATUS_CLS[v] || 'bg-neutral-100 text-neutral-500') },
+        { header: '관리', name: 'can_cancel', width: 96, align: 'right', sortable: false, exportable: false,
+          renderer: (v, row) => {
+              if (!v) return null;
+              const form = document.createElement('form');
+              form.method = 'POST'; form.action = row.destroy_url; form.className = 'inline';
+              form.addEventListener('submit', (e) => { if (!confirm('휴무 신청을 취소할까요?')) e.preventDefault(); });
+              const t = document.createElement('input'); t.type = 'hidden'; t.name = '_token'; t.value = CSRF; form.appendChild(t);
+              const m = document.createElement('input'); m.type = 'hidden'; m.name = '_method'; m.value = 'DELETE'; form.appendChild(m);
+              const b = document.createElement('button');
+              b.type = 'submit'; b.textContent = '취소';
+              b.className = 'text-xs text-neutral-400 hover:text-rose-500 font-bold';
+              form.appendChild(b);
+              return form;
+          } },
+    ], @json($gridRows));
+})();
+</script>
+@endpush
 @endsection

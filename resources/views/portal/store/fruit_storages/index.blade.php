@@ -11,39 +11,39 @@
     </x-slot:actions>
 </x-wms.page-head>
 
+@include('portal.partials.wwgrid-assets')
+@php
+    $gridRows = $fruits->map(fn ($f) => [
+        'name' => (string) $f->name,
+        'temp_c' => (string) $f->temp_c,
+        'temp_f' => (string) $f->temp_f,
+        'ventilation' => (string) $f->ventilation,
+        'humidity' => (string) $f->humidity,
+        'dehumidification' => (string) $f->dehumidification,
+        'storage_period' => (string) $f->storage_period,
+    ])->values();
+@endphp
+
 <x-wms.panel>
-    <div class="overflow-x-auto">
-    <table class="w-full text-sm">
-        <thead class="bg-neutral-50 text-neutral-500">
-            <tr>
-                <th class="text-left font-semibold px-4 py-3">제품</th>
-                <th class="text-left font-semibold px-4 py-3">온도(°C)</th>
-                <th class="text-left font-semibold px-4 py-3 hidden lg:table-cell">온도(°F)</th>
-                <th class="text-left font-semibold px-4 py-3 hidden lg:table-cell">통기공(CMH)</th>
-                <th class="text-left font-semibold px-4 py-3">상대습도(%)</th>
-                <th class="text-left font-semibold px-4 py-3 hidden md:table-cell">제습</th>
-                <th class="text-left font-semibold px-4 py-3">보관기한</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-neutral-100">
-            @forelse ($fruits as $f)
-                <tr class="hover:bg-mango-50/40">
-                    <td class="px-4 py-3 font-bold text-neutral-900 whitespace-nowrap">{{ $f->name }}</td>
-                    <td class="px-4 py-3 whitespace-nowrap">{{ $f->temp_c }}</td>
-                    <td class="px-4 py-3 hidden lg:table-cell whitespace-nowrap text-neutral-500">{{ $f->temp_f }}</td>
-                    <td class="px-4 py-3 hidden lg:table-cell whitespace-nowrap text-neutral-500">{{ $f->ventilation }}</td>
-                    <td class="px-4 py-3 whitespace-nowrap">{{ $f->humidity }}</td>
-                    <td class="px-4 py-3 hidden md:table-cell whitespace-nowrap text-neutral-500">{{ $f->dehumidification }}</td>
-                    <td class="px-4 py-3 whitespace-nowrap">{{ $f->storage_period }}</td>
-                </tr>
-            @empty
-                <tr><td colspan="7" class="px-4 py-12 text-center text-neutral-400">본사가 공유한 보관 가이드가 없습니다.</td></tr>
-            @endforelse
-        </tbody>
-    </table>
-    </div>
+    <div id="fruitStoragesGrid"></div>
 </x-wms.panel>
 
 <div class="mt-6">{{ $fruits->links() }}</div>
+
+@push('scripts')
+<script>
+(function () {
+    ww.grid('fruitStoragesGrid', [
+        { header: '제품', name: 'name', width: 150 },
+        { header: '온도(°C)', name: 'temp_c', width: 100 },
+        { header: '온도(°F)', name: 'temp_f', width: 100 },
+        { header: '통기공(CMH)', name: 'ventilation', width: 120 },
+        { header: '상대습도(%)', name: 'humidity', width: 120 },
+        { header: '제습', name: 'dehumidification', width: 110 },
+        { header: '보관기한', name: 'storage_period', width: 130 },
+    ], @json($gridRows));
+})();
+</script>
+@endpush
 <p class="mt-4 text-xs text-neutral-400">※ 온도·보관기한은 거래·계절·숙성 상태·원산지에 따라 달라질 수 있는 일반 가이드라인입니다. (출처: ZIM 권장 가이드)</p>
 @endsection

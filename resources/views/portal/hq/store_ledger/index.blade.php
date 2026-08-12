@@ -22,39 +22,56 @@
     </div>
 </div>
 
-<x-wms.panel>
-    <div class="overflow-x-auto">
-        <table class="w-full text-sm">
-            <thead class="bg-neutral-50 text-neutral-500">
-                <tr>
-                    <th class="text-left font-semibold px-5 py-3">매장</th>
-                    <th class="text-left font-semibold px-5 py-3">정산방식</th>
-                    <th class="text-left font-semibold px-5 py-3 hidden md:table-cell">가상계좌</th>
-                    <th class="text-right font-semibold px-5 py-3">잔액</th>
-                    <th class="text-right font-semibold px-5 py-3">관리</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-neutral-100">
-                @forelse ($stores as $s)
-                    <tr class="hover:bg-mango-50/40">
-                        <td class="px-5 py-3.5 font-bold text-neutral-900">{{ $s->name }}</td>
-                        <td class="px-5 py-3.5">
-                            <span class="text-xs font-bold px-2 py-0.5 rounded-full {{ $s->settlement_type === 'prepaid' ? 'bg-emerald-100 text-emerald-700' : 'bg-neutral-100 text-neutral-500' }}">{{ $s->settlement_label }}</span>
-                        </td>
-                        <td class="px-5 py-3.5 hidden md:table-cell text-neutral-500 font-mono text-xs">{{ $s->virtual_account ?: '-' }}</td>
-                        <td class="px-5 py-3.5 text-right font-black whitespace-nowrap {{ $s->ledger_balance < 0 ? 'text-rose-600' : 'text-emerald-600' }}">
-                            {{ number_format($s->ledger_balance) }}원
-                            <span class="block text-[11px] font-bold {{ $s->ledger_balance < 0 ? 'text-rose-400' : 'text-emerald-400' }}">{{ $s->ledger_balance < 0 ? '미수' : '예치' }}</span>
-                        </td>
-                        <td class="px-5 py-3.5 text-right"><a href="{{ route('portal.hq.store_ledger.show', $s) }}" class="text-xs font-bold text-mango-600 hover:text-mango-700">원장 보기</a></td>
-                    </tr>
-                @empty
-                    <tr><td colspan="5" class="px-5 py-12 text-center text-neutral-400">매장이 없습니다.</td></tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
-</x-wms.panel>
+@include('portal.partials.wwgrid-assets')
+@php
+    $gridRows = $stores->map(fn ($s) => [
+        'name' => $s->name,
+        'settlement_type' => $s->settlement_type,
+        'settlement_label' => $s->settlement_label,
+        'virtual_account' => $s->virtual_account ?: '-',
+        'ledger_balance' => (int) $s->ledger_balance,
+        'show_url' => route('portal.hq.store_ledger.show', $s),
+    ])->values();
+@endphp
 
-<div class="mt-5">{{ $stores->links() }}</div>
+<x-wwgrid-tabs gid="hqStoreLedgerGrid">
+    <x-wms.panel>
+        <div id="hqStoreLedgerGrid"></div>
+    </x-wms.panel>
+    <div class="mt-5">{{ $stores->links() }}</div>
+</x-wwgrid-tabs>
+
+@push('scripts')
+<script>
+(function () {
+    const grid = ww.grid('hqStoreLedgerGrid', [
+        { header: '매장', name: 'name', width: 200 },
+        { header: '정산방식', name: 'settlement_type', width: 120, align: 'center',
+          renderer: (v, row) => ww.badge(row.settlement_label, v === 'prepaid' ? 'bg-emerald-100 text-emerald-700' : 'bg-neutral-100 text-neutral-500') },
+        { header: '가상계좌', name: 'virtual_account', width: 180 },
+        { header: '잔액', name: 'ledger_balance', width: 150, align: 'right',
+          renderer: (v) => {
+              const neg = v < 0;
+              const box = document.createElement('div');
+              box.className = 'font-black whitespace-nowrap ' + (neg ? 'text-rose-600' : 'text-emerald-600');
+              box.appendChild(document.createTextNode(ww.won(v)));
+              const sub = document.createElement('span');
+              sub.className = 'block text-[11px] font-bold ' + (neg ? 'text-rose-400' : 'text-emerald-400');
+              sub.textContent = neg ? '미수' : '예치';
+              box.appendChild(sub);
+              return box;
+          } },
+        { header: '관리', name: 'show_url', width: 100, align: 'right', sortable: false, exportable: false,
+          renderer: (v) => {
+              const a = document.createElement('a');
+              a.href = v; a.textContent = '원장 보기';
+              a.className = 'text-xs font-bold text-mango-600 hover:text-mango-700';
+              return a;
+          } },
+    ], @json($gridRows));
+
+    ww.bindRowDetail('hqStoreLedgerGrid', grid, 'show_url', 'name');
+})();
+</script>
+@endpush
 @endsection

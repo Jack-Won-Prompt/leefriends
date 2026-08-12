@@ -21,66 +21,98 @@
     </div>
 </form>
 
+@include('portal.partials.wwgrid-assets')
+@php
+    $gridRows = collect($rows)->map(function ($r) use ($from, $to) {
+        $u = $r['user'];
+        $paid = $r['settlement'] && $r['settlement']->status === 'paid';
+        return [
+            'user_name' => $u->name,
+            'manage_url' => route('portal.attendance.manage', ['user' => $u->id, 'from' => $from, 'to' => $to]),
+            'hourly_wage' => (int) $u->hourly_wage,
+            'days' => (int) $r['days'],
+            'hours' => $r['hours'],
+            'amount' => (int) $r['amount'],
+            'paid' => $paid,
+            'paid_at' => $paid && $r['settlement']->paid_at ? $r['settlement']->paid_at->format('m.d H:i') : null,
+            'user_id' => $u->id,
+            'pay_confirm' => $u->name.'님 급여 '.number_format($r['amount']).'원을 입금 처리합니다.\n(아르바이트에게 알림 전송)\n진행할까요?',
+            'unpay_url' => $r['settlement'] ? route('portal.wages.unpay', $r['settlement']) : null,
+        ];
+    })->values();
+@endphp
+
 <x-wms.panel>
-    <table class="w-full text-sm">
-        <thead class="bg-neutral-50 text-neutral-500">
-            <tr>
-                <th class="text-left font-semibold px-5 py-3">아르바이트</th>
-                <th class="text-right font-semibold px-5 py-3">시급</th>
-                <th class="text-right font-semibold px-5 py-3">근무일</th>
-                <th class="text-right font-semibold px-5 py-3">근무시간</th>
-                <th class="text-right font-semibold px-5 py-3">급여(일당 합계)</th>
-                <th class="text-left font-semibold px-5 py-3">입금</th>
-                <th class="text-right font-semibold px-5 py-3 w-40">처리</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-neutral-100">
-            @forelse ($rows as $r)
-                @php $u = $r['user']; $paid = $r['settlement'] && $r['settlement']->status === 'paid'; @endphp
-                <tr class="hover:bg-neutral-50">
-                    <td class="px-5 py-3 font-bold text-neutral-900">
-                        {{ $u->name }}
-                        <a href="{{ route('portal.attendance.manage', ['user' => $u->id, 'from' => $from, 'to' => $to]) }}"
-                           class="block text-xs font-semibold text-mango-600 hover:underline mt-0.5">🕐 출퇴근 관리</a>
-                    </td>
-                    <td class="px-5 py-3 text-right tabular-nums text-neutral-500">{{ number_format($u->hourly_wage) }}원</td>
-                    <td class="px-5 py-3 text-right tabular-nums">{{ $r['days'] }}일</td>
-                    <td class="px-5 py-3 text-right tabular-nums">{{ $r['hours'] }}시간</td>
-                    <td class="px-5 py-3 text-right tabular-nums font-bold">{{ number_format($r['amount']) }}원</td>
-                    <td class="px-5 py-3">
-                        @if ($paid)
-                            <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">💰 입금완료</span>
-                            <span class="block text-[11px] text-neutral-400">{{ optional($r['settlement']->paid_at)->format('m.d H:i') }}</span>
-                        @else
-                            <span class="text-xs font-bold px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-400">미입금</span>
-                        @endif
-                    </td>
-                    <td class="px-5 py-3 text-right">
-                        @if ($r['amount'] > 0 && ! $paid)
-                            <form method="POST" action="{{ route('portal.wages.pay') }}"
-                                  onsubmit="return confirm('{{ $u->name }}님 급여 {{ number_format($r['amount']) }}원을 입금 처리합니다.\n(아르바이트에게 알림 전송)\n진행할까요?')">
-                                @csrf
-                                <input type="hidden" name="user_id" value="{{ $u->id }}">
-                                <input type="hidden" name="from" value="{{ $from }}">
-                                <input type="hidden" name="to" value="{{ $to }}">
-                                <input type="hidden" name="hours" value="{{ $r['hours'] }}">
-                                <input type="hidden" name="amount" value="{{ $r['amount'] }}">
-                                <button class="rounded-lg bg-mango-500 hover:bg-mango-600 text-white font-bold px-3 py-1.5 text-xs">💰 입금 처리</button>
-                            </form>
-                        @elseif ($paid)
-                            <form method="POST" action="{{ route('portal.wages.unpay', $r['settlement']) }}" onsubmit="return confirm('입금 처리를 취소할까요?')">
-                                @csrf @method('DELETE')
-                                <button class="text-xs text-neutral-400 hover:text-rose-500 font-bold">입금취소</button>
-                            </form>
-                        @else
-                            <span class="text-xs text-neutral-300">근무 없음</span>
-                        @endif
-                    </td>
-                </tr>
-            @empty
-                <tr><td colspan="7" class="px-5 py-12 text-center text-neutral-400">소속 아르바이트가 없습니다.</td></tr>
-            @endforelse
-        </tbody>
-    </table>
+    <div id="wagesGrid"></div>
 </x-wms.panel>
+
+@push('scripts')
+<script>
+(function () {
+    const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const PAY_URL = '{{ route('portal.wages.pay') }}';
+    const FROM = '{{ $from }}';
+    const TO = '{{ $to }}';
+    const hidden = (name, value) => { const i = document.createElement('input'); i.type = 'hidden'; i.name = name; i.value = value; return i; };
+    ww.grid('wagesGrid', [
+        { header: '아르바이트', name: 'user_name', width: 180,
+          renderer: (v, row) => {
+              const wrap = document.createElement('div');
+              const nm = document.createElement('div'); nm.className = 'font-bold text-neutral-900'; nm.textContent = row.user_name; wrap.appendChild(nm);
+              const a = document.createElement('a'); a.href = row.manage_url; a.textContent = '🕐 출퇴근 관리';
+              a.className = 'block text-xs font-semibold text-mango-600 hover:underline mt-0.5'; wrap.appendChild(a);
+              return wrap;
+          } },
+        { header: '시급', name: 'hourly_wage', width: 110, align: 'right', renderer: (v) => ww.won(v) },
+        { header: '근무일', name: 'days', width: 90, align: 'right', renderer: (v) => ww.num(v) + '일' },
+        { header: '근무시간', name: 'hours', width: 100, align: 'right', renderer: (v) => v + '시간' },
+        { header: '급여(일당 합계)', name: 'amount', width: 140, align: 'right', renderer: (v) => ww.won(v) },
+        { header: '입금', name: 'paid', width: 130,
+          renderer: (v, row) => {
+              const wrap = document.createElement('div');
+              if (v) {
+                  wrap.appendChild(ww.badge('💰 입금완료', 'bg-emerald-100 text-emerald-700'));
+                  if (row.paid_at) { const s = document.createElement('span'); s.className = 'block text-[11px] text-neutral-400'; s.textContent = row.paid_at; wrap.appendChild(s); }
+              } else {
+                  wrap.appendChild(ww.badge('미입금', 'bg-neutral-100 text-neutral-400'));
+              }
+              return wrap;
+          } },
+        { header: '처리', name: 'action', width: 160, align: 'right', sortable: false, exportable: false,
+          renderer: (v, row) => {
+              if (row.amount > 0 && !row.paid) {
+                  const form = document.createElement('form');
+                  form.method = 'POST'; form.action = PAY_URL;
+                  form.addEventListener('submit', (e) => { if (!confirm(row.pay_confirm)) e.preventDefault(); });
+                  form.appendChild(hidden('_token', CSRF));
+                  form.appendChild(hidden('user_id', row.user_id));
+                  form.appendChild(hidden('from', FROM));
+                  form.appendChild(hidden('to', TO));
+                  form.appendChild(hidden('hours', row.hours));
+                  form.appendChild(hidden('amount', row.amount));
+                  const b = document.createElement('button');
+                  b.type = 'submit'; b.textContent = '💰 입금 처리';
+                  b.className = 'rounded-lg bg-mango-500 hover:bg-mango-600 text-white font-bold px-3 py-1.5 text-xs';
+                  form.appendChild(b);
+                  return form;
+              }
+              if (row.paid) {
+                  const form = document.createElement('form');
+                  form.method = 'POST'; form.action = row.unpay_url;
+                  form.addEventListener('submit', (e) => { if (!confirm('입금 처리를 취소할까요?')) e.preventDefault(); });
+                  form.appendChild(hidden('_token', CSRF));
+                  form.appendChild(hidden('_method', 'DELETE'));
+                  const b = document.createElement('button');
+                  b.type = 'submit'; b.textContent = '입금취소';
+                  b.className = 'text-xs text-neutral-400 hover:text-rose-500 font-bold';
+                  form.appendChild(b);
+                  return form;
+              }
+              const s = document.createElement('span'); s.className = 'text-xs text-neutral-300'; s.textContent = '근무 없음';
+              return s;
+          } },
+    ], @json($gridRows));
+})();
+</script>
+@endpush
 @endsection

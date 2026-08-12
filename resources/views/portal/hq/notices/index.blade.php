@@ -1,10 +1,6 @@
 @extends('portal.layout')
 @section('title', '공지사항')
 
-@php
-    $audBadge = ['all' => 'bg-mango-100 text-mango-700', 'store' => 'bg-emerald-100 text-emerald-700', 'supplier' => 'bg-sky-100 text-sky-700'];
-@endphp
-
 @section('content')
 <div x-data="{ open: {{ $errors->any() ? 'true' : 'false' }} }">
 
@@ -17,46 +13,22 @@
 
 <x-wms.toolbar :count="$notices->total()" />
 
+@include('portal.partials.wwgrid-assets')
+@php
+    $gridRows = $notices->map(fn ($n) => [
+        'title' => $n->title,
+        'is_pinned' => (bool) $n->is_pinned,
+        'preview' => \Illuminate\Support\Str::limit(strip_tags($n->content), 80),
+        'audience' => $n->audience,
+        'audience_label' => $n->audience_label,
+        'author' => optional($n->author)->name ?? '본사',
+        'created_at' => $n->created_at->format('Y.m.d H:i'),
+        'destroy_url' => route('portal.hq.notices.destroy', $n),
+    ])->values();
+@endphp
+
 <x-wms.panel>
-    @if ($notices->isEmpty())
-        <p class="px-6 py-16 text-center text-neutral-400">발송한 공지가 없습니다. «공지 작성»으로 첫 공지를 보내보세요.</p>
-    @else
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-neutral-50 text-neutral-500">
-                    <tr>
-                        <th class="text-left font-semibold px-6 py-3">제목</th>
-                        <th class="text-left font-semibold px-6 py-3">대상</th>
-                        <th class="text-left font-semibold px-6 py-3 hidden md:table-cell">작성자</th>
-                        <th class="text-left font-semibold px-6 py-3 hidden md:table-cell">발송일</th>
-                        <th class="px-6 py-3"></th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-neutral-100">
-                    @foreach ($notices as $n)
-                        <tr class="hover:bg-mango-50/40 transition align-top">
-                            <td class="px-6 py-3.5">
-                                <div class="flex items-center gap-1.5">
-                                    @if ($n->is_pinned)<span class="text-mango-500" title="상단고정">📌</span>@endif
-                                    <span class="font-bold text-neutral-900">{{ $n->title }}</span>
-                                </div>
-                                <p class="text-xs text-neutral-400 mt-0.5 line-clamp-1 max-w-md">{{ \Illuminate\Support\Str::limit(strip_tags($n->content), 80) }}</p>
-                            </td>
-                            <td class="px-6 py-3.5"><span class="inline-flex px-2.5 py-1 rounded-full text-xs font-bold {{ $audBadge[$n->audience] ?? '' }}">{{ $n->audience_label }}</span></td>
-                            <td class="px-6 py-3.5 hidden md:table-cell text-neutral-500">{{ optional($n->author)->name ?? '본사' }}</td>
-                            <td class="px-6 py-3.5 hidden md:table-cell text-neutral-400">{{ $n->created_at->format('Y.m.d H:i') }}</td>
-                            <td class="px-6 py-3.5 text-right">
-                                <form method="POST" action="{{ route('portal.hq.notices.destroy', $n) }}" onsubmit="return confirm('이 공지를 삭제할까요?')">
-                                    @csrf @method('DELETE')
-                                    <button class="text-rose-500 hover:text-rose-600 text-xs font-bold">삭제</button>
-                                </form>
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    @endif
+    <div id="hqNoticesGrid"></div>
 </x-wms.panel>
 
 @if ($notices->hasPages())
@@ -107,4 +79,39 @@
     </div>
 </div>
 </div>
+
+@push('scripts')
+<script>
+(function () {
+    const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const AUD_CLS = { all: 'bg-mango-100 text-mango-700', store: 'bg-emerald-100 text-emerald-700', supplier: 'bg-sky-100 text-sky-700' };
+    ww.grid('hqNoticesGrid', [
+        { header: '제목', name: 'title', width: 360,
+          renderer: (v, row) => {
+              const d = document.createElement('div');
+              const top = document.createElement('div'); top.className = 'flex items-center gap-1.5';
+              if (row.is_pinned) { const p = document.createElement('span'); p.className = 'text-mango-500'; p.title = '상단고정'; p.textContent = '📌'; top.appendChild(p); }
+              const t = document.createElement('span'); t.className = 'font-bold text-neutral-900'; t.textContent = row.title; top.appendChild(t);
+              d.appendChild(top);
+              const pv = document.createElement('p'); pv.className = 'text-xs text-neutral-400 mt-0.5'; pv.textContent = row.preview; d.appendChild(pv);
+              return d;
+          } },
+        { header: '대상', name: 'audience', width: 100, align: 'center',
+          renderer: (v, row) => ww.badge(row.audience_label, AUD_CLS[v] || '') },
+        { header: '작성자', name: 'author', width: 120 },
+        { header: '발송일', name: 'created_at', width: 150 },
+        { header: '관리', name: 'destroy_url', width: 90, align: 'center', sortable: false, exportable: false,
+          renderer: (v, row) => {
+              const form = document.createElement('form'); form.method = 'POST'; form.action = row.destroy_url;
+              form.addEventListener('submit', (e) => { if (!confirm('이 공지를 삭제할까요?')) e.preventDefault(); });
+              const t = document.createElement('input'); t.type = 'hidden'; t.name = '_token'; t.value = CSRF; form.appendChild(t);
+              const m = document.createElement('input'); m.type = 'hidden'; m.name = '_method'; m.value = 'DELETE'; form.appendChild(m);
+              const b = document.createElement('button'); b.type = 'submit'; b.textContent = '삭제';
+              b.className = 'text-rose-500 hover:text-rose-600 text-xs font-bold'; form.appendChild(b);
+              return form;
+          } },
+    ], @json($gridRows));
+})();
+</script>
+@endpush
 @endsection

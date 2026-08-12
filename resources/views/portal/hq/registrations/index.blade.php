@@ -7,62 +7,36 @@
         rejectAction: '',
         rejectName: '',
         openReject(action, name) { this.rejectAction = action; this.rejectName = name; this.rejectOpen = true; },
-     }">
+     }"
+     @reg-reject-open.window="openReject($event.detail.action, $event.detail.name)">
 
 <x-wms.page-head title="회원가입 승인" subtitle="자가 가입한 제품 구매자 · 공급자 신청을 검토하고 승인/반려합니다" icon="📝" />
 
 <x-wms.toolbar :count="$pending->total()" />
 
+@include('portal.partials.wwgrid-assets')
+@php
+    $gridRows = $pending->map(function ($u) {
+        $org = $u->role === 'store' ? $u->store : $u->supplier;
+        return [
+            'role' => $u->role,
+            'type_label' => $u->signup_type_label,
+            'org_name' => $org?->name ?? '-',
+            'name_for_action' => $org?->name ?? '',
+            'biz_no' => $org?->biz_no,
+            'manager' => $u->name,
+            'phone' => $u->phone ?: '-',
+            'email' => $u->email,
+            'created_at' => $u->created_at->format('Y-m-d'),
+            'approve_url' => route('portal.hq.registrations.approve', $u),
+            'reject_url' => route('portal.hq.registrations.reject', $u),
+            'approve_confirm' => ($org?->name ?? '').' 님의 가입을 승인하시겠습니까?',
+        ];
+    })->values();
+@endphp
+
 <x-wms.panel>
-    @if ($pending->isEmpty())
-        <p class="px-6 py-16 text-center text-neutral-400">승인 대기 중인 회원가입 신청이 없습니다.</p>
-    @else
-        <table class="w-full text-sm">
-            <thead class="bg-neutral-50 text-neutral-500">
-                <tr>
-                    <th class="text-left font-semibold px-6 py-3">회원 종류</th>
-                    <th class="text-left font-semibold px-6 py-3">상호</th>
-                    <th class="text-left font-semibold px-6 py-3">담당자</th>
-                    <th class="text-left font-semibold px-6 py-3 hidden md:table-cell">연락처</th>
-                    <th class="text-left font-semibold px-6 py-3 hidden lg:table-cell">이메일</th>
-                    <th class="text-left font-semibold px-6 py-3 hidden lg:table-cell">신청일</th>
-                    <th class="text-center font-semibold px-6 py-3 w-44">처리</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-neutral-100">
-                @foreach ($pending as $u)
-                    @php $org = $u->role === 'store' ? $u->store : $u->supplier; @endphp
-                    <tr class="hover:bg-mango-50/40 transition">
-                        <td class="px-6 py-3.5">
-                            <span class="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold {{ $u->role === 'store' ? 'bg-sky-50 text-sky-600' : 'bg-violet-50 text-violet-600' }}">
-                                {{ $u->role === 'store' ? '🛒' : '📦' }} {{ $u->signup_type_label }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-3.5 font-bold text-neutral-900">
-                            {{ $org?->name ?? '-' }}
-                            @if ($org?->biz_no)<span class="block text-xs font-normal text-neutral-400">{{ $org->biz_no }}</span>@endif
-                        </td>
-                        <td class="px-6 py-3.5 text-neutral-600">{{ $u->name }}</td>
-                        <td class="px-6 py-3.5 hidden md:table-cell text-neutral-500">{{ $u->phone ?: '-' }}</td>
-                        <td class="px-6 py-3.5 hidden lg:table-cell text-neutral-500">{{ $u->email }}</td>
-                        <td class="px-6 py-3.5 hidden lg:table-cell text-neutral-400">{{ $u->created_at->format('Y-m-d') }}</td>
-                        <td class="px-6 py-3.5">
-                            <div class="flex items-center justify-center gap-2">
-                                <form method="POST" action="{{ route('portal.hq.registrations.approve', $u) }}"
-                                      onsubmit="return confirm('{{ $org?->name }} 님의 가입을 승인하시겠습니까?')">
-                                    @csrf
-                                    <button class="rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-3 py-1.5 text-xs transition">승인</button>
-                                </form>
-                                <button type="button"
-                                        @click="openReject('{{ route('portal.hq.registrations.reject', $u) }}', '{{ $org?->name }}')"
-                                        class="rounded-lg bg-neutral-100 hover:bg-rose-50 text-neutral-600 hover:text-rose-600 font-bold px-3 py-1.5 text-xs transition">반려</button>
-                            </div>
-                        </td>
-                    </tr>
-                @endforeach
-            </tbody>
-        </table>
-    @endif
+    <div id="hqRegistrationsGrid"></div>
 </x-wms.panel>
 
 @if ($pending->hasPages())
@@ -89,4 +63,43 @@
 </div>
 
 </div>
+
+@push('scripts')
+<script>
+(function () {
+    const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const ROLE_CLS = { store: 'bg-sky-50 text-sky-600', supplier: 'bg-violet-50 text-violet-600' };
+    ww.grid('hqRegistrationsGrid', [
+        { header: '회원 종류', name: 'type_label', width: 140,
+          renderer: (v, row) => ww.badge((row.role === 'store' ? '🛒 ' : '📦 ') + row.type_label, ROLE_CLS[row.role] || '') },
+        { header: '상호', name: 'org_name', width: 200,
+          renderer: (v, row) => {
+              const d = document.createElement('div');
+              const n = document.createElement('div'); n.className = 'font-bold text-neutral-900'; n.textContent = row.org_name; d.appendChild(n);
+              if (row.biz_no) { const b = document.createElement('div'); b.className = 'text-xs text-neutral-400'; b.textContent = row.biz_no; d.appendChild(b); }
+              return d;
+          } },
+        { header: '담당자', name: 'manager', width: 110 },
+        { header: '연락처', name: 'phone', width: 140 },
+        { header: '이메일', name: 'email', width: 200 },
+        { header: '신청일', name: 'created_at', width: 120 },
+        { header: '처리', name: 'approve_url', width: 160, align: 'center', sortable: false, exportable: false,
+          renderer: (v, row) => {
+              const wrap = document.createElement('div'); wrap.className = 'flex items-center justify-center gap-2';
+              const form = document.createElement('form'); form.method = 'POST'; form.action = row.approve_url;
+              form.addEventListener('submit', (e) => { if (!confirm(row.approve_confirm)) e.preventDefault(); });
+              const t = document.createElement('input'); t.type = 'hidden'; t.name = '_token'; t.value = CSRF; form.appendChild(t);
+              const ab = document.createElement('button'); ab.type = 'submit'; ab.textContent = '승인';
+              ab.className = 'rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-3 py-1.5 text-xs transition';
+              form.appendChild(ab); wrap.appendChild(form);
+              const rb = document.createElement('button'); rb.type = 'button'; rb.textContent = '반려';
+              rb.className = 'rounded-lg bg-neutral-100 hover:bg-rose-50 text-neutral-600 hover:text-rose-600 font-bold px-3 py-1.5 text-xs transition';
+              rb.addEventListener('click', () => window.dispatchEvent(new CustomEvent('reg-reject-open', { detail: { action: row.reject_url, name: row.name_for_action } })));
+              wrap.appendChild(rb);
+              return wrap;
+          } },
+    ], @json($gridRows));
+})();
+</script>
+@endpush
 @endsection

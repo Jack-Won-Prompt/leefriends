@@ -1,14 +1,6 @@
 @extends('portal.layout')
 @section('title', '창업 문의')
 
-@php
-    $badgeClass = [
-        'new' => 'bg-rose-100 text-rose-700',
-        'contacted' => 'bg-sky-100 text-sky-700',
-        'done' => 'bg-emerald-100 text-emerald-700',
-    ];
-@endphp
-
 @section('content')
 <x-wms.page-head title="창업 문의" subtitle="홈페이지에서 접수된 온라인 창업 문의를 확인하고 상담 상태를 관리합니다" icon="📨" />
 
@@ -26,42 +18,49 @@
 
 <x-wms.toolbar :count="$inquiries->total()" />
 
-<x-wms.panel>
-    @if ($inquiries->isEmpty())
-        <p class="px-6 py-16 text-center text-neutral-400">접수된 창업 문의가 없습니다.</p>
-    @else
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-neutral-50 text-neutral-500">
-                    <tr>
-                        <th class="text-left font-semibold px-6 py-3">성함</th>
-                        <th class="text-left font-semibold px-6 py-3">연락처</th>
-                        <th class="text-left font-semibold px-6 py-3 hidden md:table-cell">희망지역</th>
-                        <th class="text-left font-semibold px-6 py-3 hidden lg:table-cell">예산</th>
-                        <th class="text-left font-semibold px-6 py-3">상태</th>
-                        <th class="text-left font-semibold px-6 py-3 hidden md:table-cell">접수일</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-neutral-100">
-                    @foreach ($inquiries as $iq)
-                        <tr class="hover:bg-mango-50/40 transition cursor-pointer" onclick="location.href='{{ route('portal.hq.inquiries.show', $iq) }}'">
-                            <td class="px-6 py-3.5 font-bold text-neutral-900">{{ $iq->name }}</td>
-                            <td class="px-6 py-3.5">{{ $iq->phone }}</td>
-                            <td class="px-6 py-3.5 hidden md:table-cell text-neutral-500">{{ $iq->region ?: '-' }}</td>
-                            <td class="px-6 py-3.5 hidden lg:table-cell text-neutral-500">{{ $iq->budget ?: '-' }}</td>
-                            <td class="px-6 py-3.5">
-                                <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-bold {{ $badgeClass[$iq->status] ?? 'bg-neutral-100 text-neutral-600' }}">{{ $iq->status_label }}</span>
-                            </td>
-                            <td class="px-6 py-3.5 hidden md:table-cell text-neutral-400">{{ $iq->created_at->format('Y.m.d H:i') }}</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    @endif
-</x-wms.panel>
+@include('portal.partials.wwgrid-assets')
+@php
+    $gridRows = $inquiries->map(fn ($iq) => [
+        'name' => $iq->name,
+        'phone' => $iq->phone,
+        'region' => $iq->region ?: '-',
+        'budget' => $iq->budget ?: '-',
+        'status' => $iq->status,
+        'status_label' => $iq->status_label,
+        'created_at' => $iq->created_at->format('Y.m.d H:i'),
+        'show_url' => route('portal.hq.inquiries.show', $iq),
+    ])->values();
+@endphp
 
-@if ($inquiries->hasPages())
-    <div class="mt-5">{{ $inquiries->links() }}</div>
-@endif
+<x-wwgrid-tabs gid="hqInquiriesGrid">
+    <x-wms.panel>
+        <div id="hqInquiriesGrid"></div>
+    </x-wms.panel>
+    @if ($inquiries->hasPages())
+        <div class="mt-5">{{ $inquiries->links() }}</div>
+    @endif
+</x-wwgrid-tabs>
+
+@push('scripts')
+<script>
+(function () {
+    const BADGE = {
+        new: 'bg-rose-100 text-rose-700',
+        contacted: 'bg-sky-100 text-sky-700',
+        done: 'bg-emerald-100 text-emerald-700',
+    };
+    const grid = ww.grid('hqInquiriesGrid', [
+        { header: '성함', name: 'name', width: 130 },
+        { header: '연락처', name: 'phone', width: 150 },
+        { header: '희망지역', name: 'region', width: 150 },
+        { header: '예산', name: 'budget', width: 150 },
+        { header: '상태', name: 'status', width: 110, align: 'center',
+          renderer: (v, row) => ww.badge(row.status_label, BADGE[v] || 'bg-neutral-100 text-neutral-600') },
+        { header: '접수일', name: 'created_at', width: 150 },
+    ], @json($gridRows));
+
+    ww.bindRowDetail('hqInquiriesGrid', grid, 'show_url', 'name');
+})();
+</script>
+@endpush
 @endsection

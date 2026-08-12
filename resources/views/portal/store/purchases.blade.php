@@ -19,42 +19,49 @@
 </div>
 
 {{-- 주문별 총액 --}}
-<div class="rounded-2xl bg-white shadow-sm border border-neutral-100 overflow-hidden">
-    <div class="px-6 py-4 border-b border-neutral-100 font-extrabold text-neutral-900">주문별 총액</div>
-    @if ($orders->isEmpty())
-        <p class="px-6 py-16 text-center text-neutral-400">구매 내역이 없습니다.</p>
-    @else
-        <table class="w-full text-sm">
-            <thead class="bg-neutral-50 text-neutral-500">
-                <tr>
-                    <th class="text-left font-semibold px-6 py-3">주문번호</th>
-                    <th class="text-right font-semibold px-6 py-3 hidden md:table-cell">품목수</th>
-                    <th class="text-right font-semibold px-6 py-3">주문 총액</th>
-                    <th class="text-left font-semibold px-6 py-3">상태</th>
-                    <th class="text-left font-semibold px-6 py-3 hidden md:table-cell">발주일</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-neutral-100">
-                @foreach ($orders as $o)
-                    <tr class="hover:bg-mango-50/40 transition cursor-pointer" onclick="location.href='{{ route('portal.store.orders.show', $o) }}'">
-                        <td class="px-6 py-3.5 font-bold text-neutral-900">{{ $o->order_no }}</td>
-                        <td class="px-6 py-3.5 text-right hidden md:table-cell text-neutral-500">{{ $o->items_count }}</td>
-                        <td class="px-6 py-3.5 text-right font-black text-mango-700">{{ number_format($o->store_amount) }}원</td>
-                        <td class="px-6 py-3.5">@include('portal.partials.order-status', ['status' => $o->status, 'label' => $o->status_label])</td>
-                        <td class="px-6 py-3.5 hidden md:table-cell text-neutral-400">{{ $o->created_at->format('Y.m.d H:i') }}</td>
-                    </tr>
-                @endforeach
-            </tbody>
-            <tfoot>
-                <tr class="bg-neutral-50 font-black">
-                    <td class="px-6 py-4" colspan="2">합계 (현재 페이지 제외, 전체 기준)</td>
-                    <td class="px-6 py-4 text-right text-mango-700">{{ number_format($totals['amount']) }}원</td>
-                    <td colspan="2"></td>
-                </tr>
-            </tfoot>
-        </table>
-    @endif
-</div>
+@include('portal.partials.wwgrid-assets')
+@php
+    $gridRows = $orders->map(fn ($o) => [
+        'order_no' => $o->order_no,
+        'items_count' => (int) $o->items_count,
+        'store_amount' => (int) $o->store_amount,
+        'status' => $o->status,
+        'status_label' => $o->status_label,
+        'created_at' => $o->created_at->format('Y.m.d H:i'),
+        'show_url' => route('portal.store.orders.show', $o),
+    ])->values();
+@endphp
 
-<div class="mt-6">{{ $orders->links() }}</div>
+<x-wwgrid-tabs gid="purchasesGrid">
+    <x-wms.panel title="주문별 총액">
+        <div id="purchasesGrid"></div>
+    </x-wms.panel>
+    <div class="mt-3 rounded-2xl bg-neutral-50 border border-neutral-100 px-6 py-4 flex items-center justify-between font-black text-neutral-900">
+        <span>합계 (현재 페이지 제외, 전체 기준)</span>
+        <span class="text-mango-700">{{ number_format($totals['amount']) }}원</span>
+    </div>
+    <div class="mt-6">{{ $orders->links() }}</div>
+</x-wwgrid-tabs>
+
+@push('scripts')
+<script>
+(function () {
+    const STATUS_CLS = {
+        pending: 'bg-neutral-100 text-neutral-600', processing: 'bg-amber-100 text-amber-700',
+        shipping: 'bg-sky-100 text-sky-700', completed: 'bg-emerald-100 text-emerald-700',
+        canceled: 'bg-rose-100 text-rose-600',
+    };
+    const grid = ww.grid('purchasesGrid', [
+        { header: '주문번호', name: 'order_no', width: 160 },
+        { header: '품목수', name: 'items_count', width: 90, align: 'right' },
+        { header: '주문 총액', name: 'store_amount', width: 140, align: 'right', renderer: (v) => ww.won(v) },
+        { header: '상태', name: 'status', width: 120,
+          renderer: (v, row) => ww.badge(row.status_label, STATUS_CLS[v] || STATUS_CLS.pending) },
+        { header: '발주일', name: 'created_at', width: 150 },
+    ], @json($gridRows));
+
+    ww.bindRowDetail('purchasesGrid', grid, 'show_url', 'order_no');
+})();
+</script>
+@endpush
 @endsection

@@ -29,42 +29,51 @@
 
 <x-wms.toolbar :count="$shipments->total()" />
 
-<x-wms.panel>
-    @if ($shipments->isEmpty())
-        <p class="px-6 py-16 text-center text-neutral-400">출고 내역이 없습니다.</p>
-    @else
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-neutral-50 text-neutral-500">
-                    <tr>
-                        <th class="text-left font-semibold px-6 py-3">출고번호</th>
-                        <th class="text-left font-semibold px-6 py-3">매장</th>
-                        <th class="text-right font-semibold px-6 py-3 hidden md:table-cell">품목</th>
-                        <th class="text-right font-semibold px-6 py-3 hidden md:table-cell">수량</th>
-                        <th class="text-left font-semibold px-6 py-3 hidden lg:table-cell">택배사</th>
-                        <th class="text-left font-semibold px-6 py-3">송장번호</th>
-                        <th class="text-left font-semibold px-6 py-3">상태</th>
-                        <th class="text-left font-semibold px-6 py-3 hidden md:table-cell">생성일</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-neutral-100">
-                    @foreach ($shipments as $s)
-                        <tr class="hover:bg-mango-50/40 transition cursor-pointer" onclick="location.href='{{ route($routePrefix . '.shipments.show', $s) }}'">
-                            <td class="px-6 py-3.5 font-bold text-neutral-900 font-mono">{{ $s->shipment_no }}</td>
-                            <td class="px-6 py-3.5">{{ $s->store->name ?? '-' }}</td>
-                            <td class="px-6 py-3.5 text-right hidden md:table-cell text-neutral-500">{{ number_format($s->item_count) }}</td>
-                            <td class="px-6 py-3.5 text-right hidden md:table-cell text-neutral-500">{{ number_format($s->total_qty) }}</td>
-                            <td class="px-6 py-3.5 hidden lg:table-cell text-neutral-500">{{ $s->carrier ?: '-' }}</td>
-                            <td class="px-6 py-3.5 font-mono text-neutral-600">{{ $s->tracking_no ?: '-' }}</td>
-                            <td class="px-6 py-3.5">@include('portal.partials.lifecycle-status', ['status' => $s->status, 'label' => $s->status_label])</td>
-                            <td class="px-6 py-3.5 hidden md:table-cell text-neutral-400">{{ $s->created_at->format('Y.m.d H:i') }}</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    @endif
-</x-wms.panel>
+@include('portal.partials.wwgrid-assets')
+@php
+    $gridRows = $shipments->map(fn ($s) => [
+        'shipment_no' => $s->shipment_no,
+        'store_name' => $s->store->name ?? '-',
+        'item_count' => (int) $s->item_count,
+        'total_qty' => (int) $s->total_qty,
+        'carrier' => $s->carrier ?: '-',
+        'tracking_no' => $s->tracking_no ?: '-',
+        'status' => $s->status,
+        'status_label' => $s->status_label,
+        'created_at' => $s->created_at->format('Y.m.d H:i'),
+        'show_url' => route($routePrefix . '.shipments.show', $s),
+    ])->values();
+@endphp
 
-<div class="mt-5">{{ $shipments->links() }}</div>
+<x-wwgrid-tabs gid="shipmentsGrid">
+    <x-wms.panel>
+        <div id="shipmentsGrid"></div>
+    </x-wms.panel>
+    <div class="mt-5">{{ $shipments->links() }}</div>
+</x-wwgrid-tabs>
+
+@push('scripts')
+<script>
+(function () {
+    const STATUS_CLS = {
+        created: 'bg-neutral-100 text-neutral-600', confirmed: 'bg-sky-100 text-sky-700',
+        shipped: 'bg-indigo-100 text-indigo-700', delivered: 'bg-teal-100 text-teal-700',
+        received: 'bg-emerald-100 text-emerald-700', canceled: 'bg-rose-100 text-rose-600',
+    };
+    const grid = ww.grid('shipmentsGrid', [
+        { header: '출고번호', name: 'shipment_no', width: 150 },
+        { header: '매장', name: 'store_name', width: 130 },
+        { header: '품목', name: 'item_count', width: 80, align: 'right', renderer: (v) => ww.num(v) },
+        { header: '수량', name: 'total_qty', width: 80, align: 'right', renderer: (v) => ww.num(v) },
+        { header: '택배사', name: 'carrier', width: 110 },
+        { header: '송장번호', name: 'tracking_no', width: 150 },
+        { header: '상태', name: 'status', width: 110, align: 'center',
+          renderer: (v, row) => ww.badge(row.status_label, STATUS_CLS[v] || 'bg-neutral-100 text-neutral-600') },
+        { header: '생성일', name: 'created_at', width: 150 },
+    ], @json($gridRows));
+
+    ww.bindRowDetail('shipmentsGrid', grid, 'show_url', 'shipment_no');
+})();
+</script>
+@endpush
 @endsection

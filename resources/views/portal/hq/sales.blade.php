@@ -27,56 +27,75 @@
     </div>
 </div>
 
-{{-- 매장별 매출 (x-data: 행 클릭 $dispatch 스코프) --}}
-<div x-data class="rounded-2xl bg-white shadow-sm border border-neutral-100 overflow-hidden">
-    <div class="px-6 py-4 border-b border-neutral-100 font-extrabold text-neutral-900">매장별 매출</div>
-    @if ($byStore->isEmpty())
-        <p class="px-6 py-16 text-center text-neutral-400">집계할 매출이 없습니다.</p>
-    @else
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-neutral-50 text-neutral-500">
-                    <tr>
-                        <th class="text-left font-semibold px-6 py-3 w-10">#</th>
-                        <th class="text-left font-semibold px-6 py-3">매장</th>
-                        <th class="text-right font-semibold px-6 py-3">발주</th>
-                        <th class="text-right font-semibold px-6 py-3">판매액</th>
-                        <th class="text-right font-semibold px-6 py-3 hidden md:table-cell">원가</th>
-                        <th class="text-right font-semibold px-6 py-3 hidden md:table-cell">마진</th>
-                        <th class="text-right font-semibold px-6 py-3 hidden lg:table-cell w-32">비중</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-neutral-100">
-                    @foreach ($byStore as $i => $row)
-                        @php $pct = $totals['sales'] > 0 ? round($row->sales / $totals['sales'] * 100) : 0; @endphp
-                        <tr class="hover:bg-mango-50/40 transition cursor-pointer"
-                            @click="$dispatch('open-store-orders', { url: '{{ route('portal.hq.sales.store_orders', ['store' => $row->id, 'period' => $period]) }}' })">
-                            <td class="px-6 py-3.5 text-neutral-400 font-bold">{{ $i + 1 }}</td>
-                            <td class="px-6 py-3.5"><span class="font-bold text-neutral-900">{{ $row->name }}</span> <span class="text-xs text-neutral-400">{{ $row->region }}</span></td>
-                            <td class="px-6 py-3.5 text-right text-neutral-500">{{ number_format($row->cnt) }}건</td>
-                            <td class="px-6 py-3.5 text-right font-black text-mango-700">{{ number_format($row->sales) }}원</td>
-                            <td class="px-6 py-3.5 text-right hidden md:table-cell text-neutral-500">{{ number_format($row->cost) }}원</td>
-                            <td class="px-6 py-3.5 text-right hidden md:table-cell text-emerald-600 font-semibold">{{ number_format($row->sales - $row->cost) }}원</td>
-                            <td class="px-6 py-3.5 hidden lg:table-cell">
-                                <div class="flex items-center gap-2">
-                                    <div class="flex-1 h-1.5 rounded-full bg-neutral-100 overflow-hidden"><div class="h-full bg-mango-500" style="width: {{ $pct }}%"></div></div>
-                                    <span class="text-xs text-neutral-400 w-8 text-right">{{ $pct }}%</span>
-                                </div>
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-                <tfoot>
-                    <tr class="bg-neutral-50 font-black">
-                        <td class="px-6 py-4" colspan="3">합계</td>
-                        <td class="px-6 py-4 text-right text-mango-700">{{ number_format($totals['sales']) }}원</td>
-                        <td class="px-6 py-4 text-right hidden md:table-cell text-neutral-600">{{ number_format($totals['cost']) }}원</td>
-                        <td class="px-6 py-4 text-right hidden md:table-cell text-emerald-600">{{ number_format($totals['margin']) }}원</td>
-                        <td class="hidden lg:table-cell"></td>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
-    @endif
-</div>
+@include('portal.partials.wwgrid-assets')
+@php
+    $totalSales = $totals['sales'];
+    $gridRows = $byStore->map(fn ($row) => [
+        'name' => $row->name,
+        'region' => $row->region,
+        'cnt' => (int) $row->cnt,
+        'sales' => (int) $row->sales,
+        'cost' => (int) $row->cost,
+        'margin' => (int) $row->sales - (int) $row->cost,
+        'pct' => $totalSales > 0 ? round($row->sales / $totalSales * 100) : 0,
+        'store_url' => route('portal.hq.sales.store_orders', ['store' => $row->id, 'period' => $period]),
+    ])->values();
+@endphp
+
+<x-wms.panel title="매장별 매출">
+    <div id="hqSalesGrid"></div>
+</x-wms.panel>
+
+@push('scripts')
+<script>
+(function () {
+    const grid = ww.grid('hqSalesGrid', [
+        { header: '매장', name: 'name', width: 200,
+          renderer: (v, row) => {
+              const box = document.createElement('span');
+              const nm = document.createElement('span');
+              nm.className = 'font-bold text-neutral-900'; nm.textContent = v;
+              box.appendChild(nm);
+              if (row.region) {
+                  const rg = document.createElement('span');
+                  rg.className = 'text-xs text-neutral-400 ml-1'; rg.textContent = row.region;
+                  box.appendChild(rg);
+              }
+              return box;
+          } },
+        { header: '발주', name: 'cnt', width: 90, align: 'right', summary: false, renderer: (v) => ww.num(v) + '건' },
+        { header: '판매액', name: 'sales', width: 130, align: 'right',
+          renderer: (v) => ww.el('span', 'font-black text-mango-700', ww.won(v)) },
+        { header: '원가', name: 'cost', width: 130, align: 'right',
+          renderer: (v) => ww.el('span', 'text-neutral-500', ww.won(v)) },
+        { header: '마진', name: 'margin', width: 130, align: 'right',
+          renderer: (v) => ww.el('span', 'text-emerald-600 font-semibold', ww.won(v)) },
+        { header: '비중', name: 'pct', width: 140, summary: false, exportable: false,
+          renderer: (v) => {
+              const wrap = document.createElement('div');
+              wrap.className = 'flex items-center gap-2';
+              const track = document.createElement('div');
+              track.className = 'flex-1 h-1.5 rounded-full bg-neutral-100 overflow-hidden';
+              const bar = document.createElement('div');
+              bar.className = 'h-full bg-mango-500'; bar.style.width = v + '%';
+              track.appendChild(bar);
+              const lbl = document.createElement('span');
+              lbl.className = 'text-xs text-neutral-400 w-8 text-right'; lbl.textContent = v + '%';
+              wrap.appendChild(track); wrap.appendChild(lbl);
+              return wrap;
+          } },
+    ], @json($gridRows));
+
+    document.getElementById('hqSalesGrid').addEventListener('click', function (e) {
+        if (e.target.closest('a, button, input, select, form')) return;
+        const cell = e.target.closest('[data-row-index]');
+        if (!cell) return;
+        const row = grid.getData()[parseInt(cell.dataset.rowIndex, 10)];
+        if (!row) return;
+        window.getSelection()?.removeAllRanges();
+        window.dispatchEvent(new CustomEvent('open-store-orders', { detail: { url: row.store_url } }));
+    });
+})();
+</script>
+@endpush
 @endsection

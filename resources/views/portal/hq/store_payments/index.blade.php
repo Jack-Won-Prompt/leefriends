@@ -59,59 +59,77 @@
     </div>
 </div>
 
-<div class="rounded-2xl bg-white shadow-sm border border-neutral-100 overflow-hidden">
-    <div class="px-6 py-4 border-b border-neutral-100 font-extrabold text-neutral-900">매장별 입금현황</div>
-    @if ($byStore->isEmpty())
-        <p class="px-6 py-16 text-center text-neutral-400">집계할 발주가 없습니다.</p>
-    @else
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-neutral-50 text-neutral-500">
-                    <tr>
-                        <th class="text-left font-semibold px-6 py-3">매장</th>
-                        <th class="text-right font-semibold px-6 py-3">발주</th>
-                        <th class="text-right font-semibold px-6 py-3">총 발주액</th>
-                        <th class="text-right font-semibold px-6 py-3">입금완료</th>
-                        <th class="text-right font-semibold px-6 py-3">미입금</th>
-                        <th class="text-right font-semibold px-6 py-3">미입금 건</th>
-                        <th class="text-left font-semibold px-6 py-3 hidden md:table-cell">최근입금</th>
-                        <th class="px-6 py-3"></th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-neutral-100">
-                    @foreach ($byStore as $s)
-                        @php $unpaidAmt = (int) $s->total - (int) $s->paid; @endphp
-                        <tr class="hover:bg-mango-50/40 transition cursor-pointer"
-                            onclick="location.href='{{ route('portal.hq.store_payments.show', ['store' => $s->id, 'period' => $period, 'from' => $from, 'to' => $to, 'year' => $year, 'month' => $month]) }}'">
-                            <td class="px-6 py-3.5 font-bold text-neutral-900">{{ $s->name }}<span class="block text-xs font-normal text-neutral-400">{{ $s->region }}</span></td>
-                            <td class="px-6 py-3.5 text-right text-neutral-500">{{ number_format($s->cnt) }}</td>
-                            <td class="px-6 py-3.5 text-right font-semibold tabular-nums">{{ number_format($s->total) }}</td>
-                            <td class="px-6 py-3.5 text-right tabular-nums text-emerald-600 font-semibold">{{ number_format($s->paid) }}</td>
-                            <td class="px-6 py-3.5 text-right tabular-nums {{ $unpaidAmt > 0 ? 'text-amber-600 font-bold' : 'text-neutral-400' }}">{{ number_format($unpaidAmt) }}</td>
-                            <td class="px-6 py-3.5 text-right">
-                                @if ($s->unpaid_cnt > 0)
-                                    <span class="inline-flex items-center justify-center min-w-[2rem] rounded-full bg-amber-100 text-amber-700 font-bold px-2 py-0.5 text-xs">{{ $s->unpaid_cnt }}</span>
-                                @else
-                                    <span class="text-emerald-600 text-xs font-bold">완납</span>
-                                @endif
-                            </td>
-                            <td class="px-6 py-3.5 hidden md:table-cell text-neutral-400 text-xs">{{ $s->last_paid_at ? \Illuminate\Support\Carbon::parse($s->last_paid_at)->format('Y.m.d') : '-' }}</td>
-                            <td class="px-6 py-3.5 text-right" onclick="event.stopPropagation()">
-                                @if ($s->unpaid_cnt > 0)
-                                    <form method="POST" action="{{ route('portal.hq.store_payments.request_unpaid', ['store' => $s->id, 'period' => $period, 'from' => $from, 'to' => $to, 'year' => $year, 'month' => $month]) }}"
-                                          data-confirm="{{ $s->name }}에 미입금 {{ $s->unpaid_cnt }}건 · {{ number_format($unpaidAmt) }}원 안내 SMS를 전송합니다.\n진행하시겠습니까?">
-                                        @csrf
-                                        <button type="submit" class="inline-flex items-center gap-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-1.5 text-xs transition">💬 미입금 SMS</button>
-                                    </form>
-                                @else
-                                    <span class="text-neutral-300">›</span>
-                                @endif
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    @endif
-</div>
+@include('portal.partials.wwgrid-assets')
+@php
+    $qp = ['period' => $period, 'from' => $from, 'to' => $to, 'year' => $year, 'month' => $month];
+    $gridRows = $byStore->map(function ($s) use ($qp) {
+        $unpaidAmt = (int) $s->total - (int) $s->paid;
+        return [
+            'name' => $s->name,
+            'region' => $s->region,
+            'cnt' => (int) $s->cnt,
+            'total' => (int) $s->total,
+            'paid' => (int) $s->paid,
+            'unpaid_amt' => $unpaidAmt,
+            'unpaid_cnt' => (int) $s->unpaid_cnt,
+            'last_paid_at' => $s->last_paid_at ? \Illuminate\Support\Carbon::parse($s->last_paid_at)->format('Y.m.d') : '-',
+            'show_url' => route('portal.hq.store_payments.show', array_merge(['store' => $s->id], $qp)),
+            'req_url' => route('portal.hq.store_payments.request_unpaid', array_merge(['store' => $s->id], $qp)),
+        ];
+    })->values();
+@endphp
+
+<x-wwgrid-tabs gid="hqStorePaymentsGrid">
+    <x-wms.panel title="매장별 입금현황">
+        <div id="hqStorePaymentsGrid"></div>
+    </x-wms.panel>
+</x-wwgrid-tabs>
+
+@push('scripts')
+<script>
+(function () {
+    const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    const grid = ww.grid('hqStorePaymentsGrid', [
+        { header: '매장', name: 'name', width: 180,
+          renderer: (v, row) => {
+              const box = document.createElement('div');
+              box.className = 'font-bold text-neutral-900';
+              box.appendChild(document.createTextNode(v));
+              const sub = document.createElement('span');
+              sub.className = 'block text-xs font-normal text-neutral-400';
+              sub.textContent = row.region || '';
+              box.appendChild(sub);
+              return box;
+          } },
+        { header: '발주', name: 'cnt', width: 80, align: 'right', renderer: (v) => ww.num(v) },
+        { header: '총 발주액', name: 'total', width: 130, align: 'right', renderer: (v) => ww.num(v) },
+        { header: '입금완료', name: 'paid', width: 130, align: 'right',
+          renderer: (v) => ww.el('span', 'text-emerald-600 font-semibold', ww.num(v)) },
+        { header: '미입금', name: 'unpaid_amt', width: 130, align: 'right',
+          renderer: (v) => ww.el('span', v > 0 ? 'text-amber-600 font-bold' : 'text-neutral-400', ww.num(v)) },
+        { header: '미입금 건', name: 'unpaid_cnt', width: 100, align: 'right',
+          renderer: (v) => v > 0
+              ? ww.badge(String(v), 'bg-amber-100 text-amber-700')
+              : ww.el('span', 'text-emerald-600 text-xs font-bold', '완납') },
+        { header: '최근입금', name: 'last_paid_at', width: 110 },
+        { header: '', name: 'req_url', width: 140, align: 'right', sortable: false, exportable: false,
+          renderer: (v, row) => {
+              if (row.unpaid_cnt <= 0) return ww.el('span', 'text-neutral-300', '›');
+              const form = document.createElement('form');
+              form.method = 'POST'; form.action = v;
+              const conf = row.name + '에 미입금 ' + row.unpaid_cnt + '건 · ' + ww.num(row.unpaid_amt) + '원 안내 SMS를 전송합니다.\n진행하시겠습니까?';
+              form.addEventListener('submit', (e) => { if (!confirm(conf)) e.preventDefault(); });
+              const t = document.createElement('input'); t.type = 'hidden'; t.name = '_token'; t.value = CSRF; form.appendChild(t);
+              const b = document.createElement('button');
+              b.type = 'submit'; b.textContent = '💬 미입금 SMS';
+              b.className = 'inline-flex items-center gap-1 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold px-3 py-1.5 text-xs transition';
+              form.appendChild(b);
+              return form;
+          } },
+    ], @json($gridRows));
+
+    ww.bindRowDetail('hqStorePaymentsGrid', grid, 'show_url', 'name');
+})();
+</script>
+@endpush
 @endsection

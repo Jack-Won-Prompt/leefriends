@@ -11,7 +11,8 @@
         openCreate() { this.mode = 'create'; this.form = {{ \Illuminate\Support\Js::from($blank) }}; this.open = true; },
         openEdit(f) { this.mode = 'edit'; this.form = Object.assign({}, f); this.open = true; },
         action() { return this.mode === 'create' ? '{{ route('portal.hq.fruit_storages.store') }}' : '{{ url('portal/hq/fruit-storages') }}/' + this.form.id; },
-     }">
+     }"
+     @fruit-edit-open.window="openEdit($event.detail)">
 
 <x-wms.page-head title="과일 보관 관리" subtitle="과일·채소의 냉장/냉동 보관 가이드(ZIM 권장)입니다. ‘매장 공유’를 체크하면 매장 포털에서 열람할 수 있습니다." icon="🧊">
     <x-slot:actions>
@@ -23,58 +24,30 @@
     </x-slot:actions>
 </x-wms.page-head>
 
+@include('portal.partials.wwgrid-assets')
+@php
+    $gridRows = $fruits->map(fn ($f) => [
+        'name' => $f->name,
+        'temp_c' => $f->temp_c,
+        'temp_f' => $f->temp_f,
+        'ventilation' => $f->ventilation,
+        'humidity' => $f->humidity,
+        'dehumidification' => $f->dehumidification,
+        'storage_period' => $f->storage_period,
+        'is_shared' => (bool) $f->is_shared,
+        'toggle_url' => route('portal.hq.fruit_storages.toggle_share', $f),
+        'destroy_url' => route('portal.hq.fruit_storages.destroy', $f),
+        'edit' => [
+            'id' => $f->id, 'name' => $f->name, 'temp_c' => $f->temp_c, 'temp_f' => $f->temp_f,
+            'ventilation' => $f->ventilation, 'humidity' => $f->humidity, 'dehumidification' => $f->dehumidification,
+            'storage_period' => $f->storage_period, 'note' => $f->note, 'sort_order' => (int) $f->sort_order,
+            'is_shared' => (bool) $f->is_shared, 'is_active' => (bool) $f->is_active,
+        ],
+    ])->values();
+@endphp
+
 <x-wms.panel>
-    <div class="overflow-x-auto">
-    <table class="w-full text-sm">
-        <thead class="bg-neutral-50 text-neutral-500">
-            <tr>
-                <th class="text-left font-semibold px-4 py-3">제품</th>
-                <th class="text-left font-semibold px-4 py-3">온도(°C)</th>
-                <th class="text-left font-semibold px-4 py-3 hidden lg:table-cell">온도(°F)</th>
-                <th class="text-left font-semibold px-4 py-3 hidden lg:table-cell">통기공(CMH)</th>
-                <th class="text-left font-semibold px-4 py-3">상대습도(%)</th>
-                <th class="text-left font-semibold px-4 py-3 hidden md:table-cell">제습</th>
-                <th class="text-left font-semibold px-4 py-3">보관기한</th>
-                <th class="text-center font-semibold px-4 py-3">매장 공유</th>
-                <th class="text-right font-semibold px-4 py-3">관리</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-neutral-100">
-            @forelse ($fruits as $f)
-                <tr class="hover:bg-mango-50/40">
-                    <td class="px-4 py-3 font-bold text-neutral-900 whitespace-nowrap">{{ $f->name }}</td>
-                    <td class="px-4 py-3 whitespace-nowrap">{{ $f->temp_c }}</td>
-                    <td class="px-4 py-3 hidden lg:table-cell whitespace-nowrap text-neutral-500">{{ $f->temp_f }}</td>
-                    <td class="px-4 py-3 hidden lg:table-cell whitespace-nowrap text-neutral-500">{{ $f->ventilation }}</td>
-                    <td class="px-4 py-3 whitespace-nowrap">{{ $f->humidity }}</td>
-                    <td class="px-4 py-3 hidden md:table-cell whitespace-nowrap text-neutral-500">{{ $f->dehumidification }}</td>
-                    <td class="px-4 py-3 whitespace-nowrap">{{ $f->storage_period }}</td>
-                    <td class="px-4 py-3 text-center">
-                        <form method="POST" action="{{ route('portal.hq.fruit_storages.toggle_share', $f) }}" class="inline">
-                            @csrf
-                            <input type="checkbox" onchange="this.form.submit()" {{ $f->is_shared ? 'checked' : '' }}
-                                   class="rounded w-5 h-5 text-mango-500 focus:ring-mango-400 cursor-pointer" title="매장 공유">
-                        </form>
-                    </td>
-                    <td class="px-4 py-3 text-right whitespace-nowrap">
-                        <button type="button" @click="openEdit({{ Illuminate\Support\Js::from([
-                                    'id' => $f->id, 'name' => $f->name, 'temp_c' => $f->temp_c, 'temp_f' => $f->temp_f,
-                                    'ventilation' => $f->ventilation, 'humidity' => $f->humidity, 'dehumidification' => $f->dehumidification,
-                                    'storage_period' => $f->storage_period, 'note' => $f->note, 'sort_order' => (int) $f->sort_order,
-                                    'is_shared' => (bool) $f->is_shared, 'is_active' => (bool) $f->is_active,
-                                ]) }})" class="text-mango-600 hover:text-mango-700 text-xs font-bold mr-2">수정</button>
-                        <form method="POST" action="{{ route('portal.hq.fruit_storages.destroy', $f) }}" class="inline" onsubmit="return confirm('이 항목을 삭제할까요?')">
-                            @csrf @method('DELETE')
-                            <button class="text-rose-500 hover:text-rose-600 text-xs font-bold">삭제</button>
-                        </form>
-                    </td>
-                </tr>
-            @empty
-                <tr><td colspan="9" class="px-4 py-12 text-center text-neutral-400">등록된 보관 항목이 없습니다.</td></tr>
-            @endforelse
-        </tbody>
-    </table>
-    </div>
+    <div id="hqFruitStoragesGrid"></div>
 </x-wms.panel>
 
 <div class="mt-6">{{ $fruits->links() }}</div>
@@ -152,4 +125,47 @@
     </div>
 </div>
 </div>
+
+@push('scripts')
+<script>
+(function () {
+    const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    ww.grid('hqFruitStoragesGrid', [
+        { header: '제품', name: 'name', width: 150 },
+        { header: '온도(°C)', name: 'temp_c', width: 120 },
+        { header: '온도(°F)', name: 'temp_f', width: 120 },
+        { header: '통기공(CMH)', name: 'ventilation', width: 120 },
+        { header: '상대습도(%)', name: 'humidity', width: 110 },
+        { header: '제습', name: 'dehumidification', width: 80 },
+        { header: '보관기한', name: 'storage_period', width: 150 },
+        { header: '매장 공유', name: 'is_shared', width: 90, align: 'center', sortable: false, exportable: false,
+          renderer: (v, row) => {
+              const form = document.createElement('form'); form.method = 'POST'; form.action = row.toggle_url;
+              const t = document.createElement('input'); t.type = 'hidden'; t.name = '_token'; t.value = CSRF; form.appendChild(t);
+              const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = row.is_shared; cb.title = '매장 공유';
+              cb.className = 'rounded w-5 h-5 text-mango-500 focus:ring-mango-400 cursor-pointer';
+              cb.addEventListener('change', () => form.submit());
+              form.appendChild(cb);
+              return form;
+          } },
+        { header: '관리', name: 'destroy_url', width: 110, align: 'right', sortable: false, exportable: false,
+          renderer: (v, row) => {
+              const wrap = document.createElement('div'); wrap.className = 'flex items-center justify-end gap-2';
+              const eb = document.createElement('button'); eb.type = 'button'; eb.textContent = '수정';
+              eb.className = 'text-mango-600 hover:text-mango-700 text-xs font-bold';
+              eb.addEventListener('click', () => window.dispatchEvent(new CustomEvent('fruit-edit-open', { detail: row.edit })));
+              wrap.appendChild(eb);
+              const form = document.createElement('form'); form.method = 'POST'; form.action = row.destroy_url;
+              form.addEventListener('submit', (e) => { if (!confirm('이 항목을 삭제할까요?')) e.preventDefault(); });
+              const t = document.createElement('input'); t.type = 'hidden'; t.name = '_token'; t.value = CSRF; form.appendChild(t);
+              const m = document.createElement('input'); m.type = 'hidden'; m.name = '_method'; m.value = 'DELETE'; form.appendChild(m);
+              const db = document.createElement('button'); db.type = 'submit'; db.textContent = '삭제';
+              db.className = 'text-rose-500 hover:text-rose-600 text-xs font-bold'; form.appendChild(db);
+              wrap.appendChild(form);
+              return wrap;
+          } },
+    ], @json($gridRows));
+})();
+</script>
+@endpush
 @endsection

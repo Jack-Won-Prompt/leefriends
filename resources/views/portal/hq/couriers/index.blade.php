@@ -8,7 +8,8 @@
         openCreate() { this.mode = 'create'; this.form = { id: null, name: '', is_direct: false, is_active: true, sort_order: 0 }; this.open = true; },
         openEdit(c) { this.mode = 'edit'; this.form = Object.assign({}, c); this.open = true; },
         action() { return this.mode === 'create' ? '{{ route('portal.hq.couriers.store') }}' : '{{ url('portal/hq/couriers') }}/' + this.form.id; },
-     }">
+     }"
+     @courier-edit-open.window="openEdit($event.detail)">
 
 <x-wms.page-head title="택배사 관리" subtitle="출고 확정 시 선택할 택배사를 등록·관리합니다. 직접 배송은 송장번호 없이 출고됩니다." icon="🚚">
     <x-slot:actions>
@@ -16,45 +17,20 @@
     </x-slot:actions>
 </x-wms.page-head>
 
+@include('portal.partials.wwgrid-assets')
+@php
+    $gridRows = $couriers->map(fn ($c) => [
+        'sort_order' => (int) $c->sort_order,
+        'name' => $c->name,
+        'is_direct' => (bool) $c->is_direct,
+        'is_active' => (bool) $c->is_active,
+        'destroy_url' => route('portal.hq.couriers.destroy', $c),
+        'edit' => ['id' => $c->id, 'name' => $c->name, 'is_direct' => (bool) $c->is_direct, 'is_active' => (bool) $c->is_active, 'sort_order' => (int) $c->sort_order],
+    ])->values();
+@endphp
+
 <x-wms.panel>
-    <table class="w-full text-sm">
-        <thead class="bg-neutral-50 text-neutral-500">
-            <tr>
-                <th class="text-left font-semibold px-6 py-3 w-20">순서</th>
-                <th class="text-left font-semibold px-6 py-3">택배사</th>
-                <th class="text-left font-semibold px-6 py-3">구분</th>
-                <th class="text-left font-semibold px-6 py-3">상태</th>
-                <th class="text-right font-semibold px-6 py-3 w-32">관리</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-neutral-100">
-            @forelse ($couriers as $c)
-                <tr class="hover:bg-mango-50/40">
-                    <td class="px-6 py-3.5 text-neutral-400">{{ $c->sort_order }}</td>
-                    <td class="px-6 py-3.5 font-bold text-neutral-900">{{ $c->name }}</td>
-                    <td class="px-6 py-3.5">
-                        @if ($c->is_direct)
-                            <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-sky-100 text-sky-700">직접 배송</span>
-                        @else
-                            <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-neutral-100 text-neutral-600">택배</span>
-                        @endif
-                    </td>
-                    <td class="px-6 py-3.5">
-                        <span class="text-xs font-bold px-2.5 py-1 rounded-full {{ $c->is_active ? 'bg-emerald-100 text-emerald-700' : 'bg-neutral-100 text-neutral-400' }}">{{ $c->is_active ? '사용' : '미사용' }}</span>
-                    </td>
-                    <td class="px-6 py-3.5 text-right">
-                        <button type="button" @click="openEdit({ id: {{ $c->id }}, name: {{ Illuminate\Support\Js::from($c->name) }}, is_direct: {{ $c->is_direct ? 'true' : 'false' }}, is_active: {{ $c->is_active ? 'true' : 'false' }}, sort_order: {{ (int) $c->sort_order }} })" class="text-mango-600 hover:text-mango-700 text-xs font-bold mr-2">수정</button>
-                        <form method="POST" action="{{ route('portal.hq.couriers.destroy', $c) }}" class="inline" onsubmit="return confirm('이 택배사를 삭제할까요?')">
-                            @csrf @method('DELETE')
-                            <button class="text-rose-500 hover:text-rose-600 text-xs font-bold">삭제</button>
-                        </form>
-                    </td>
-                </tr>
-            @empty
-                <tr><td colspan="5" class="px-6 py-12 text-center text-neutral-400">등록된 택배사가 없습니다.</td></tr>
-            @endforelse
-        </tbody>
-    </table>
+    <div id="hqCouriersGrid"></div>
 </x-wms.panel>
 
 {{-- 추가/수정 모달 --}}
@@ -97,4 +73,36 @@
     </div>
 </div>
 </div>
+
+@push('scripts')
+<script>
+(function () {
+    const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
+    ww.grid('hqCouriersGrid', [
+        { header: '순서', name: 'sort_order', width: 80, align: 'right' },
+        { header: '택배사', name: 'name', width: 220 },
+        { header: '구분', name: 'is_direct', width: 120, align: 'center',
+          renderer: (v) => v ? ww.badge('직접 배송', 'bg-sky-100 text-sky-700') : ww.badge('택배', 'bg-neutral-100 text-neutral-600') },
+        { header: '상태', name: 'is_active', width: 120, align: 'center',
+          renderer: (v) => v ? ww.badge('사용', 'bg-emerald-100 text-emerald-700') : ww.badge('미사용', 'bg-neutral-100 text-neutral-400') },
+        { header: '관리', name: 'destroy_url', width: 120, align: 'right', sortable: false, exportable: false,
+          renderer: (v, row) => {
+              const wrap = document.createElement('div'); wrap.className = 'flex items-center justify-end gap-2';
+              const eb = document.createElement('button'); eb.type = 'button'; eb.textContent = '수정';
+              eb.className = 'text-mango-600 hover:text-mango-700 text-xs font-bold';
+              eb.addEventListener('click', () => window.dispatchEvent(new CustomEvent('courier-edit-open', { detail: row.edit })));
+              wrap.appendChild(eb);
+              const form = document.createElement('form'); form.method = 'POST'; form.action = row.destroy_url;
+              form.addEventListener('submit', (e) => { if (!confirm('이 택배사를 삭제할까요?')) e.preventDefault(); });
+              const t = document.createElement('input'); t.type = 'hidden'; t.name = '_token'; t.value = CSRF; form.appendChild(t);
+              const m = document.createElement('input'); m.type = 'hidden'; m.name = '_method'; m.value = 'DELETE'; form.appendChild(m);
+              const db = document.createElement('button'); db.type = 'submit'; db.textContent = '삭제';
+              db.className = 'text-rose-500 hover:text-rose-600 text-xs font-bold'; form.appendChild(db);
+              wrap.appendChild(form);
+              return wrap;
+          } },
+    ], @json($gridRows));
+})();
+</script>
+@endpush
 @endsection

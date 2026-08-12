@@ -1,16 +1,6 @@
 @extends('portal.layout')
 @section('title', '공급사 발주 현황')
 
-@php
-    $stBadge = [
-        'created' => 'bg-amber-100 text-amber-700',
-        'confirmed' => 'bg-sky-100 text-sky-700',
-        'shipped' => 'bg-indigo-100 text-indigo-700',
-        'received' => 'bg-emerald-100 text-emerald-700',
-        'canceled' => 'bg-neutral-100 text-neutral-400',
-    ];
-@endphp
-
 @section('content')
 <x-wms.page-head title="공급사 발주 현황" subtitle="매장 발주 중 공급처 직배송분(공급사별 판매주문)을 한눈에 확인합니다." icon="🏭" />
 
@@ -50,50 +40,58 @@
     </div>
 </form>
 
+@include('portal.partials.wwgrid-assets')
+@php
+    $gridRows = $salesOrders->map(fn ($so) => [
+        'created_at' => $so->created_at->format('Y.m.d'),
+        'sales_order_no' => $so->sales_order_no,
+        'supplier_name' => optional($so->supplier)->name ?? '공급처',
+        'store_name' => optional($so->store)->name ?? '-',
+        'item_count' => (int) $so->item_count,
+        'supply_amount' => (int) $so->supply_amount,
+        'status' => $so->status,
+        'status_label' => $so->status_label,
+        'order_url' => $so->order ? route('portal.hq.orders.show', $so->order) : null,
+    ])->values();
+@endphp
+
 <x-wms.panel>
-    @if ($salesOrders->isEmpty())
-        <p class="px-6 py-16 text-center text-neutral-400">해당하는 공급사 발주가 없습니다.</p>
-    @else
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-neutral-50 text-neutral-500">
-                    <tr>
-                        <th class="text-left font-semibold px-6 py-3 hidden md:table-cell">발주일</th>
-                        <th class="text-left font-semibold px-6 py-3">판매주문</th>
-                        <th class="text-left font-semibold px-6 py-3">공급사</th>
-                        <th class="text-left font-semibold px-6 py-3">매장</th>
-                        <th class="text-right font-semibold px-6 py-3">품목</th>
-                        <th class="text-right font-semibold px-6 py-3">공급액</th>
-                        <th class="text-center font-semibold px-6 py-3">상태</th>
-                        <th class="text-right font-semibold px-6 py-3 w-20">상세</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-neutral-100">
-                    @foreach ($salesOrders as $so)
-                        <tr class="hover:bg-mango-50/40 transition">
-                            <td class="px-6 py-3.5 hidden md:table-cell text-neutral-400 whitespace-nowrap">{{ $so->created_at->format('Y.m.d') }}</td>
-                            <td class="px-6 py-3.5 font-mono font-bold text-neutral-700">{{ $so->sales_order_no }}</td>
-                            <td class="px-6 py-3.5"><span class="font-bold text-neutral-900">{{ optional($so->supplier)->name ?? '공급처' }}</span></td>
-                            <td class="px-6 py-3.5 text-neutral-600">{{ optional($so->store)->name ?? '-' }}</td>
-                            <td class="px-6 py-3.5 text-right text-neutral-500">{{ number_format($so->item_count) }}건</td>
-                            <td class="px-6 py-3.5 text-right font-black text-mango-700">{{ number_format($so->supply_amount) }}원</td>
-                            <td class="px-6 py-3.5 text-center">
-                                <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-bold {{ $stBadge[$so->status] ?? 'bg-neutral-100 text-neutral-600' }}">{{ $so->status_label }}</span>
-                            </td>
-                            <td class="px-6 py-3.5 text-right">
-                                @if ($so->order)
-                                    <a href="{{ route('portal.hq.orders.show', $so->order) }}" class="text-xs font-bold text-mango-600 hover:text-mango-700">발주</a>
-                                @else - @endif
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    @endif
+    <div id="hqSupplierOrdersGrid"></div>
 </x-wms.panel>
 
 @if ($salesOrders->hasPages())
     <div class="mt-5">{{ $salesOrders->links() }}</div>
 @endif
+
+@push('scripts')
+<script>
+(function () {
+    const ST_CLS = {
+        created: 'bg-amber-100 text-amber-700',
+        confirmed: 'bg-sky-100 text-sky-700',
+        shipped: 'bg-indigo-100 text-indigo-700',
+        received: 'bg-emerald-100 text-emerald-700',
+        canceled: 'bg-neutral-100 text-neutral-400',
+    };
+    ww.grid('hqSupplierOrdersGrid', [
+        { header: '발주일', name: 'created_at', width: 110 },
+        { header: '판매주문', name: 'sales_order_no', width: 150 },
+        { header: '공급사', name: 'supplier_name', width: 150 },
+        { header: '매장', name: 'store_name', width: 130 },
+        { header: '품목', name: 'item_count', width: 80, align: 'right', renderer: (v) => ww.num(v) + '건' },
+        { header: '공급액', name: 'supply_amount', width: 130, align: 'right', renderer: (v) => ww.won(v) },
+        { header: '상태', name: 'status', width: 100, align: 'center',
+          renderer: (v, row) => ww.badge(row.status_label, ST_CLS[v] || 'bg-neutral-100 text-neutral-600') },
+        { header: '상세', name: 'order_url', width: 80, align: 'right', sortable: false, exportable: false,
+          renderer: (v) => {
+              if (!v) return ww.dash();
+              const a = document.createElement('a');
+              a.href = v; a.textContent = '발주';
+              a.className = 'text-xs font-bold text-mango-600 hover:text-mango-700';
+              return a;
+          } },
+    ], @json($gridRows));
+})();
+</script>
+@endpush
 @endsection

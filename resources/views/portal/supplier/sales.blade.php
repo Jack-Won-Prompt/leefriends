@@ -27,52 +27,61 @@
     </div>
 </div>
 
-{{-- 매장별 공급액 (x-data: 행 클릭 $dispatch 스코프) --}}
-<div x-data class="rounded-2xl bg-white shadow-sm border border-neutral-100 overflow-hidden">
+{{-- 매장별 공급액 --}}
+@include('portal.partials.wwgrid-assets')
+@php
+    $gridRows = $byStore->map(fn ($row) => [
+        'name' => $row->name,
+        'region' => $row->region,
+        'items' => (int) $row->items,
+        'qty' => (int) $row->qty,
+        'amount' => (int) $row->amount,
+        'pct' => $totals['amount'] > 0 ? (int) round($row->amount / $totals['amount'] * 100) : 0,
+        'store_orders_url' => route('portal.supplier.sales.store_orders', ['store' => $row->id, 'period' => $period]),
+    ])->values();
+@endphp
+
+<div class="rounded-2xl bg-white shadow-sm border border-neutral-100 overflow-hidden">
     <div class="px-6 py-4 border-b border-neutral-100 font-extrabold text-neutral-900">매장별 공급액 (직배송)</div>
-    @if ($byStore->isEmpty())
-        <p class="px-6 py-16 text-center text-neutral-400">집계할 공급 내역이 없습니다.</p>
-    @else
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-neutral-50 text-neutral-500">
-                    <tr>
-                        <th class="text-left font-semibold px-6 py-3 w-10">#</th>
-                        <th class="text-left font-semibold px-6 py-3">매장 (배송지)</th>
-                        <th class="text-right font-semibold px-6 py-3">품목</th>
-                        <th class="text-right font-semibold px-6 py-3 hidden md:table-cell">수량</th>
-                        <th class="text-right font-semibold px-6 py-3">공급액</th>
-                        <th class="text-right font-semibold px-6 py-3 hidden lg:table-cell w-32">비중</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-neutral-100">
-                    @foreach ($byStore as $i => $row)
-                        @php $pct = $totals['amount'] > 0 ? round($row->amount / $totals['amount'] * 100) : 0; @endphp
-                        <tr class="hover:bg-mango-50/40 transition cursor-pointer"
-                            @click="$dispatch('open-store-orders', { url: '{{ route('portal.supplier.sales.store_orders', ['store' => $row->id, 'period' => $period]) }}' })">
-                            <td class="px-6 py-3.5 text-neutral-400 font-bold">{{ $i + 1 }}</td>
-                            <td class="px-6 py-3.5"><span class="font-bold text-neutral-900">{{ $row->name }}</span> <span class="text-xs text-neutral-400">{{ $row->region }}</span></td>
-                            <td class="px-6 py-3.5 text-right text-neutral-500">{{ number_format($row->items) }}건</td>
-                            <td class="px-6 py-3.5 text-right hidden md:table-cell text-neutral-500">{{ number_format($row->qty) }}</td>
-                            <td class="px-6 py-3.5 text-right font-black text-mango-700">{{ number_format($row->amount) }}원</td>
-                            <td class="px-6 py-3.5 hidden lg:table-cell">
-                                <div class="flex items-center gap-2">
-                                    <div class="flex-1 h-1.5 rounded-full bg-neutral-100 overflow-hidden"><div class="h-full bg-mango-500" style="width: {{ $pct }}%"></div></div>
-                                    <span class="text-xs text-neutral-400 w-8 text-right">{{ $pct }}%</span>
-                                </div>
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-                <tfoot>
-                    <tr class="bg-neutral-50 font-black">
-                        <td class="px-6 py-4" colspan="4">합계</td>
-                        <td class="px-6 py-4 text-right text-mango-700">{{ number_format($totals['amount']) }}원</td>
-                        <td class="hidden lg:table-cell"></td>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
-    @endif
+    <div class="p-4"><div id="supplierSalesGrid"></div></div>
 </div>
+
+@push('scripts')
+<script>
+(function () {
+    const grid = ww.grid('supplierSalesGrid', [
+        { header: '매장 (배송지)', name: 'name', width: 220,
+          renderer: (v, row) => {
+              const wrap = ww.el('div');
+              wrap.appendChild(ww.el('span', 'font-bold text-neutral-900', v));
+              if (row.region) { wrap.appendChild(document.createTextNode(' ')); wrap.appendChild(ww.el('span', 'text-xs text-neutral-400', row.region)); }
+              return wrap;
+          } },
+        { header: '품목', name: 'items', width: 90, align: 'right', renderer: (v) => ww.num(v) + '건' },
+        { header: '수량', name: 'qty', width: 90, align: 'right', renderer: (v) => ww.num(v) },
+        { header: '공급액', name: 'amount', width: 130, align: 'right', renderer: (v) => ww.won(v) },
+        { header: '비중', name: 'pct', width: 140, align: 'right', exportable: false, summary: false,
+          renderer: (v) => {
+              const wrap = ww.el('div', 'flex items-center gap-2');
+              const track = ww.el('div', 'flex-1 h-1.5 rounded-full bg-neutral-100 overflow-hidden');
+              const bar = ww.el('div', 'h-full bg-mango-500'); bar.style.width = v + '%';
+              track.appendChild(bar);
+              wrap.appendChild(track);
+              wrap.appendChild(ww.el('span', 'text-xs text-neutral-400 w-8 text-right', v + '%'));
+              return wrap;
+          } },
+    ], @json($gridRows));
+
+    document.getElementById('supplierSalesGrid').addEventListener('click', function (e) {
+        if (e.target.closest('a, button, input, select, form')) return;
+        const cell = e.target.closest('[data-row-index]');
+        if (!cell) return;
+        const row = grid.getData()[parseInt(cell.dataset.rowIndex, 10)];
+        if (!row) return;
+        window.getSelection()?.removeAllRanges();
+        window.dispatchEvent(new CustomEvent('open-store-orders', { detail: { url: row.store_orders_url } }));
+    });
+})();
+</script>
+@endpush
 @endsection

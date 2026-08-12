@@ -2,7 +2,7 @@
 @section('title', '세금계산서 (수취)')
 
 @section('content')
-<div x-data="{ open: null }">
+<div x-data="{ open: null }" @open-hq-invoice.window="open = $event.detail.id">
 <x-wms.page-head title="세금계산서 (수취)" subtitle="공급처가 발행한 세금계산서" icon="🧮" />
 <x-date-filter :from="$from" :to="$to" label="발행일 기간" />
 <div class="grid grid-cols-2 gap-4 mb-6">
@@ -16,41 +16,24 @@
     </div>
 </div>
 
-<div class="rounded-2xl bg-white shadow-sm border border-neutral-100 overflow-hidden">
-    <div class="px-6 py-4 border-b border-neutral-100 font-extrabold text-neutral-900">공급처 발행 세금계산서</div>
-    @if ($invoices->isEmpty())
-        <p class="px-6 py-16 text-center text-neutral-400">수취한 세금계산서가 없습니다.</p>
-    @else
-        <div class="overflow-x-auto">
-            <table class="w-full text-sm">
-                <thead class="bg-neutral-50 text-neutral-500">
-                    <tr>
-                        <th class="text-left font-semibold px-6 py-3">계산서번호</th>
-                        <th class="text-left font-semibold px-6 py-3">공급처</th>
-                        <th class="text-right font-semibold px-6 py-3">공급가액</th>
-                        <th class="text-right font-semibold px-6 py-3">부가세</th>
-                        <th class="text-right font-semibold px-6 py-3">합계</th>
-                        <th class="text-left font-semibold px-6 py-3">작성일</th>
-                        <th class="text-left font-semibold px-6 py-3">상태</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-neutral-100">
-                    @foreach ($invoices as $inv)
-                        <tr class="hover:bg-mango-50/40 transition cursor-pointer" @click="open = {{ $inv->id }}">
-                            <td class="px-6 py-3.5 font-bold text-mango-700">{{ $inv->invoice_no }}</td>
-                            <td class="px-6 py-3.5">{{ $inv->invoicer_corp_name ?? optional($inv->supplier)->name ?? '-' }}</td>
-                            <td class="px-6 py-3.5 text-right">{{ number_format($inv->supply_amount) }}원</td>
-                            <td class="px-6 py-3.5 text-right text-neutral-500">{{ number_format($inv->vat) }}원</td>
-                            <td class="px-6 py-3.5 text-right font-black text-mango-700">{{ number_format($inv->total_amount) }}원</td>
-                            <td class="px-6 py-3.5 text-neutral-400">{{ $inv->issue_date?->format('Y.m.d') }}</td>
-                            <td class="px-6 py-3.5"><span class="text-xs font-bold px-2.5 py-1 rounded-full {{ $inv->status === 'canceled' ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700' }}">{{ $inv->status_label }}</span></td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    @endif
-</div>
+@include('portal.partials.wwgrid-assets')
+@php
+    $gridRows = $invoices->map(fn ($inv) => [
+        'id' => $inv->id,
+        'invoice_no' => $inv->invoice_no,
+        'supplier_name' => $inv->invoicer_corp_name ?? optional($inv->supplier)->name ?? '-',
+        'supply_amount' => (int) $inv->supply_amount,
+        'vat' => (int) $inv->vat,
+        'total_amount' => (int) $inv->total_amount,
+        'issue_date' => $inv->issue_date?->format('Y.m.d') ?? '',
+        'status' => $inv->status,
+        'status_label' => $inv->status_label,
+    ])->values();
+@endphp
+
+<x-wms.panel title="공급처 발행 세금계산서">
+    <div id="hqInvoicesGrid"></div>
+</x-wms.panel>
 
 <div class="mt-6">{{ $invoices->links() }}</div>
 
@@ -65,4 +48,34 @@
     </x-detail-modal>
 @endforeach
 </div>
+
+@push('scripts')
+<script>
+(function () {
+    const grid = ww.grid('hqInvoicesGrid', [
+        { header: '계산서번호', name: 'invoice_no', width: 150,
+          renderer: (v) => ww.el('span', 'font-bold text-mango-700', v) },
+        { header: '공급처', name: 'supplier_name', width: 180 },
+        { header: '공급가액', name: 'supply_amount', width: 120, align: 'right', renderer: (v) => ww.won(v) },
+        { header: '부가세', name: 'vat', width: 110, align: 'right',
+          renderer: (v) => ww.el('span', 'text-neutral-500', ww.won(v)) },
+        { header: '합계', name: 'total_amount', width: 130, align: 'right',
+          renderer: (v) => ww.el('span', 'font-black text-mango-700', ww.won(v)) },
+        { header: '작성일', name: 'issue_date', width: 110 },
+        { header: '상태', name: 'status', width: 100, align: 'center',
+          renderer: (v, row) => ww.badge(row.status_label, v === 'canceled' ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700') },
+    ], @json($gridRows));
+
+    document.getElementById('hqInvoicesGrid').addEventListener('click', function (e) {
+        if (e.target.closest('a, button, input, select, form')) return;
+        const cell = e.target.closest('[data-row-index]');
+        if (!cell) return;
+        const row = grid.getData()[parseInt(cell.dataset.rowIndex, 10)];
+        if (!row) return;
+        window.getSelection()?.removeAllRanges();
+        window.dispatchEvent(new CustomEvent('open-hq-invoice', { detail: { id: row.id } }));
+    });
+})();
+</script>
+@endpush
 @endsection
