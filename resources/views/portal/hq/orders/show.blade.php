@@ -274,4 +274,39 @@
         </div>
     </div>
 </div>
+
+{{-- 배송 완료 증빙: 현장 사진 · 매장 담당자 서명 (클릭 시 팝오버 확대) --}}
+@if (! empty($order->delivery_photos) || $order->delivery_signature)
+<div class="rounded-2xl bg-white shadow-sm border border-neutral-100 p-4 mt-3" x-data="{ viewer: null }">
+    <div class="font-extrabold text-neutral-900 mb-3 flex items-center gap-2">
+        <span>📦 배송 완료 증빙</span>
+        @if ($order->delivered_at)
+            <span class="text-xs font-semibold text-neutral-400">{{ $order->delivered_at->format('Y.m.d H:i') }} 배송완료</span>
+        @endif
+    </div>
+    <div class="flex flex-wrap gap-3">
+        @foreach ($order->delivery_photos ?? [] as $i => $p)
+            <button type="button" @click="viewer = '{{ asset($p) }}'"
+                    class="group relative w-28 h-28 rounded-xl overflow-hidden border border-neutral-200 bg-neutral-50">
+                <img src="{{ asset($p) }}" alt="현장사진 {{ $i + 1 }}" loading="lazy" class="w-full h-full object-cover group-hover:scale-105 transition">
+                <span class="absolute bottom-1 left-1 text-[10px] font-bold text-white bg-black/50 px-1.5 py-0.5 rounded">사진 {{ $i + 1 }}</span>
+            </button>
+        @endforeach
+        @if ($order->delivery_signature)
+            <button type="button" @click="viewer = '{{ asset($order->delivery_signature) }}'"
+                    class="group relative w-40 h-28 rounded-xl overflow-hidden border border-neutral-200 bg-white">
+                <img src="{{ asset($order->delivery_signature) }}" alt="매장 담당자 서명" loading="lazy" class="w-full h-full object-contain p-1">
+                <span class="absolute bottom-1 left-1 text-[10px] font-bold text-white bg-black/50 px-1.5 py-0.5 rounded">서명</span>
+            </button>
+        @endif
+    </div>
+
+    {{-- 팝오버(라이트박스) --}}
+    <div x-show="viewer" x-cloak @keydown.escape.window="viewer = null"
+         class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-6" @click="viewer = null">
+        <img :src="viewer" alt="증빙 확대" class="max-w-full max-h-[85vh] rounded-lg shadow-2xl bg-white" @click.stop>
+        <button type="button" @click="viewer = null" class="absolute top-4 right-5 text-white text-3xl font-bold leading-none">✕</button>
+    </div>
+</div>
+@endif
 @endsection

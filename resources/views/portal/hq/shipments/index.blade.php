@@ -39,6 +39,8 @@
         'status' => $o->status,
         'status_label' => $o->status_label,
         'has_pending' => (bool) $o->has_pending,
+        'has_photo' => ! empty($o->delivery_photos),
+        'has_sign' => (bool) $o->delivery_signature,
         'created_at' => $o->created_at->format('Y.m.d H:i'),
         'show_url' => route('portal.hq.orders.show', $o),
     ])->values();
@@ -69,6 +71,13 @@
           renderer: (v, row) => ww.badge(row.status_label, STATUS_CLS[v] || STATUS_CLS.pending) },
         { header: '단가', name: 'has_pending', width: 100, align: 'center', sortable: false,
           renderer: (v) => v ? ww.badge('미확인', 'bg-rose-100 text-rose-600') : ww.badge('확정', 'bg-emerald-50 text-emerald-600') },
+        { header: '배송증빙', name: 'has_photo', width: 120, align: 'center', sortable: false, exportable: false,
+          renderer: (v, row) => {
+              const wrap = ww.el('span', 'inline-flex gap-1 justify-center');
+              wrap.appendChild(ww.badge('사진', row.has_photo ? 'bg-emerald-100 text-emerald-700' : 'bg-neutral-100 text-neutral-300'));
+              wrap.appendChild(ww.badge('서명', row.has_sign ? 'bg-emerald-100 text-emerald-700' : 'bg-neutral-100 text-neutral-300'));
+              return wrap;
+          } },
         { header: '발주일', name: 'created_at', width: 150 },
     ], @json($gridRows));
 
