@@ -103,9 +103,13 @@ class ShipmentController extends BaseShipmentController
         ]);
     }
 
-    /** 발주번호 → 스캔 가능한 QR SVG 문자열 */
+    /** 발주번호 → 스캔 가능한 QR SVG 문자열 (라이브러리 미설치 시 텍스트로 대체) */
     private function qrSvg(string $text): string
     {
+        if (! class_exists(Writer::class)) {
+            return '<div style="font:11px monospace;color:#6b7280;text-align:center;padding:8px;">'.e($text).'</div>';
+        }
+
         $renderer = new ImageRenderer(
             new RendererStyle(150, 1),
             new SvgImageBackEnd()
