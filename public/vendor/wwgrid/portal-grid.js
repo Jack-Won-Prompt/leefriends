@@ -20,6 +20,22 @@
         /** 회색 대시(빈 값) */
         dash() { return el('span', 'text-neutral-300', '—'); },
 
+        /** 우하단 토스트 알림 (#toast-container 사용, 없으면 무시) */
+        toast(title, body) {
+            const c = document.getElementById('toast-container');
+            if (!c) { return; }
+            const box = document.createElement('div');
+            box.className = 'pointer-events-auto rounded-xl bg-white shadow-lg border border-neutral-200 px-4 py-3 flex items-start gap-3 translate-x-6 opacity-0 transition-all duration-300';
+            const icon = el('span', 'text-xl shrink-0', '✅');
+            const txt = document.createElement('div'); txt.className = 'min-w-0 flex-1';
+            txt.appendChild(el('p', 'text-sm font-bold text-neutral-900', title || '완료'));
+            if (body) txt.appendChild(el('p', 'text-xs text-neutral-500 mt-0.5 break-words', body));
+            box.appendChild(icon); box.appendChild(txt);
+            c.appendChild(box);
+            requestAnimationFrame(() => box.classList.remove('translate-x-6', 'opacity-0'));
+            setTimeout(() => { box.classList.add('translate-x-6', 'opacity-0'); setTimeout(() => box.remove(), 300); }, 4000);
+        },
+
         /** 리스트/상세보기 탭 전환. 표준 id 규칙: {id}-tabList/-tabDetail/-btnList/-btnDetail */
         switchTab(id, which) {
             const onList = which === 'list';
@@ -45,6 +61,37 @@
             const bd = document.getElementById(id + '-btnDetail'); if (bd) { bd.disabled = false; bd.classList.remove('text-neutral-300'); }
             ww.switchTab(id, 'detail');
             if (!box) return;
+            box.dataset.detailUrl = url;
+            // 상세 내부 폼 제출 → 전체 페이지 이동 대신 AJAX 전송(현재 탭 유지) + 토스트 + 상세 재로딩.
+            // (box 는 innerHTML 만 교체되고 요소 자체는 유지되므로 리스너는 1회만 등록)
+            if (!box.__wwFormBound) {
+                box.__wwFormBound = true;
+                box.addEventListener('submit', function (e) {
+                    const form = e.target;
+                    if (!(form instanceof HTMLFormElement) || form.hasAttribute('data-no-ajax')) return;
+                    if ((form.getAttribute('method') || 'get').toUpperCase() === 'GET' || form.target === '_blank') return;
+                    // 인라인 onsubmit 이 이미 막았으면(confirm 취소·단가 차단 등) AJAX 전송도 하지 않음
+                    if (e.defaultPrevented) return;
+                    e.preventDefault();
+                    const btn = form.querySelector('[type="submit"]');
+                    if (btn) btn.disabled = true;
+                    fetch(form.action, { method: 'POST', body: new FormData(form), headers: { 'X-Requested-With': 'XMLHttpRequest' }, redirect: 'follow' })
+                        .then((r) => r.text().then((t) => ({ ok: r.ok, t })))
+                        .then(({ ok, t }) => {
+                            let err = null, msg = form.getAttribute('data-ajax-toast') || '처리되었습니다.';
+                            try {
+                                const d = new DOMParser().parseFromString(t, 'text/html');
+                                const e2 = d.querySelector('.bg-rose-50.text-rose-700');
+                                const s2 = d.querySelector('.bg-emerald-50.text-emerald-700');
+                                if (e2 && e2.textContent.trim()) err = e2.textContent.trim().slice(0, 160);
+                                else if (s2 && s2.textContent.trim()) msg = s2.textContent.trim().slice(0, 160);
+                            } catch (_) {}
+                            ww.toast(err ? '⚠ 실패' : '✅ 완료', err || msg);
+                            ww.openDetail(id, box.dataset.detailUrl, (document.getElementById(id + '-detailTitle') || {}).textContent || '');
+                        })
+                        .catch(() => { if (btn) btn.disabled = false; ww.toast('⚠ 오류', '전송 중 오류가 발생했습니다.'); });
+                });
+            }
             box.innerHTML = '<div class="p-10 text-center text-neutral-400 text-sm">불러오는 중…</div>';
             const sep = url.includes('?') ? '&' : '?';
             fetch(url + sep + 'panel=1', { headers: { 'X-Requested-With': 'XMLHttpRequest' } })

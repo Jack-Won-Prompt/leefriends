@@ -6,6 +6,8 @@
 
 @php $shipAddr = $order->store ? ($order->store->postcode ? '('.$order->store->postcode.') ' : '').$order->store->full_delivery_address : '-'; @endphp
 @php($taxInvoice = $order->taxInvoice)
+@php($hasPending = $order->hasPendingPrice())
+@php($pendingAlert = "alert('미확인 단가(싯가) 품목이 있어 거래명세서를 출력할 수 없습니다.\\n단가 확정 후 다시 시도하세요.')")
 <div x-data="{ shipOpen: false, stmtOpen: false, box: {{ (int) ($order->shipping_box_count ?? 0) }}, unit: {{ (int) ($order->shipping_unit_price ?? 0) }}, stmtDate: '{{ $order->created_at->format('Y-m-d') }}', get fee() { return (this.box || 0) * (this.unit || 0); }, get stmtDateLabel() { const p = (this.stmtDate || '').split('-'); return p.length === 3 ? `${p[0]}년 ${p[1]}월 ${p[2]}일` : this.stmtDate; } }">
     {{-- 하나의 카드: 헤더+액션 / 발주 정보 한 줄 / 정산 요약 한 줄 --}}
     <div class="rounded-2xl bg-white shadow-sm border border-neutral-100 p-4 mb-3">
@@ -18,9 +20,10 @@
             @unless ($order->status === 'canceled')
                 <div class="flex flex-wrap items-center gap-1.5">
                     <button type="button" @click="shipOpen = true" class="rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-bold px-3 py-1.5 text-xs transition">🚚 택배비 {{ $order->shipping_fee ? '수정' : '추가' }}</button>
-                    <button type="button" @click="stmtOpen = true" class="rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-bold px-3 py-1.5 text-xs transition">🧾 거래명세서</button>
+                    <button type="button" @click="{!! $hasPending ? $pendingAlert : 'stmtOpen = true' !!}" class="rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-bold px-3 py-1.5 text-xs transition">🧾 거래명세서</button>
                     <form method="POST" action="{{ route('portal.hq.orders.statement.email', $order) }}" class="inline"
-                          onsubmit="return confirm('거래명세서 PDF를 매장({{ $order->store->email }})으로 전송합니다.\n진행하시겠습니까?')">
+                          data-ajax-toast="거래명세서를 매장 이메일로 전송했습니다."
+                          onsubmit="@if ($hasPending) alert('미확인 단가(싯가) 품목이 있어 거래명세서를 전송할 수 없습니다.\n단가 확정 후 다시 시도하세요.'); return false; @else return confirm('거래명세서 PDF를 매장({{ $order->store->email }})으로 전송합니다.\n진행하시겠습니까?') @endif">
                         @csrf
                         <input type="hidden" name="statement_date" :value="stmtDate">
                         <button type="submit" @if (! $order->store?->email) disabled @endif

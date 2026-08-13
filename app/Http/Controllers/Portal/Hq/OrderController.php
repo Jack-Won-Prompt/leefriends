@@ -237,6 +237,7 @@ class OrderController extends Controller
     /** 발주 거래명세서 PDF 다운로드/미리보기 */
     public function statementPdf(Request $request, Order $order)
     {
+        abort_if($order->hasPendingPrice(), 422, '미확인 단가(싯가) 품목이 있어 거래명세서를 출력할 수 없습니다. 단가 확정 후 다시 시도하세요.');
         $order->load(['items', 'store']);
         $statementDate = $this->statementDate($request->query('date'), $order);
 
@@ -255,6 +256,9 @@ class OrderController extends Controller
     /** 발주 거래명세서 PDF를 매장 이메일로 전송 + 전송상태 기록 */
     public function statementEmail(Request $request, Order $order)
     {
+        if ($order->hasPendingPrice()) {
+            return back()->with('error', '미확인 단가(싯가) 품목이 있어 거래명세서를 전송할 수 없습니다. 단가 확정 후 다시 시도하세요.');
+        }
         $order->load(['items.supplyProduct', 'store']);
         $to = $order->store?->email;
         if (! $to) {

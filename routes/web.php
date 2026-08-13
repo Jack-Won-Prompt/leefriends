@@ -235,6 +235,7 @@ Route::prefix('portal')->name('portal.')->group(function () {
             // 출고
             Route::get('shipments', [Portal\Hq\ShipmentController::class, 'index'])->name('shipments.index');
             Route::get('shipments/create', [Portal\Hq\ShipmentController::class, 'create'])->name('shipments.create');
+            Route::get('shipments/picking-slip', [Portal\Hq\ShipmentController::class, 'pickingSlip'])->name('shipments.picking');
             Route::post('shipments', [Portal\Hq\ShipmentController::class, 'store'])->name('shipments.store');
             Route::get('shipments/{shipment}', [Portal\Hq\ShipmentController::class, 'show'])->name('shipments.show');
             Route::patch('shipments/{shipment}/confirm', [Portal\Hq\ShipmentController::class, 'confirm'])->name('shipments.confirm');
