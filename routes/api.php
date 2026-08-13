@@ -211,10 +211,12 @@ Route::prefix('v1')->group(function () {
             Route::get('couriers', [Seller\ShipmentController::class, 'couriers'])->name('couriers.index');
             Route::get('shipments', [Seller\ShipmentController::class, 'index'])->name('shipments.index');
             Route::get('shipments/candidates', [Seller\ShipmentController::class, 'candidates'])->name('shipments.candidates');
+            Route::get('shipments/lookup', [Seller\ShipmentController::class, 'lookup'])->name('shipments.lookup');
             Route::post('shipments', [Seller\ShipmentController::class, 'store'])->name('shipments.store');
             Route::get('shipments/{shipment}', [Seller\ShipmentController::class, 'show'])->name('shipments.show');
             Route::patch('shipments/{shipment}/confirm', [Seller\ShipmentController::class, 'confirm'])->name('shipments.confirm');
             Route::patch('shipments/{shipment}/deliver', [Seller\ShipmentController::class, 'deliver'])->name('shipments.deliver');
+            Route::post('shipments/{shipment}/complete-delivery', [Seller\ShipmentController::class, 'completeDelivery'])->name('shipments.complete_delivery');
 
             // 전자세금계산서 — 발행 대상 조회 / 발행 / 취소 / 이력
             Route::get('tax-invoices', [Seller\TaxInvoiceController::class, 'index'])->name('tax_invoices.index');

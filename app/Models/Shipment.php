@@ -9,13 +9,15 @@ class Shipment extends Model
     protected $fillable = [
         'shipment_no', 'seller_type', 'supplier_id', 'store_id', 'status',
         'carrier', 'tracking_no', 'item_count', 'total_qty', 'supply_amount',
-        'note', 'confirmed_at', 'delivered_at', 'received_at', 'received_by',
+        'note', 'delivery_photos', 'delivery_signature',
+        'confirmed_at', 'delivered_at', 'received_at', 'received_by',
     ];
 
     protected $casts = [
         'item_count' => 'integer',
         'total_qty' => 'integer',
         'supply_amount' => 'integer',
+        'delivery_photos' => 'array',
         'confirmed_at' => 'datetime',
         'delivered_at' => 'datetime',
         'received_at' => 'datetime',
