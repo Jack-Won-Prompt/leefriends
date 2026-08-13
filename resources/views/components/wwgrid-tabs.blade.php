@@ -18,13 +18,14 @@
 
 <div id="{{ $gid }}-tabDetail" class="hidden">
     <div class="rounded-2xl bg-white shadow-sm border border-neutral-200 overflow-hidden">
-        <div class="flex items-center justify-between px-4 py-2.5 border-b border-neutral-100 bg-neutral-50">
+        <div class="flex items-center justify-between px-4 py-2 border-b border-neutral-100 bg-neutral-50">
             <span id="{{ $gid }}-detailTitle" class="font-extrabold text-sm text-neutral-900">상세</span>
             <div class="flex items-center gap-1.5">
                 <a id="{{ $gid }}-full" href="#" target="_blank" class="rounded-lg border border-neutral-200 hover:bg-white px-2.5 py-1 text-xs font-bold text-neutral-500">새 탭 ↗</a>
                 <button type="button" onclick="ww.switchTab('{{ $gid }}','list')" class="rounded-lg border border-neutral-200 hover:bg-white px-2.5 py-1 text-xs font-bold text-neutral-500">← 리스트</button>
             </div>
         </div>
-        <iframe id="{{ $gid }}-frame" class="w-full bg-white" style="height: calc(100vh - 230px); border: 0;"></iframe>
+        {{-- 상세 내용을 AJAX 로 직접 임베드(iframe 아님) --}}
+        <div id="{{ $gid }}-detail" class="overflow-auto" style="max-height: calc(100vh - 150px);"></div>
     </div>
 </div>

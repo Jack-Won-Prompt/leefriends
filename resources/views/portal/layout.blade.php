@@ -149,18 +149,21 @@
 <body class="font-sans bg-neutral-100 text-neutral-800">
 @php $panelMode = request()->boolean('panel'); @endphp
 @if ($panelMode)
-    {{-- 패널(옆 탭) 모드 — 사이드바·헤더 없이 상세 내용만 임베드 --}}
-    <div class="p-5 lg:p-6 min-h-screen">
+    {{-- 패널(옆 탭) 모드 — 사이드바·헤더 없이 상세 내용만. 리스트 화면이 이 #panel-root 를
+         AJAX 로 가져와 상세보기 탭에 직접 임베드한다(iframe 아님). --}}
+    <div id="panel-root" class="p-3 lg:p-4">
         @if (session('success'))
-            <div class="mb-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 px-5 py-3 text-sm font-medium">{{ session('success') }}</div>
+            <div class="mb-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 px-4 py-2.5 text-sm font-medium">{{ session('success') }}</div>
         @endif
         @if (session('error'))
-            <div class="mb-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 px-5 py-3 text-sm font-medium">{{ session('error') }}</div>
+            <div class="mb-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 px-4 py-2.5 text-sm font-medium">{{ session('error') }}</div>
         @endif
         @if ($errors->any())
-            <div class="mb-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 px-5 py-3 text-sm"><ul class="list-disc list-inside space-y-1">@foreach ($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>
+            <div class="mb-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 px-4 py-2.5 text-sm"><ul class="list-disc list-inside space-y-1">@foreach ($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>
         @endif
         @yield('content')
+        {{-- 뷰가 push 한 스크립트도 #panel-root 안에 두어 AJAX 임베드 시 함께 실행되게 함 --}}
+        @stack('scripts')
     </div>
 @else
 <div class="flex min-h-screen">
@@ -434,6 +437,8 @@
         document.body.appendChild(f);
     };
 </script>
-@stack('scripts')
+@unless ($panelMode)
+    @stack('scripts')
+@endunless
 </body>
 </html>

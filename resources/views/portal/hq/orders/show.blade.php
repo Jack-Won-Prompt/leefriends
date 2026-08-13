@@ -2,35 +2,31 @@
 @section('title', '발주 상세')
 
 @section('content')
-<a href="{{ route('portal.hq.orders.index') }}" class="inline-flex items-center gap-1.5 text-sm font-bold text-neutral-500 hover:text-mango-600 mb-5">← 발주 관리</a>
+<a href="{{ route('portal.hq.orders.index') }}" class="inline-flex items-center gap-1.5 text-sm font-bold text-neutral-500 hover:text-mango-600 mb-2">← 발주 관리</a>
 
-<div class="grid lg:grid-cols-3 gap-6 mb-6">
-    <div class="lg:col-span-2 rounded-2xl bg-white shadow-sm border border-neutral-100 p-7">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
-                <h2 class="text-2xl font-black text-neutral-900">{{ $order->order_no }}</h2>
-                <p class="text-sm text-neutral-400 mt-1">{{ $order->created_at->format('Y년 m월 d일 H:i') }}</p>
-            </div>
+<div class="grid lg:grid-cols-3 gap-3 mb-3">
+    <div class="lg:col-span-2 rounded-2xl bg-white shadow-sm border border-neutral-100 p-4">
+        <div class="flex flex-wrap items-center gap-2">
+            <h2 class="text-xl font-black text-neutral-900">{{ $order->order_no }}</h2>
+            <span class="text-xs text-neutral-400">{{ $order->created_at->format('Y.m.d H:i') }}</span>
             @include('portal.partials.order-status', ['status' => $order->status, 'label' => $order->status_label])
         </div>
-        <dl class="grid sm:grid-cols-2 gap-x-8 gap-y-3 mt-6 text-sm">
-            <div class="flex justify-between border-b border-neutral-100 pb-2"><dt class="text-neutral-500 font-semibold">발주 매장</dt><dd class="font-bold">{{ $order->store->name ?? '-' }}</dd></div>
-            <div class="flex justify-between border-b border-neutral-100 pb-2"><dt class="text-neutral-500 font-semibold">발주자</dt><dd>{{ $order->user->name ?? '-' }}</dd></div>
-            @php $shipAddr = $order->store ? ($order->store->postcode ? '('.$order->store->postcode.') ' : '').$order->store->full_delivery_address : '-'; @endphp
-            <div class="flex items-center justify-between gap-4 border-b border-neutral-100 pb-2 sm:col-span-2">
-                <dt class="text-neutral-500 font-semibold shrink-0">배송지</dt>
-                <dd class="text-right truncate min-w-0" title="{{ $shipAddr }}">{{ $shipAddr }}</dd>
-            </div>
-            <div class="flex justify-between border-b border-neutral-100 pb-2"><dt class="text-neutral-500 font-semibold">연락처</dt><dd>{{ $order->store->phone ?? '-' }}</dd></div>
+        @php $shipAddr = $order->store ? ($order->store->postcode ? '('.$order->store->postcode.') ' : '').$order->store->full_delivery_address : '-'; @endphp
+        {{-- 한 줄 3단 정보 스트립 (넓은 박스 대신) --}}
+        <dl class="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-1.5 mt-3 pt-3 border-t border-neutral-100 text-sm">
+            <div class="flex justify-between gap-2 min-w-0"><dt class="text-neutral-500 shrink-0">발주 매장</dt><dd class="font-bold truncate">{{ $order->store->name ?? '-' }}</dd></div>
+            <div class="flex justify-between gap-2 min-w-0"><dt class="text-neutral-500 shrink-0">발주자</dt><dd class="truncate">{{ $order->user->name ?? '-' }}</dd></div>
+            <div class="flex justify-between gap-2"><dt class="text-neutral-500 shrink-0">연락처</dt><dd>{{ $order->store->phone ?? '-' }}</dd></div>
+            <div class="flex justify-between gap-2 min-w-0 col-span-2 md:col-span-3"><dt class="text-neutral-500 shrink-0">배송지</dt><dd class="text-right truncate min-w-0" title="{{ $shipAddr }}">{{ $shipAddr }}</dd></div>
         </dl>
         @if ($order->note)
-            <p class="mt-4 text-sm text-neutral-600 bg-neutral-50 rounded-xl p-4">📝 {{ $order->note }}</p>
+            <p class="mt-2 text-sm text-neutral-600 bg-neutral-50 rounded-xl px-3 py-2">📝 {{ $order->note }}</p>
         @endif
     </div>
 
-    <div class="rounded-2xl bg-neutral-900 text-white p-7"
+    <div class="rounded-2xl bg-neutral-900 text-white p-5"
          x-data="{ shipOpen: false, stmtOpen: false, box: {{ (int) ($order->shipping_box_count ?? 0) }}, unit: {{ (int) ($order->shipping_unit_price ?? 0) }}, stmtDate: '{{ $order->created_at->format('Y-m-d') }}', get fee() { return (this.box || 0) * (this.unit || 0); }, get stmtDateLabel() { const p = (this.stmtDate || '').split('-'); return p.length === 3 ? `${p[0]}년 ${p[1]}월 ${p[2]}일` : this.stmtDate; } }">
-        <h3 class="font-bold text-white/70 text-sm mb-4">정산 요약</h3>
+        <h3 class="font-bold text-white/70 text-sm mb-2">정산 요약</h3>
         <div class="flex justify-between py-2 border-b border-white/10"><span class="text-white/70">매장 출고가 합계</span><span class="font-bold">{{ number_format($order->store_amount) }}원</span></div>
         <div class="flex justify-between py-2 border-b border-white/10">
             <span class="text-white/70">택배비 합계
