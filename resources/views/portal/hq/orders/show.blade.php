@@ -4,152 +4,121 @@
 @section('content')
 <a href="{{ route('portal.hq.orders.index') }}" class="inline-flex items-center gap-1.5 text-sm font-bold text-neutral-500 hover:text-mango-600 mb-2">← 발주 관리</a>
 
-<div class="grid lg:grid-cols-3 gap-3 mb-3">
-    <div class="lg:col-span-2 rounded-2xl bg-white shadow-sm border border-neutral-100 p-4">
-        <div class="flex flex-wrap items-center gap-2">
-            <h2 class="text-xl font-black text-neutral-900">{{ $order->order_no }}</h2>
-            <span class="text-xs text-neutral-400">{{ $order->created_at->format('Y.m.d H:i') }}</span>
-            @include('portal.partials.order-status', ['status' => $order->status, 'label' => $order->status_label])
-        </div>
-        @php $shipAddr = $order->store ? ($order->store->postcode ? '('.$order->store->postcode.') ' : '').$order->store->full_delivery_address : '-'; @endphp
-        {{-- 한 줄 3단 정보 스트립 (넓은 박스 대신) --}}
-        <dl class="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-1.5 mt-3 pt-3 border-t border-neutral-100 text-sm">
-            <div class="flex justify-between gap-2 min-w-0"><dt class="text-neutral-500 shrink-0">발주 매장</dt><dd class="font-bold truncate">{{ $order->store->name ?? '-' }}</dd></div>
-            <div class="flex justify-between gap-2 min-w-0"><dt class="text-neutral-500 shrink-0">발주자</dt><dd class="truncate">{{ $order->user->name ?? '-' }}</dd></div>
-            <div class="flex justify-between gap-2"><dt class="text-neutral-500 shrink-0">연락처</dt><dd>{{ $order->store->phone ?? '-' }}</dd></div>
-            <div class="flex justify-between gap-2 min-w-0 col-span-2 md:col-span-3"><dt class="text-neutral-500 shrink-0">배송지</dt><dd class="text-right truncate min-w-0" title="{{ $shipAddr }}">{{ $shipAddr }}</dd></div>
-        </dl>
-        @if ($order->note)
-            <p class="mt-2 text-sm text-neutral-600 bg-neutral-50 rounded-xl px-3 py-2">📝 {{ $order->note }}</p>
-        @endif
-    </div>
-
-    <div class="rounded-2xl bg-neutral-900 text-white p-5"
-         x-data="{ shipOpen: false, stmtOpen: false, box: {{ (int) ($order->shipping_box_count ?? 0) }}, unit: {{ (int) ($order->shipping_unit_price ?? 0) }}, stmtDate: '{{ $order->created_at->format('Y-m-d') }}', get fee() { return (this.box || 0) * (this.unit || 0); }, get stmtDateLabel() { const p = (this.stmtDate || '').split('-'); return p.length === 3 ? `${p[0]}년 ${p[1]}월 ${p[2]}일` : this.stmtDate; } }">
-        <h3 class="font-bold text-white/70 text-sm mb-2">정산 요약</h3>
-        <div class="flex justify-between py-2 border-b border-white/10"><span class="text-white/70">매장 출고가 합계</span><span class="font-bold">{{ number_format($order->store_amount) }}원</span></div>
-        <div class="flex justify-between py-2 border-b border-white/10">
-            <span class="text-white/70">택배비 합계
-                @if ($order->shipping_fee)<span class="text-white/40 text-xs">({{ number_format($order->shipping_box_count) }}박스 × {{ number_format($order->shipping_unit_price) }}원)</span>@endif
-            </span>
-            <span class="font-bold">{{ number_format($order->shipping_fee) }}원</span>
-        </div>
-        <div class="flex justify-between py-3 mt-1"><span class="text-mango-300 font-bold">발주 합계</span><span class="text-mango-300 font-black text-lg">{{ number_format($order->order_total) }}원</span></div>
-        <div class="flex justify-between items-center py-2 border-t border-white/10">
-            <span class="text-white/70">입금 상태</span>
-            @if ($order->paid_at)
-                <span class="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300">💰 입금완료 · {{ $order->paid_at->format('m.d H:i') }}</span>
-            @else
-                <span class="inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full bg-white/10 text-white/50">입금대기</span>
-            @endif
-        </div>
-
-        @if ($order->status === 'canceled')
-            <p class="mt-4 rounded-xl bg-white/10 text-white/60 text-sm text-center py-3">취소된 발주입니다. 택배비·거래명세서·세금계산서 처리는 제공되지 않습니다.</p>
-        @else
-        <button type="button" @click="shipOpen = true"
-                class="w-full mt-2 rounded-xl bg-white/10 hover:bg-white/15 text-white/90 font-bold px-4 py-2.5 text-sm transition">
-            🚚 택배비 {{ $order->shipping_fee ? '수정' : '추가' }}
-        </button>
-
-        {{-- 택배비 추가/수정 오버레이 팝업 --}}
-        <div x-show="shipOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-             @keydown.escape.window="shipOpen = false">
-            <div class="bg-white text-neutral-800 rounded-2xl shadow-xl w-full max-w-sm p-6" @click.outside="shipOpen = false">
-                <h3 class="text-lg font-extrabold text-neutral-900 mb-4">🚚 택배비 입력</h3>
-                <form method="POST" action="{{ route('portal.hq.orders.shipping', $order) }}" class="space-y-3">
-                    @csrf @method('PATCH')
-                    <div>
-                        <label class="block text-sm font-bold text-neutral-700 mb-1.5">박스 수</label>
-                        <input type="number" name="shipping_box_count" x-model.number="box" min="0" max="9999"
-                               class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm" placeholder="0">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-neutral-700 mb-1.5">박스당 단가 (원)</label>
-                        <input type="number" name="shipping_unit_price" x-model.number="unit" min="0" max="9999999"
-                               class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm" placeholder="0">
-                    </div>
-                    <div class="flex justify-between items-end rounded-xl bg-neutral-50 px-4 py-3">
-                        <span class="text-sm font-semibold text-neutral-600">택배비 합계</span>
-                        <span class="text-xl font-black text-mango-700"><span x-text="fee.toLocaleString()"></span>원</span>
-                    </div>
-                    <div class="flex gap-2 pt-1">
-                        <button type="submit" class="flex-1 rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2.5 text-sm transition">저장</button>
-                        <button type="button" @click="shipOpen = false" class="rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-600 font-bold px-4 py-2.5 text-sm">취소</button>
-                    </div>
-                </form>
+@php $shipAddr = $order->store ? ($order->store->postcode ? '('.$order->store->postcode.') ' : '').$order->store->full_delivery_address : '-'; @endphp
+@php($taxInvoice = $order->taxInvoice)
+<div x-data="{ shipOpen: false, stmtOpen: false, box: {{ (int) ($order->shipping_box_count ?? 0) }}, unit: {{ (int) ($order->shipping_unit_price ?? 0) }}, stmtDate: '{{ $order->created_at->format('Y-m-d') }}', get fee() { return (this.box || 0) * (this.unit || 0); }, get stmtDateLabel() { const p = (this.stmtDate || '').split('-'); return p.length === 3 ? `${p[0]}년 ${p[1]}월 ${p[2]}일` : this.stmtDate; } }">
+    {{-- 하나의 카드: 헤더+액션 / 발주 정보 한 줄 / 정산 요약 한 줄 --}}
+    <div class="rounded-2xl bg-white shadow-sm border border-neutral-100 p-4 mb-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
+                <h2 class="text-xl font-black text-neutral-900">{{ $order->order_no }}</h2>
+                <span class="text-xs text-neutral-400">{{ $order->created_at->format('Y.m.d H:i') }}</span>
+                @include('portal.partials.order-status', ['status' => $order->status, 'label' => $order->status_label])
             </div>
-        </div>
-
-        {{-- 거래명세서: PDF 모달 / 이메일 전송 / 전송상태 --}}
-        <div class="mt-5 pt-4 border-t border-white/10">
-            <p class="text-white/50 text-xs mb-2 font-semibold">거래명세서</p>
-            <div class="grid grid-cols-2 gap-2">
-                <button type="button" @click="stmtOpen = true"
-                        class="rounded-xl bg-white/10 hover:bg-white/15 text-white/90 font-bold py-2.5 text-sm transition">🧾 거래명세서</button>
-                <form method="POST" action="{{ route('portal.hq.orders.statement.email', $order) }}"
-                      onsubmit="return confirm('거래명세서 PDF를 매장({{ $order->store->email }})으로 전송합니다.\n진행하시겠습니까?')">
-                    @csrf
-                    <input type="hidden" name="statement_date" :value="stmtDate">
-                    <button type="submit" @if (! $order->store?->email) disabled @endif
-                            class="w-full rounded-xl bg-sky-500 hover:bg-sky-600 disabled:opacity-40 text-white font-bold py-2.5 text-sm transition">📧 {{ $order->statement_emailed_at ? '재전송' : '이메일 보내기' }}</button>
-                </form>
-            </div>
-            @if ($order->statement_emailed_at)
-                <p class="text-emerald-300 text-xs mt-2">✓ {{ $order->statement_emailed_at->format('Y.m.d H:i') }} 매장 전송됨@if ($order->statement_email_count > 1) ({{ $order->statement_email_count }}회)@endif</p>
-            @else
-                <p class="text-white/40 text-xs mt-2">미전송@unless ($order->store?->email) · 매장 이메일 없음@endunless</p>
-            @endif
-
-            {{-- 거래명세서 PDF 모달 팝업 --}}
-            <div x-show="stmtOpen" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-black/50 p-4" @keydown.escape.window="stmtOpen = false">
-                <div class="relative mx-auto max-w-3xl my-8 text-neutral-800">
-                    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-                        <label class="flex items-center gap-2 rounded-xl bg-white/90 px-3 py-2 text-sm shadow">
-                            <span class="font-bold text-neutral-600">발행일자</span>
-                            <input type="date" x-model="stmtDate" class="rounded-lg border-neutral-200 text-sm py-1">
-                        </label>
-                        <div class="flex items-center gap-2">
-                            <a :href="'{{ route('portal.hq.orders.statement.pdf', $order) }}?date=' + stmtDate" target="_blank"
-                               class="rounded-xl bg-white/90 hover:bg-white text-neutral-700 font-bold px-4 py-2 text-sm shadow">⬇ PDF 다운로드</a>
-                            <button type="button" @click="stmtOpen = false" class="rounded-xl bg-white/90 hover:bg-white text-neutral-700 font-bold px-4 py-2 text-sm shadow">닫기 ✕</button>
-                        </div>
-                    </div>
-                    @include('portal.partials.store-order-statement-document', ['order' => $order, 'editableDate' => true])
-                </div>
-            </div>
-        </div>
-
-        @php($taxInvoice = $order->taxInvoice)
-        <div class="mt-5 pt-4 border-t border-white/10">
-            @if ($taxInvoice)
-                <div class="rounded-xl bg-emerald-500/15 border border-emerald-400/30 px-4 py-3 text-sm">
-                    <p class="font-bold text-emerald-300">✓ 세금계산서 발행 완료</p>
-                    <p class="text-white/70 mt-1">계산서번호 {{ $taxInvoice->invoice_no }} · 합계 {{ number_format($taxInvoice->total_amount) }}원</p>
-                    <p class="text-white/50 text-xs mt-0.5">{{ $taxInvoice->invoicee_corp_name }} ({{ $taxInvoice->invoicee_email }})</p>
-                    @if ($taxInvoice->status === 'issued')
-                        <form method="POST" action="{{ route('portal.hq.tax_invoices.cancel', $taxInvoice) }}" class="mt-3"
-                              onsubmit="return confirm('이 세금계산서를 발행취소합니다. 진행하시겠습니까?\n(국세청 전송 완료 후에는 취소되지 않을 수 있습니다.)')">
+            @unless ($order->status === 'canceled')
+                <div class="flex flex-wrap items-center gap-1.5">
+                    <button type="button" @click="shipOpen = true" class="rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-bold px-3 py-1.5 text-xs transition">🚚 택배비 {{ $order->shipping_fee ? '수정' : '추가' }}</button>
+                    <button type="button" @click="stmtOpen = true" class="rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-bold px-3 py-1.5 text-xs transition">🧾 거래명세서</button>
+                    <form method="POST" action="{{ route('portal.hq.orders.statement.email', $order) }}" class="inline"
+                          onsubmit="return confirm('거래명세서 PDF를 매장({{ $order->store->email }})으로 전송합니다.\n진행하시겠습니까?')">
+                        @csrf
+                        <input type="hidden" name="statement_date" :value="stmtDate">
+                        <button type="submit" @if (! $order->store?->email) disabled @endif
+                                class="rounded-lg bg-sky-500 hover:bg-sky-600 disabled:opacity-40 text-white font-bold px-3 py-1.5 text-xs transition">📧 {{ $order->statement_emailed_at ? '재전송' : '이메일' }}</button>
+                    </form>
+                    @if ($taxInvoice)
+                        <span class="inline-flex items-center gap-1 rounded-lg bg-emerald-50 text-emerald-700 font-bold px-3 py-1.5 text-xs">✓ 세금계산서 {{ $taxInvoice->invoice_no }}</span>
+                        @if ($taxInvoice->status === 'issued')
+                            <form method="POST" action="{{ route('portal.hq.tax_invoices.cancel', $taxInvoice) }}" class="inline"
+                                  onsubmit="return confirm('이 세금계산서를 발행취소합니다. 진행하시겠습니까?\n(국세청 전송 완료 후에는 취소되지 않을 수 있습니다.)')">
+                                @csrf
+                                <button type="submit" class="text-xs font-bold text-rose-500 hover:text-rose-600 underline">발행취소</button>
+                            </form>
+                        @endif
+                    @else
+                        <form method="POST" action="{{ route('portal.hq.tax_invoices.issue', $order) }}" class="inline"
+                              onsubmit="return confirm('본사 → 매장 세금계산서를 발행합니다.\n수신: {{ $order->store->name }} ({{ $order->store->email }})\n진행하시겠습니까?')">
                             @csrf
-                            <button type="submit" class="text-xs font-bold text-rose-300 hover:text-rose-200 underline">발행취소</button>
+                            <button type="submit" @unless ($order->store?->biz_no) title="⚠ 매장 사업자등록번호가 없습니다. 매장 관리에서 먼저 등록하세요." @endunless
+                                    class="rounded-lg bg-mango-500 hover:bg-mango-600 text-white font-bold px-3 py-1.5 text-xs transition">🧾 세금계산서 발행</button>
                         </form>
                     @endif
                 </div>
-            @else
-                <form method="POST" action="{{ route('portal.hq.tax_invoices.issue', $order) }}"
-                      onsubmit="return confirm('본사 → 매장 세금계산서를 발행합니다.\n수신: {{ $order->store->name }} ({{ $order->store->email }})\n진행하시겠습니까?')">
-                    @csrf
-                    <button type="submit"
-                            class="w-full rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-3 text-sm transition">
-                        🧾 세금계산서 발행 (본사 → 매장)
-                    </button>
-                    @unless ($order->store?->biz_no)
-                        <p class="text-amber-300/80 text-xs mt-2">⚠ 매장 사업자등록번호가 없습니다. 매장 관리에서 먼저 등록하세요.</p>
-                    @endunless
-                </form>
-            @endif
+            @endunless
         </div>
+
+        {{-- 발주 정보 한 줄 --}}
+        <div class="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm mt-3 pt-3 border-t border-neutral-100">
+            <span class="inline-flex gap-1.5"><span class="text-neutral-500">발주 매장</span><b>{{ $order->store->name ?? '-' }}</b></span>
+            <span class="inline-flex gap-1.5"><span class="text-neutral-500">발주자</span>{{ $order->user->name ?? '-' }}</span>
+            <span class="inline-flex gap-1.5"><span class="text-neutral-500">연락처</span>{{ $order->store->phone ?? '-' }}</span>
+            <span class="inline-flex gap-1.5 min-w-0"><span class="text-neutral-500 shrink-0">배송지</span><span class="truncate" title="{{ $shipAddr }}">{{ $shipAddr }}</span></span>
+        </div>
+
+        {{-- 정산 요약 한 줄 --}}
+        <div class="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm mt-2 pt-2 border-t border-neutral-100">
+            <span class="inline-flex gap-1.5"><span class="text-neutral-500">매장 출고가</span><b>{{ number_format($order->store_amount) }}원</b></span>
+            <span class="inline-flex items-center gap-1.5"><span class="text-neutral-500">택배비</span>{{ number_format($order->shipping_fee) }}원@if ($order->shipping_fee)<span class="text-neutral-400 text-xs">({{ number_format($order->shipping_box_count) }}×{{ number_format($order->shipping_unit_price) }})</span>@endif</span>
+            <span class="inline-flex gap-1.5"><span class="text-neutral-500">발주 합계</span><b class="text-mango-700">{{ number_format($order->order_total) }}원</b></span>
+            <span class="inline-flex items-center gap-1.5"><span class="text-neutral-500">입금 상태</span>
+                @if ($order->paid_at)<span class="text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">💰 입금완료 · {{ $order->paid_at->format('m.d H:i') }}</span>
+                @else<span class="text-xs font-bold px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-500">입금대기</span>@endif
+            </span>
+        </div>
+
+        @if ($order->note)
+            <p class="mt-2 text-sm text-neutral-600 bg-neutral-50 rounded-xl px-3 py-2">📝 {{ $order->note }}</p>
         @endif
+        @if ($order->status === 'canceled')
+            <p class="mt-2 rounded-xl bg-neutral-100 text-neutral-500 text-sm text-center py-2">취소된 발주입니다. 택배비·거래명세서·세금계산서 처리는 제공되지 않습니다.</p>
+        @endif
+    </div>
+
+    {{-- 택배비 추가/수정 오버레이 팝업 --}}
+    <div x-show="shipOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+         @keydown.escape.window="shipOpen = false">
+        <div class="bg-white text-neutral-800 rounded-2xl shadow-xl w-full max-w-sm p-6" @click.outside="shipOpen = false">
+            <h3 class="text-lg font-extrabold text-neutral-900 mb-4">🚚 택배비 입력</h3>
+            <form method="POST" action="{{ route('portal.hq.orders.shipping', $order) }}" class="space-y-3">
+                @csrf @method('PATCH')
+                <div>
+                    <label class="block text-sm font-bold text-neutral-700 mb-1.5">박스 수</label>
+                    <input type="number" name="shipping_box_count" x-model.number="box" min="0" max="9999"
+                           class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm" placeholder="0">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-neutral-700 mb-1.5">박스당 단가 (원)</label>
+                    <input type="number" name="shipping_unit_price" x-model.number="unit" min="0" max="9999999"
+                           class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm" placeholder="0">
+                </div>
+                <div class="flex justify-between items-end rounded-xl bg-neutral-50 px-4 py-3">
+                    <span class="text-sm font-semibold text-neutral-600">택배비 합계</span>
+                    <span class="text-xl font-black text-mango-700"><span x-text="fee.toLocaleString()"></span>원</span>
+                </div>
+                <div class="flex gap-2 pt-1">
+                    <button type="submit" class="flex-1 rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2.5 text-sm transition">저장</button>
+                    <button type="button" @click="shipOpen = false" class="rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-600 font-bold px-4 py-2.5 text-sm">취소</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- 거래명세서 PDF 모달 팝업 --}}
+    <div x-show="stmtOpen" x-cloak class="fixed inset-0 z-50 overflow-y-auto bg-black/50 p-4" @keydown.escape.window="stmtOpen = false">
+        <div class="relative mx-auto max-w-3xl my-8 text-neutral-800">
+            <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <label class="flex items-center gap-2 rounded-xl bg-white/90 px-3 py-2 text-sm shadow">
+                    <span class="font-bold text-neutral-600">발행일자</span>
+                    <input type="date" x-model="stmtDate" class="rounded-lg border-neutral-200 text-sm py-1">
+                </label>
+                <div class="flex items-center gap-2">
+                    <a :href="'{{ route('portal.hq.orders.statement.pdf', $order) }}?date=' + stmtDate" target="_blank"
+                       class="rounded-xl bg-white/90 hover:bg-white text-neutral-700 font-bold px-4 py-2 text-sm shadow">⬇ PDF 다운로드</a>
+                    <button type="button" @click="stmtOpen = false" class="rounded-xl bg-white/90 hover:bg-white text-neutral-700 font-bold px-4 py-2 text-sm shadow">닫기 ✕</button>
+                </div>
+            </div>
+            @include('portal.partials.store-order-statement-document', ['order' => $order, 'editableDate' => true])
+        </div>
     </div>
 </div>
 
