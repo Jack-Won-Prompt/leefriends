@@ -62,10 +62,13 @@
                             box.appendChild(s);
                         });
                     }
-                    // 상세 내부 페이지이동 링크 → 리스트 탭으로 전환(전체 페이지 이동 방지)
+                    // 상세 내부 링크 처리
                     box.querySelectorAll('a[href]').forEach((a) => {
+                        // «← ...» 뒤로가기 링크는 탭 헤더의 «← 리스트» 와 중복 → 숨김
+                        if (a.textContent.trim().charAt(0) === '←') { a.style.display = 'none'; return; }
                         const href = a.getAttribute('href');
                         if (!href || href.charAt(0) === '#' || a.target === '_blank' || a.hasAttribute('download') || href.toLowerCase().startsWith('javascript:')) return;
+                        // 그 외 페이지이동 링크 → 리스트 탭으로 전환(전체 페이지 이동 방지)
                         a.addEventListener('click', (e) => { e.preventDefault(); ww.switchTab(id, 'list'); });
                     });
                     // Alpine 초기화(상세 내 x-data)
