@@ -4,34 +4,35 @@
 
 @section('content')
 <div x-data="{ open: null }">
-<div class="flex items-center justify-between mb-3">
-    @if ($isSample)
-        <a href="{{ route('portal.store.sample_orders.index') }}" class="inline-flex items-center gap-1.5 text-sm font-bold text-neutral-500 hover:text-violet-600">← 샘플 주문 내역</a>
-    @else
-        <a href="{{ route('portal.store.orders.index') }}" class="inline-flex items-center gap-1.5 text-sm font-bold text-neutral-500 hover:text-mango-600">← 발주 내역</a>
-    @endif
-    <div class="flex gap-2">
-        @unless ($isSample)
-            <button type="button" @click="open = {{ $order->id }}"
-                    class="rounded-lg bg-neutral-900 hover:bg-mango-600 text-white px-4 py-2 font-bold text-sm">🧾 거래명세서</button>
-        @endunless
-        @if (! empty($editable))
-            <a href="{{ route('portal.store.orders.edit', $order) }}" class="rounded-lg bg-neutral-100 hover:bg-neutral-200 px-4 py-2 font-bold text-sm">✏️ 수정</a>
-            <form method="POST" action="{{ route('portal.store.orders.destroy', $order) }}" onsubmit="return confirm('이 발주를 취소할까요? 본사·공급처에 취소 알림이 전송됩니다.')">
-                @csrf @method('DELETE')
-                <button class="rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 px-4 py-2 font-bold text-sm">발주 취소</button>
-            </form>
-        @endif
-    </div>
-</div>
+@if ($isSample)
+    <a href="{{ route('portal.store.sample_orders.index') }}" class="inline-flex items-center gap-1.5 text-sm font-bold text-neutral-500 hover:text-violet-600 mb-2">← 샘플 주문 내역</a>
+@else
+    <a href="{{ route('portal.store.orders.index') }}" class="inline-flex items-center gap-1.5 text-sm font-bold text-neutral-500 hover:text-mango-600 mb-2">← 발주 내역</a>
+@endif
 
+{{-- 하나의 카드: 헤더 + 액션 한 줄 --}}
 <div class="rounded-2xl bg-white shadow-sm border border-neutral-100 p-4 mb-3">
-    <div class="flex flex-wrap items-center gap-2">
-        <h2 class="text-xl font-black text-neutral-900">{{ $order->order_no }}</h2>
-        @if ($isSample)<span class="text-xs font-bold px-2.5 py-1 rounded-full bg-violet-100 text-violet-700">샘플 · 무상</span>@endif
-        <span class="text-xs text-neutral-400">{{ $isSample ? '주문일' : '발주일' }} {{ $order->created_at->format('Y년 m월 d일 H:i') }}</span>
-        @include('portal.partials.order-status', ['status' => $order->status, 'label' => $order->status_label])
-        @include('portal.partials.payment-badge', ['order' => $order])
+    <div class="flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-2 flex-wrap">
+            <h2 class="text-xl font-black text-neutral-900">{{ $order->order_no }}</h2>
+            @if ($isSample)<span class="text-xs font-bold px-2.5 py-1 rounded-full bg-violet-100 text-violet-700">샘플 · 무상</span>@endif
+            <span class="text-xs text-neutral-400">{{ $isSample ? '주문일' : '발주일' }} {{ $order->created_at->format('Y년 m월 d일 H:i') }}</span>
+            @include('portal.partials.order-status', ['status' => $order->status, 'label' => $order->status_label])
+            @include('portal.partials.payment-badge', ['order' => $order])
+        </div>
+        <div class="flex flex-wrap items-center gap-1.5">
+            @unless ($isSample)
+                <button type="button" @click="open = {{ $order->id }}"
+                        class="rounded-lg bg-neutral-900 hover:bg-mango-600 text-white font-bold px-3 py-1.5 text-xs transition">🧾 거래명세서</button>
+            @endunless
+            @if (! empty($editable))
+                <a href="{{ route('portal.store.orders.edit', $order) }}" class="rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-bold px-3 py-1.5 text-xs transition">✏️ 수정</a>
+                <form method="POST" action="{{ route('portal.store.orders.destroy', $order) }}" class="inline" onsubmit="return confirm('이 발주를 취소할까요? 본사·공급처에 취소 알림이 전송됩니다.')">
+                    @csrf @method('DELETE')
+                    <button class="rounded-lg border border-rose-200 text-rose-600 hover:bg-rose-50 font-bold px-3 py-1.5 text-xs transition">발주 취소</button>
+                </form>
+            @endif
+        </div>
     </div>
     @if ($order->note)
         <p class="mt-2 text-sm text-neutral-600 bg-neutral-50 rounded-xl px-3 py-2">📝 {{ $order->note }}</p>

@@ -10,12 +10,12 @@
         <span class="text-xs text-neutral-400">{{ $order->created_at->format('Y년 m월 d일 H:i') }}</span>
         @include('portal.partials.order-status', ['status' => $order->status, 'label' => $order->status_label])
     </div>
-    {{-- 한 줄 3단 정보 스트립 (넓은 박스 대신) --}}
-    <dl class="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-1.5 mt-3 pt-3 border-t border-neutral-100 text-sm">
-        <div class="flex justify-between gap-2 min-w-0"><dt class="text-neutral-500 shrink-0">배송지 (매장)</dt><dd class="font-bold truncate">{{ $order->store->name ?? '-' }}</dd></div>
-        <div class="flex justify-between gap-2"><dt class="text-neutral-500 shrink-0">연락처</dt><dd>{{ $order->store->phone ?? '-' }}</dd></div>
-        <div class="flex justify-between gap-2 min-w-0 col-span-2 md:col-span-3"><dt class="text-neutral-500 shrink-0">주소</dt><dd class="text-right truncate min-w-0" title="{{ $order->store->address ?? '-' }}">{{ $order->store->address ?? '-' }}</dd></div>
-    </dl>
+    {{-- 정보 한 줄 (넓은 박스 대신) --}}
+    <div class="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm mt-3 pt-3 border-t border-neutral-100">
+        <span class="inline-flex gap-1.5"><span class="text-neutral-500">배송지 (매장)</span><b>{{ $order->store->name ?? '-' }}</b></span>
+        <span class="inline-flex gap-1.5"><span class="text-neutral-500">연락처</span>{{ $order->store->phone ?? '-' }}</span>
+        <span class="inline-flex gap-1.5 min-w-0"><span class="text-neutral-500 shrink-0">주소</span><span class="truncate" title="{{ $order->store->address ?? '-' }}">{{ $order->store->address ?? '-' }}</span></span>
+    </div>
     @if ($order->note)
         <p class="mt-2 text-sm text-neutral-600 bg-neutral-50 rounded-xl px-3 py-2">📝 {{ $order->note }}</p>
     @endif
