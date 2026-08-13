@@ -555,6 +555,43 @@ class OrderController extends Controller
     }
 
     /**
+     * GET /api/v1/seller/orders/delivered?date=YYYY-MM-DD  — 해당 날짜 배송완료 발주 목록 (배송업무, 본사)
+     */
+    public function deliveredList(Request $request): JsonResponse
+    {
+        [$type] = $this->seller($request);
+        abort_unless($type === 'hq', 403, '본사 계정만 사용할 수 있습니다.');
+
+        $raw = trim((string) $request->query('date', ''));
+        try {
+            $date = $raw !== '' ? \Illuminate\Support\Carbon::parse($raw)->toDateString() : today()->toDateString();
+        } catch (\Throwable $e) {
+            $date = today()->toDateString();
+        }
+
+        $orders = Order::whereNotNull('delivered_at')
+            ->whereDate('delivered_at', $date)
+            ->with('store')
+            ->withCount('items')
+            ->orderByDesc('delivered_at')
+            ->get();
+
+        return response()->json([
+            'data' => $orders->map(fn (Order $o) => [
+                'id' => $o->id,
+                'order_no' => $o->order_no,
+                'store_name' => $o->store?->name,
+                'delivered_at' => $o->delivered_at?->format('H:i'),
+                'item_count' => (int) $o->items_count,
+                'order_total' => (int) $o->order_total,
+                'has_photo' => ! empty($o->delivery_photos),
+                'has_sign' => (bool) $o->delivery_signature,
+            ])->values(),
+            'meta' => ['date' => $date, 'count' => $orders->count()],
+        ]);
+    }
+
+    /**
      * POST /api/v1/seller/orders/{order}/complete-delivery  — 현장 사진·서명과 함께 배송완료 (본사)
      * multipart: photos[] (1장 이상), signature (이미지)
      * 처리: 사진·서명 저장 → 전 품목 배송완료(발주 completed) → 거래명세서 이메일 + 세금계산서 자동발행.

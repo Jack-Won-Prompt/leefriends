@@ -189,6 +189,7 @@ Route::prefix('v1')->group(function () {
 
             Route::get('orders', [Seller\OrderController::class, 'index'])->name('orders.index');
             Route::get('orders/delivery-lookup', [Seller\OrderController::class, 'deliveryLookup'])->name('orders.delivery_lookup');
+            Route::get('orders/delivered', [Seller\OrderController::class, 'deliveredList'])->name('orders.delivered');
             Route::get('orders/{order}', [Seller\OrderController::class, 'show'])->name('orders.show');
             Route::post('orders/{order}/items', [Seller\OrderController::class, 'addItem'])->name('orders.items.add');
             Route::delete('orders/{order}/items/{item}', [Seller\OrderController::class, 'deleteItem'])->name('orders.items.delete');
