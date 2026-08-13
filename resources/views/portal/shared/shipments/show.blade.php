@@ -9,28 +9,28 @@
        class="rounded-xl bg-neutral-900 hover:bg-mango-600 text-white font-bold px-5 py-2.5 transition">🧾 거래명세서</a>
 </div>
 
-<div class="grid lg:grid-cols-3 gap-6 mb-6">
-    <div class="lg:col-span-2 rounded-2xl bg-white shadow-sm border border-neutral-100 p-7">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-            <div>
-                <h2 class="text-2xl font-black text-neutral-900">{{ $shipment->shipment_no }}</h2>
-                <p class="text-sm text-neutral-400 mt-1">{{ $shipment->created_at->format('Y.m.d H:i') }}</p>
-            </div>
+<div class="grid lg:grid-cols-3 gap-3 mb-3">
+    <div class="lg:col-span-2 rounded-2xl bg-white shadow-sm border border-neutral-100 p-4">
+        <div class="flex flex-wrap items-center gap-2">
+            <h2 class="text-xl font-black text-neutral-900">{{ $shipment->shipment_no }}</h2>
+            <span class="text-xs text-neutral-400">{{ $shipment->created_at->format('Y.m.d H:i') }}</span>
             @include('portal.partials.lifecycle-status', ['status' => $shipment->status, 'label' => $shipment->status_label])
         </div>
-        <dl class="grid sm:grid-cols-2 gap-x-8 gap-y-3 mt-6 text-sm">
-            <div class="flex justify-between border-b border-neutral-100 pb-2"><dt class="text-neutral-500 font-semibold">매장</dt><dd class="font-bold">{{ $shipment->store->name ?? '-' }}</dd></div>
-            <div class="flex justify-between border-b border-neutral-100 pb-2"><dt class="text-neutral-500 font-semibold">연락처</dt><dd>{{ $shipment->store->phone ?? '-' }}</dd></div>
-            <div class="flex justify-between border-b border-neutral-100 pb-2 sm:col-span-2"><dt class="text-neutral-500 font-semibold">배송지</dt><dd class="text-right">{{ $shipment->store ? ($shipment->store->postcode ? '('.$shipment->store->postcode.') ' : '').$shipment->store->full_delivery_address : '-' }}</dd></div>
+        @php $shipAddr = $shipment->store ? ($shipment->store->postcode ? '('.$shipment->store->postcode.') ' : '').$shipment->store->full_delivery_address : '-'; @endphp
+        {{-- 한 줄 3단 정보 스트립 (넓은 박스 대신) --}}
+        <dl class="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-1.5 mt-3 pt-3 border-t border-neutral-100 text-sm">
+            <div class="flex justify-between gap-2 min-w-0"><dt class="text-neutral-500 shrink-0">매장</dt><dd class="font-bold truncate">{{ $shipment->store->name ?? '-' }}</dd></div>
+            <div class="flex justify-between gap-2"><dt class="text-neutral-500 shrink-0">연락처</dt><dd>{{ $shipment->store->phone ?? '-' }}</dd></div>
             @if ($shipment->tracking_no)
-                <div class="flex justify-between border-b border-neutral-100 pb-2"><dt class="text-neutral-500 font-semibold">택배사</dt><dd class="font-bold">{{ $shipment->carrier }}</dd></div>
-                <div class="flex justify-between border-b border-neutral-100 pb-2"><dt class="text-neutral-500 font-semibold">송장번호</dt><dd class="font-bold text-mango-700">{{ $shipment->tracking_no }}</dd></div>
+                <div class="flex justify-between gap-2"><dt class="text-neutral-500 shrink-0">택배사</dt><dd class="font-bold">{{ $shipment->carrier }}</dd></div>
+                <div class="flex justify-between gap-2 min-w-0"><dt class="text-neutral-500 shrink-0">송장번호</dt><dd class="font-bold text-mango-700 truncate">{{ $shipment->tracking_no }}</dd></div>
             @endif
+            <div class="flex justify-between gap-2 min-w-0 col-span-2 md:col-span-3"><dt class="text-neutral-500 shrink-0">배송지</dt><dd class="text-right truncate min-w-0" title="{{ $shipAddr }}">{{ $shipAddr }}</dd></div>
         </dl>
     </div>
 
     {{-- 송장 입력 + 출고확정 --}}
-    <div class="rounded-2xl bg-white shadow-sm border border-neutral-100 p-6">
+    <div class="rounded-2xl bg-white shadow-sm border border-neutral-100 p-5">
         @if ($shipment->status === 'created')
             <h3 class="font-extrabold text-neutral-900 mb-4">송장 입력 · 출고확정</h3>
             <form method="POST" action="{{ route($routePrefix . '.shipments.confirm', $shipment) }}" class="space-y-3"

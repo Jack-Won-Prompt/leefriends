@@ -2,7 +2,7 @@
 @section('title', $store->name . ' 원장')
 
 @section('content')
-<a href="{{ route('portal.hq.store_ledger.index') }}" class="inline-flex items-center gap-1.5 text-sm font-bold text-neutral-500 hover:text-mango-600 mb-5">← 매장 원장</a>
+<a href="{{ route('portal.hq.store_ledger.index') }}" class="inline-flex items-center gap-1.5 text-sm font-bold text-neutral-500 hover:text-mango-600 mb-2">← 매장 원장</a>
 
 <x-wms.page-head :title="$store->name . ' 원장'" :subtitle="$store->settlement_label . ($store->virtual_account ? ' · 가상계좌 ' . $store->virtual_account : '')" icon="📒">
     <x-slot:actions>
@@ -15,15 +15,15 @@
     <div class="mb-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 px-5 py-3 text-sm">{{ $errors->first() }}</div>
 @endif
 
-<div class="grid lg:grid-cols-3 gap-4 mb-6">
+<div class="grid lg:grid-cols-3 gap-3 mb-3">
     {{-- 잔액 --}}
-    <div class="rounded-2xl p-6 text-white {{ $store->ledger_balance < 0 ? 'bg-gradient-to-br from-rose-500 to-rose-600' : 'bg-gradient-to-br from-emerald-500 to-emerald-600' }}">
+    <div class="rounded-2xl p-5 text-white flex flex-col justify-center {{ $store->ledger_balance < 0 ? 'bg-gradient-to-br from-rose-500 to-rose-600' : 'bg-gradient-to-br from-emerald-500 to-emerald-600' }}">
         <p class="text-white/80 font-semibold text-sm">{{ $store->ledger_balance < 0 ? '미수금' : '예치 잔액' }}</p>
         <p class="text-3xl font-black mt-1">{{ number_format(abs($store->ledger_balance)) }}<span class="text-lg">원</span></p>
     </div>
 
     {{-- 충전 / 조정 --}}
-    <div class="rounded-2xl bg-white shadow-sm border border-neutral-100 p-5 space-y-3">
+    <div class="rounded-2xl bg-white shadow-sm border border-neutral-100 p-4 space-y-3">
         <form method="POST" action="{{ route('portal.hq.store_ledger.charge', $store) }}" class="flex items-end gap-2">
             @csrf
             <div class="flex-1">
@@ -45,7 +45,7 @@
     </div>
 
     {{-- 정산 설정 --}}
-    <form method="POST" action="{{ route('portal.hq.store_ledger.settings', $store) }}" class="rounded-2xl bg-white shadow-sm border border-neutral-100 p-5 space-y-3">
+    <form method="POST" action="{{ route('portal.hq.store_ledger.settings', $store) }}" class="rounded-2xl bg-white shadow-sm border border-neutral-100 p-4 space-y-3">
         @csrf @method('PATCH')
         <div>
             <label class="block text-xs font-bold text-neutral-500 mb-1">정산 방식</label>

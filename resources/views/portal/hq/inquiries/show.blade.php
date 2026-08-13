@@ -16,35 +16,22 @@
     </x-slot:actions>
 </x-wms.page-head>
 
-<div class="grid gap-5 lg:grid-cols-3">
+<div class="grid gap-3 lg:grid-cols-3">
     {{-- 문의 내용 --}}
     <div class="lg:col-span-2">
         <x-wms.panel>
-            <div class="p-6 space-y-5">
-                <div class="flex items-center justify-between">
+            <div class="p-4 space-y-3">
+                <div class="flex flex-wrap items-center gap-2">
                     <h2 class="text-xl font-extrabold text-neutral-900">{{ $inquiry->name }}</h2>
                     <span class="inline-flex px-3 py-1 rounded-full text-xs font-bold {{ $badgeClass[$inquiry->status] ?? 'bg-neutral-100 text-neutral-600' }}">{{ $inquiry->status_label }}</span>
                 </div>
 
-                <dl class="grid sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
-                    <div>
-                        <dt class="text-neutral-400 font-semibold mb-1">연락처</dt>
-                        <dd class="font-bold text-neutral-800"><a href="tel:{{ $inquiry->phone }}" class="hover:text-mango-600">{{ $inquiry->phone }}</a></dd>
-                    </div>
-                    <div>
-                        <dt class="text-neutral-400 font-semibold mb-1">이메일</dt>
-                        <dd class="font-bold text-neutral-800">
-                            @if ($inquiry->email)<a href="mailto:{{ $inquiry->email }}" class="hover:text-mango-600">{{ $inquiry->email }}</a>@else-@endif
-                        </dd>
-                    </div>
-                    <div>
-                        <dt class="text-neutral-400 font-semibold mb-1">희망 지역</dt>
-                        <dd class="font-bold text-neutral-800">{{ $inquiry->region ?: '-' }}</dd>
-                    </div>
-                    <div>
-                        <dt class="text-neutral-400 font-semibold mb-1">창업 예산</dt>
-                        <dd class="font-bold text-neutral-800">{{ $inquiry->budget ?: '-' }}</dd>
-                    </div>
+                {{-- 한 줄 3단 정보 스트립 (넓은 박스 대신) --}}
+                <dl class="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-1.5 pt-3 border-t border-neutral-100 text-sm">
+                    <div class="flex justify-between gap-2 min-w-0"><dt class="text-neutral-500 shrink-0">연락처</dt><dd class="font-bold text-neutral-800 truncate"><a href="tel:{{ $inquiry->phone }}" class="hover:text-mango-600">{{ $inquiry->phone }}</a></dd></div>
+                    <div class="flex justify-between gap-2 min-w-0"><dt class="text-neutral-500 shrink-0">이메일</dt><dd class="font-bold text-neutral-800 truncate">@if ($inquiry->email)<a href="mailto:{{ $inquiry->email }}" class="hover:text-mango-600">{{ $inquiry->email }}</a>@else-@endif</dd></div>
+                    <div class="flex justify-between gap-2 min-w-0"><dt class="text-neutral-500 shrink-0">희망 지역</dt><dd class="font-bold text-neutral-800 truncate">{{ $inquiry->region ?: '-' }}</dd></div>
+                    <div class="flex justify-between gap-2 min-w-0"><dt class="text-neutral-500 shrink-0">창업 예산</dt><dd class="font-bold text-neutral-800 truncate">{{ $inquiry->budget ?: '-' }}</dd></div>
                 </dl>
 
                 <div>
@@ -56,9 +43,9 @@
     </div>
 
     {{-- 상태 관리 --}}
-    <div class="space-y-4">
+    <div class="space-y-3">
         <x-wms.panel>
-            <div class="p-6 space-y-4">
+            <div class="p-4 space-y-4">
                 <h3 class="font-extrabold text-neutral-900">상담 상태</h3>
                 <form method="POST" action="{{ route('portal.hq.inquiries.update', $inquiry) }}" class="space-y-3">
                     @csrf

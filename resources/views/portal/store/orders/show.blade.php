@@ -4,7 +4,7 @@
 
 @section('content')
 <div x-data="{ open: null }">
-<div class="flex items-center justify-between mb-5">
+<div class="flex items-center justify-between mb-3">
     @if ($isSample)
         <a href="{{ route('portal.store.sample_orders.index') }}" class="inline-flex items-center gap-1.5 text-sm font-bold text-neutral-500 hover:text-violet-600">← 샘플 주문 내역</a>
     @else
@@ -25,22 +25,16 @@
     </div>
 </div>
 
-<div class="rounded-2xl bg-white shadow-sm border border-neutral-100 p-7 mb-6">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-        <div>
-            <div class="flex items-center gap-2">
-                <h2 class="text-2xl font-black text-neutral-900">{{ $order->order_no }}</h2>
-                @if ($isSample)<span class="text-xs font-bold px-2.5 py-1 rounded-full bg-violet-100 text-violet-700">샘플 · 무상</span>@endif
-            </div>
-            <p class="text-sm text-neutral-400 mt-1">{{ $isSample ? '주문일' : '발주일' }} {{ $order->created_at->format('Y년 m월 d일 H:i') }}</p>
-        </div>
-        <div class="flex items-center gap-2">
-            @include('portal.partials.order-status', ['status' => $order->status, 'label' => $order->status_label])
-            @include('portal.partials.payment-badge', ['order' => $order])
-        </div>
+<div class="rounded-2xl bg-white shadow-sm border border-neutral-100 p-4 mb-3">
+    <div class="flex flex-wrap items-center gap-2">
+        <h2 class="text-xl font-black text-neutral-900">{{ $order->order_no }}</h2>
+        @if ($isSample)<span class="text-xs font-bold px-2.5 py-1 rounded-full bg-violet-100 text-violet-700">샘플 · 무상</span>@endif
+        <span class="text-xs text-neutral-400">{{ $isSample ? '주문일' : '발주일' }} {{ $order->created_at->format('Y년 m월 d일 H:i') }}</span>
+        @include('portal.partials.order-status', ['status' => $order->status, 'label' => $order->status_label])
+        @include('portal.partials.payment-badge', ['order' => $order])
     </div>
     @if ($order->note)
-        <p class="mt-4 text-sm text-neutral-600 bg-neutral-50 rounded-xl p-4">📝 {{ $order->note }}</p>
+        <p class="mt-2 text-sm text-neutral-600 bg-neutral-50 rounded-xl px-3 py-2">📝 {{ $order->note }}</p>
     @endif
 </div>
 

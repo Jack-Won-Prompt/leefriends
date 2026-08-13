@@ -4,21 +4,20 @@
 @section('content')
 <a href="{{ route('portal.supplier.orders.index') }}" class="inline-flex items-center gap-1.5 text-sm font-bold text-neutral-500 hover:text-mango-600 mb-5">← 주문 관리</a>
 
-<div class="rounded-2xl bg-white shadow-sm border border-neutral-100 p-7 mb-6">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-        <div>
-            <h2 class="text-2xl font-black text-neutral-900">{{ $order->order_no }}</h2>
-            <p class="text-sm text-neutral-400 mt-1">{{ $order->created_at->format('Y년 m월 d일 H:i') }}</p>
-        </div>
+<div class="rounded-2xl bg-white shadow-sm border border-neutral-100 p-4 mb-3">
+    <div class="flex flex-wrap items-center gap-2">
+        <h2 class="text-xl font-black text-neutral-900">{{ $order->order_no }}</h2>
+        <span class="text-xs text-neutral-400">{{ $order->created_at->format('Y년 m월 d일 H:i') }}</span>
         @include('portal.partials.order-status', ['status' => $order->status, 'label' => $order->status_label])
     </div>
-    <dl class="grid sm:grid-cols-2 gap-x-8 gap-y-3 mt-6 text-sm">
-        <div class="flex justify-between border-b border-neutral-100 pb-2"><dt class="text-neutral-500 font-semibold">배송지 (매장)</dt><dd class="font-bold">{{ $order->store->name ?? '-' }}</dd></div>
-        <div class="flex justify-between border-b border-neutral-100 pb-2"><dt class="text-neutral-500 font-semibold">연락처</dt><dd>{{ $order->store->phone ?? '-' }}</dd></div>
-        <div class="flex justify-between border-b border-neutral-100 pb-2 sm:col-span-2"><dt class="text-neutral-500 font-semibold">주소</dt><dd class="text-right">{{ $order->store->address ?? '-' }}</dd></div>
+    {{-- 한 줄 3단 정보 스트립 (넓은 박스 대신) --}}
+    <dl class="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-1.5 mt-3 pt-3 border-t border-neutral-100 text-sm">
+        <div class="flex justify-between gap-2 min-w-0"><dt class="text-neutral-500 shrink-0">배송지 (매장)</dt><dd class="font-bold truncate">{{ $order->store->name ?? '-' }}</dd></div>
+        <div class="flex justify-between gap-2"><dt class="text-neutral-500 shrink-0">연락처</dt><dd>{{ $order->store->phone ?? '-' }}</dd></div>
+        <div class="flex justify-between gap-2 min-w-0 col-span-2 md:col-span-3"><dt class="text-neutral-500 shrink-0">주소</dt><dd class="text-right truncate min-w-0" title="{{ $order->store->address ?? '-' }}">{{ $order->store->address ?? '-' }}</dd></div>
     </dl>
     @if ($order->note)
-        <p class="mt-4 text-sm text-neutral-600 bg-neutral-50 rounded-xl p-4">📝 {{ $order->note }}</p>
+        <p class="mt-2 text-sm text-neutral-600 bg-neutral-50 rounded-xl px-3 py-2">📝 {{ $order->note }}</p>
     @endif
 </div>
 

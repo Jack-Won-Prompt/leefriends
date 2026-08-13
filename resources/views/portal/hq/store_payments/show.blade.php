@@ -22,7 +22,7 @@
     $btn = 'inline-flex items-center justify-center rounded-xl px-3.5 py-2 text-sm font-bold transition';
     $isRange = ! $month && ($from || $to);
 @endphp
-<div class="flex flex-wrap items-end justify-between gap-4 mb-6">
+<div class="flex flex-wrap items-end justify-between gap-4 mb-4">
     <div class="flex flex-wrap items-center gap-1.5">
         <a href="{{ route('portal.hq.store_payments.show', $store) }}"
            class="{{ $btn }} {{ ! $month && ! $isRange ? 'bg-mango-500 text-white' : 'bg-white border border-neutral-200 text-neutral-600 hover:bg-neutral-50' }}">전체</a>
@@ -47,7 +47,7 @@
     </form>
 </div>
 
-<div class="grid grid-cols-3 gap-4 mb-6">
+<div class="grid grid-cols-3 gap-3 mb-3">
     <x-wms.stat label="총 발주액" :value="number_format($orders->sum(fn($o)=>$o->order_total)).'원'" variant="default" />
     <x-wms.stat label="입금완료" :value="number_format($paidAmt).'원'" variant="success" icon="💰" />
     <x-wms.stat label="미입금" :value="number_format($unpaidAmt).'원'" :sub="number_format($unpaidOrders->count()).'건'" variant="warn" />
