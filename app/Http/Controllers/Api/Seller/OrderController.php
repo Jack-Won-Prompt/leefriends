@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Services\Notification\NotificationService;
+use App\Services\TaxInvoice\TaxInvoiceIssueService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -530,6 +531,179 @@ class OrderController extends Controller
         $order->update(['statement_emailed_at' => now(), 'statement_email_count' => $order->statement_email_count + 1]);
 
         return response()->json(['message' => "거래명세서를 매장({$to})으로 전송했습니다."]);
+    }
+
+    /**
+     * GET /api/v1/seller/orders/delivery-lookup?no=PO-...  — 출고지시서 QR(발주번호) 로 발주 조회 (배송업무 스캔, 본사)
+     */
+    public function deliveryLookup(Request $request): JsonResponse
+    {
+        [$type] = $this->seller($request);
+        abort_unless($type === 'hq', 403, '본사 계정만 사용할 수 있습니다.');
+
+        $no = trim((string) $request->query('no', ''));
+        if ($no === '') {
+            return response()->json(['message' => '발주번호가 없습니다.'], 422);
+        }
+
+        $order = Order::with(['items', 'store'])->where('order_no', $no)->first();
+        if (! $order) {
+            return response()->json(['message' => "발주 «{$no}» 를 찾을 수 없습니다."], 404);
+        }
+
+        return response()->json(['data' => $this->deliverySummary($order)]);
+    }
+
+    /**
+     * POST /api/v1/seller/orders/{order}/complete-delivery  — 현장 사진·서명과 함께 배송완료 (본사)
+     * multipart: photos[] (1장 이상), signature (이미지)
+     * 처리: 사진·서명 저장 → 전 품목 배송완료(발주 completed) → 거래명세서 이메일 + 세금계산서 자동발행.
+     */
+    public function completeDelivery(
+        Request $request,
+        Order $order,
+        TaxInvoiceIssueService $taxInvoices,
+        NotificationService $notifications
+    ): JsonResponse {
+        [$type] = $this->seller($request);
+        abort_unless($type === 'hq', 403, '본사 계정만 사용할 수 있습니다.');
+
+        if (($order->order_type ?? 'normal') === 'sample') {
+            return response()->json(['message' => '샘플 주문은 배송완료 처리 대상이 아닙니다.'], 422);
+        }
+        if (in_array($order->status, ['canceled', 'completed'], true)) {
+            return response()->json(['message' => '이미 완료되었거나 취소된 발주입니다.'], 409);
+        }
+
+        $request->validate([
+            'photos' => ['required', 'array', 'min:1'],
+            'photos.*' => ['image', 'max:8192'],
+            'signature' => ['required', 'image', 'max:4096'],
+        ], [
+            'photos.required' => '현장 사진을 1장 이상 첨부해 주세요.',
+            'photos.min' => '현장 사진을 1장 이상 첨부해 주세요.',
+            'signature.required' => '매장 담당자 서명을 받아 주세요.',
+        ]);
+
+        // 사진·서명 저장 (public 디스크 → /storage 심볼릭 서빙)
+        $dir = "orders/{$order->id}/delivery";
+        $photoPaths = [];
+        foreach (array_values($request->file('photos')) as $i => $f) {
+            $name = 'photo_'.time().'_'.$i.'.'.strtolower($f->getClientOriginalExtension() ?: 'jpg');
+            $f->storeAs($dir, $name, 'public');
+            $photoPaths[] = "storage/{$dir}/{$name}";
+        }
+        $sig = $request->file('signature');
+        $sigName = 'signature_'.time().'.'.strtolower($sig->getClientOriginalExtension() ?: 'png');
+        $sig->storeAs($dir, $sigName, 'public');
+        $sigPath = "storage/{$dir}/{$sigName}";
+
+        // 전 품목 배송완료 → 발주 상태 completed
+        $order->items()->whereNull('shipped_at')->update(['shipped_at' => now()]);
+        $order->items()->update(['fulfillment_status' => 'delivered']);
+        $order->update([
+            'delivery_photos' => $photoPaths,
+            'delivery_signature' => $sigPath,
+            'delivered_at' => now(),
+        ]);
+        $order->syncStatus(); // 전 품목 delivered → completed
+
+        // 매장 알림
+        try {
+            $notifications->notifyStore(
+                (int) $order->store_id, 'order_delivered', '📦 배송완료',
+                "발주 {$order->order_no} 배송이 완료되었습니다.", ['order_id' => $order->id]
+            );
+        } catch (\Throwable $e) {
+            report($e);
+        }
+
+        // 거래명세서 이메일 + 세금계산서 자동발행
+        $issue = $this->autoIssueOnDelivery($order, $taxInvoices);
+
+        $msg = "발주 {$order->order_no} 를 배송완료로 처리했습니다."
+            .($issue['statement_sent'] ? ' 거래명세서 전송 완료.' : '')
+            .($issue['tax_issued'] ? ' 세금계산서 발행 완료.' : '');
+
+        return response()->json([
+            'message' => $msg,
+            'data' => $this->deliverySummary($order->fresh(['items', 'store'])),
+            'issue' => $issue,
+        ]);
+    }
+
+    /** 배송완료 발주의 거래명세서 이메일 + 세금계산서 발행 (스킵: 이미발행/싯가미확정/이메일없음). */
+    private function autoIssueOnDelivery(Order $order, TaxInvoiceIssueService $taxInvoices): array
+    {
+        $order->loadMissing(['items', 'store']);
+        $statementSent = 0;
+        $taxIssued = 0;
+        $skipped = [];
+
+        $to = $order->store?->email;
+        if ($to) {
+            try {
+                $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('portal.print.order-statement-pdf', ['order' => $order])->setPaper('a4');
+                \Illuminate\Support\Facades\Mail::to($to)->send(
+                    new \App\Mail\OrderStatementMail($order, $pdf->output(), '거래명세서_'.$order->order_no.'.pdf')
+                );
+                $order->update(['statement_emailed_at' => now(), 'statement_email_count' => $order->statement_email_count + 1]);
+                $statementSent = 1;
+            } catch (\Throwable $e) {
+                report($e);
+                $skipped[] = '거래명세서 전송 실패';
+            }
+        } else {
+            $skipped[] = '매장 이메일 없음(명세서 미전송)';
+        }
+
+        if ($order->tax_invoice_id) {
+            $skipped[] = '세금계산서 이미 발행됨';
+        } elseif ($order->items->where('price_pending', true)->isNotEmpty()) {
+            $skipped[] = '싯가 미확정 → 세금계산서 보류';
+        } else {
+            try {
+                $taxInvoices->hqToStore($order);
+                $taxIssued = 1;
+            } catch (\Throwable $e) {
+                report($e);
+                $skipped[] = '세금계산서 발행 실패';
+            }
+        }
+
+        return ['statement_sent' => $statementSent, 'tax_issued' => $taxIssued, 'skipped' => $skipped];
+    }
+
+    /** 배송업무 화면용 발주 요약 (앱 SellerOrder.fromJson 호환). */
+    private function deliverySummary(Order $order): array
+    {
+        $order->loadMissing(['items', 'store']);
+
+        return [
+            'id' => $order->id,
+            'order_no' => $order->order_no,
+            'status' => $order->status,
+            'status_label' => Order::STATUSES[$order->status] ?? $order->status,
+            'store_name' => $order->store?->name,
+            'store_email' => $order->store?->email,
+            'item_count' => $order->items->count(),
+            'store_amount' => (int) $order->store_amount,
+            'order_total' => (int) $order->order_total,
+            'is_sample' => ($order->order_type ?? 'normal') === 'sample',
+            'tax_invoiced' => (bool) $order->tax_invoice_id,
+            'statement_emailed' => $order->statement_emailed_at !== null,
+            'has_pending_price' => $order->items->where('price_pending', true)->isNotEmpty(),
+            'items' => $order->items->map(fn (OrderItem $it) => [
+                'id' => $it->id,
+                'product_name' => $it->product_name,
+                'unit' => $it->unit,
+                'qty' => (int) $it->qty,
+                'supplier_name' => $it->supplier_name,
+                'supply_type' => $it->supply_type,
+                'store_line_amount' => (int) $it->store_line_amount,
+                'price_pending' => (bool) $it->price_pending,
+            ])->values(),
+        ];
     }
 
     /** 입금요청 SMS 전송 + 주문 상태 접수(pending). 본사 전용. (웹 Portal\Hq\OrderController@paymentRequest 와 동일) */

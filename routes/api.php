@@ -188,6 +188,7 @@ Route::prefix('v1')->group(function () {
             Route::delete('inquiries/{inquiry}', [Seller\InquiryController::class, 'destroy'])->name('inquiries.destroy');
 
             Route::get('orders', [Seller\OrderController::class, 'index'])->name('orders.index');
+            Route::get('orders/delivery-lookup', [Seller\OrderController::class, 'deliveryLookup'])->name('orders.delivery_lookup');
             Route::get('orders/{order}', [Seller\OrderController::class, 'show'])->name('orders.show');
             Route::post('orders/{order}/items', [Seller\OrderController::class, 'addItem'])->name('orders.items.add');
             Route::delete('orders/{order}/items/{item}', [Seller\OrderController::class, 'deleteItem'])->name('orders.items.delete');
@@ -197,6 +198,7 @@ Route::prefix('v1')->group(function () {
             Route::patch('orders/{order}/shipping', [Seller\OrderController::class, 'updateShipping'])->name('orders.shipping');
             Route::post('orders/{order}/tax-invoice', [Seller\OrderController::class, 'issueForOrder'])->name('orders.tax_invoice');
             Route::post('orders/{order}/statement-email', [Seller\OrderController::class, 'statementEmail'])->name('orders.statement_email');
+            Route::post('orders/{order}/complete-delivery', [Seller\OrderController::class, 'completeDelivery'])->name('orders.complete_delivery');
             Route::post('orders/{order}/payment-request', [Seller\OrderController::class, 'paymentRequest'])->name('orders.payment_request');
 
             // 매장 주문 변경 확인(반영)
@@ -211,12 +213,10 @@ Route::prefix('v1')->group(function () {
             Route::get('couriers', [Seller\ShipmentController::class, 'couriers'])->name('couriers.index');
             Route::get('shipments', [Seller\ShipmentController::class, 'index'])->name('shipments.index');
             Route::get('shipments/candidates', [Seller\ShipmentController::class, 'candidates'])->name('shipments.candidates');
-            Route::get('shipments/lookup', [Seller\ShipmentController::class, 'lookup'])->name('shipments.lookup');
             Route::post('shipments', [Seller\ShipmentController::class, 'store'])->name('shipments.store');
             Route::get('shipments/{shipment}', [Seller\ShipmentController::class, 'show'])->name('shipments.show');
             Route::patch('shipments/{shipment}/confirm', [Seller\ShipmentController::class, 'confirm'])->name('shipments.confirm');
             Route::patch('shipments/{shipment}/deliver', [Seller\ShipmentController::class, 'deliver'])->name('shipments.deliver');
-            Route::post('shipments/{shipment}/complete-delivery', [Seller\ShipmentController::class, 'completeDelivery'])->name('shipments.complete_delivery');
 
             // 전자세금계산서 — 발행 대상 조회 / 발행 / 취소 / 이력
             Route::get('tax-invoices', [Seller\TaxInvoiceController::class, 'index'])->name('tax_invoices.index');

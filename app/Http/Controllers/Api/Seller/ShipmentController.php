@@ -4,13 +4,11 @@ namespace App\Http\Controllers\Api\Seller;
 
 use App\Http\Controllers\Controller;
 use App\Models\Courier;
-use App\Models\Order;
 use App\Models\OrderChange;
 use App\Models\OrderItem;
 use App\Models\Shipment;
 use App\Models\Store;
 use App\Services\Fulfillment\ShipmentService;
-use App\Services\TaxInvoice\TaxInvoiceIssueService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -194,152 +192,6 @@ class ShipmentController extends Controller
         ]);
     }
 
-    /**
-     * GET /api/v1/seller/shipments/lookup?no=SHP-...  — 출고지시번호(QR) 로 출고 조회 (배송업무 스캔용)
-     */
-    public function lookup(Request $request): JsonResponse
-    {
-        [$type, $sid] = $this->seller($request);
-        $no = trim((string) $request->query('no', ''));
-        if ($no === '') {
-            return response()->json(['message' => '출고지시번호가 없습니다.'], 422);
-        }
-
-        $shipment = Shipment::forSeller($type, $sid)->where('shipment_no', $no)->first();
-        if (! $shipment) {
-            return response()->json(['message' => "출고 «{$no}» 를 찾을 수 없습니다."], 404);
-        }
-        $shipment->load(['store', 'items']);
-
-        return response()->json(['data' => $this->detail($shipment)]);
-    }
-
-    /**
-     * POST /api/v1/seller/shipments/{shipment}/complete-delivery  — 현장 사진·서명과 함께 배송완료 (본사 전용)
-     * multipart: photos[] (1장 이상), signature (이미지)
-     * 처리: 사진·서명 저장 → 배송완료 전이 → 관련 발주별 거래명세서 이메일 + 세금계산서 자동발행(이미발행·싯가미확정 스킵).
-     */
-    public function completeDelivery(
-        Request $request,
-        Shipment $shipment,
-        ShipmentService $service,
-        TaxInvoiceIssueService $taxInvoices
-    ): JsonResponse {
-        [$type] = $this->seller($request);
-        abort_unless($type === 'hq', 403, '본사 계정만 사용할 수 있습니다.');
-        $this->authorize($request, $shipment);
-
-        if ($shipment->status !== 'confirmed') {
-            return response()->json(['message' => '배송중 상태의 출고만 배송완료 처리할 수 있습니다.'], 409);
-        }
-
-        $request->validate([
-            'photos' => ['required', 'array', 'min:1'],
-            'photos.*' => ['image', 'max:8192'],
-            'signature' => ['required', 'image', 'max:4096'],
-        ], [
-            'photos.required' => '현장 사진을 1장 이상 첨부해 주세요.',
-            'photos.min' => '현장 사진을 1장 이상 첨부해 주세요.',
-            'signature.required' => '매장 담당자 서명을 받아 주세요.',
-        ]);
-
-        // 사진·서명 저장 (public 디스크 → /storage 심볼릭 서빙)
-        $dir = "shipments/{$shipment->id}";
-        $photoPaths = [];
-        foreach (array_values($request->file('photos')) as $i => $f) {
-            $name = 'photo_'.time().'_'.$i.'.'.strtolower($f->getClientOriginalExtension() ?: 'jpg');
-            $f->storeAs($dir, $name, 'public');
-            $photoPaths[] = "storage/{$dir}/{$name}";
-        }
-        $sig = $request->file('signature');
-        $sigName = 'signature_'.time().'.'.strtolower($sig->getClientOriginalExtension() ?: 'png');
-        $sig->storeAs($dir, $sigName, 'public');
-        $sigPath = "storage/{$dir}/{$sigName}";
-
-        $shipment->update(['delivery_photos' => $photoPaths, 'delivery_signature' => $sigPath]);
-
-        try {
-            $service->deliver($shipment); // status → delivered, delivered_at, 매장 알림 (내부에서 발주 syncStatus)
-        } catch (\Throwable $e) {
-            return response()->json(['message' => $e->getMessage() ?: '배송완료 처리에 실패했습니다.'], 400);
-        }
-
-        app(\App\Services\Order\OrderStatusSms::class)->delivered($shipment->loadMissing('store'));
-
-        $issue = $this->autoIssueOnDeliver($shipment, $taxInvoices);
-
-        $msg = "배송완료로 처리했습니다. (거래명세서 {$issue['statement_sent']}건 전송 · 세금계산서 {$issue['tax_issued']}건 발행)";
-
-        return response()->json([
-            'message' => $msg,
-            'data' => $this->detail($shipment->fresh(['store', 'items'])),
-            'issue' => $issue,
-        ]);
-    }
-
-    /**
-     * 배송완료 후 자동발행: 이 출고에 포함된 발주별로 거래명세서 이메일 + 세금계산서 발행.
-     * 스킵 규칙: 샘플 / 세금계산서 이미 발행 / 싯가 미확정 / 매장 이메일 없음(명세서).
-     */
-    private function autoIssueOnDeliver(Shipment $shipment, TaxInvoiceIssueService $taxInvoices): array
-    {
-        $orderIds = OrderItem::where('shipment_id', $shipment->id)->pluck('order_id')->unique()->values();
-        $orders = Order::whereIn('id', $orderIds)->with(['items', 'store'])->get();
-
-        $statementSent = 0;
-        $taxIssued = 0;
-        $skipped = [];
-
-        foreach ($orders as $order) {
-            if (($order->order_type ?? 'normal') === 'sample') {
-                $skipped[] = "{$order->order_no}: 샘플 제외";
-                continue;
-            }
-
-            // 거래명세서 이메일 (매장 이메일 있을 때)
-            $to = $order->store?->email;
-            if ($to) {
-                try {
-                    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('portal.print.order-statement-pdf', ['order' => $order])->setPaper('a4');
-                    \Illuminate\Support\Facades\Mail::to($to)->send(
-                        new \App\Mail\OrderStatementMail($order, $pdf->output(), '거래명세서_'.$order->order_no.'.pdf')
-                    );
-                    $order->update(['statement_emailed_at' => now(), 'statement_email_count' => $order->statement_email_count + 1]);
-                    $statementSent++;
-                } catch (\Throwable $e) {
-                    report($e);
-                    $skipped[] = "{$order->order_no}: 명세서 전송 실패";
-                }
-            } else {
-                $skipped[] = "{$order->order_no}: 매장 이메일 없음(명세서)";
-            }
-
-            // 세금계산서 발행
-            if ($order->tax_invoice_id) {
-                $skipped[] = "{$order->order_no}: 세금계산서 이미 발행";
-                continue;
-            }
-            if ($order->items->where('price_pending', true)->isNotEmpty()) {
-                $skipped[] = "{$order->order_no}: 싯가 미확정 → 세금계산서 보류";
-                continue;
-            }
-            try {
-                $taxInvoices->hqToStore($order);
-                $taxIssued++;
-            } catch (\Throwable $e) {
-                report($e);
-                $skipped[] = "{$order->order_no}: 세금계산서 발행 실패";
-            }
-        }
-
-        return [
-            'order_count' => $orders->count(),
-            'statement_sent' => $statementSent,
-            'tax_issued' => $taxIssued,
-            'skipped' => $skipped,
-        ];
-    }
-
     /** 택배사 목록 (출고 확정 드롭다운용, 직접 배송 포함) */
     public function couriers(): JsonResponse
     {
@@ -382,8 +234,6 @@ class ShipmentController extends Controller
 
         return array_merge($this->summary($s), [
             'note' => $s->note,
-            'delivery_photos' => collect($s->delivery_photos ?? [])->map(fn ($p) => asset($p))->values(),
-            'delivery_signature' => $s->delivery_signature ? asset($s->delivery_signature) : null,
             'items' => $s->items->map(fn (OrderItem $it) => [
                 'id' => $it->id,
                 'product_name' => $it->product_name,

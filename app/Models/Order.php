@@ -11,6 +11,7 @@ class Order extends Model
         'store_amount', 'store_vat', 'supply_amount', 'note', 'tax_invoice_id',
         'shipping_box_count', 'shipping_unit_price', 'shipping_fee',
         'statement_emailed_at', 'statement_email_count', 'paid_at',
+        'delivery_photos', 'delivery_signature', 'delivered_at',
     ];
 
     protected $casts = [
@@ -23,6 +24,8 @@ class Order extends Model
         'statement_emailed_at' => 'datetime',
         'statement_email_count' => 'integer',
         'paid_at' => 'datetime',
+        'delivery_photos' => 'array',
+        'delivered_at' => 'datetime',
     ];
 
     /** 매장 청구에 가산되는 부가세(과세·별도 품목의 10%). 택배비는 별도(자체 포함). */
