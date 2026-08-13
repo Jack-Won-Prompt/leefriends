@@ -18,6 +18,8 @@
         [x-cloak]{display:none!important}
         /* 좁은 열에서 헤더·액션 버튼·상태 뱃지 텍스트가 세로로 줄바꿈되지 않도록 */
         table th, table td button, table td .rounded-full { white-space: nowrap; }
+        /* 화면 폰트 하나로 통일 — 코드·번호 등 monospace 도 본문 폰트(Pretendard)로 */
+        .font-mono, code, pre, kbd, samp { font-family: 'Pretendard Variable', Pretendard, sans-serif !important; }
     </style>
     @stack('head')
 </head>
