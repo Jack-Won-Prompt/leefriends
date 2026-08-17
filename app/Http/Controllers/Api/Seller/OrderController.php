@@ -586,6 +586,12 @@ class OrderController extends Controller
                 'order_total' => (int) $o->order_total,
                 'has_photo' => ! empty($o->delivery_photos),
                 'has_sign' => (bool) $o->delivery_signature,
+                // 앱에서 목록 항목을 눌렀을 때 바로 보여줄 배송 증빙 (public 디스크 → 절대 URL)
+                'photos' => collect($o->delivery_photos ?? [])
+                    ->filter()
+                    ->map(fn ($p) => asset($p))
+                    ->values(),
+                'signature' => $o->delivery_signature ? asset($o->delivery_signature) : null,
             ])->values(),
             'meta' => ['date' => $date, 'count' => $orders->count()],
         ]);
