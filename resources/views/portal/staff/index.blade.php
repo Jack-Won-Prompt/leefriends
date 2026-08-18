@@ -2,7 +2,7 @@
 @section('title', '직원 관리')
 
 @section('content')
-@php($meId = auth()->id())
+@php $meId = auth()->id(); @endphp
 <div x-data="{
         open: false, mode: 'create',
         form: { id: null, name: '', email: '', phone: '', password: '', employment_type: 'regular', hourly_wage: '' },
