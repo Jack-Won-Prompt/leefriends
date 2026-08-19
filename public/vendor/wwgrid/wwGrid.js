@@ -682,6 +682,8 @@ class wwGrid {
     this.data         = options.data ? JSON.parse(JSON.stringify(options.data)) : [];
     this.originalData = options.data ? JSON.parse(JSON.stringify(options.data)) : [];
     this.rowCheckbox  = options.rowCheckbox !== false;
+    // 행별 체크박스 비활성화: (row, rowIndex) => true 이면 그 행은 체크 불가
+    this.rowCheckboxDisabled = typeof options.rowCheckboxDisabled === 'function' ? options.rowCheckboxDisabled : null;
     this.rowNumber    = options.rowNumber   !== false;
     this.editable     = options.editable    !== false;
     this.height       = options.height || null;
@@ -984,7 +986,15 @@ class wwGrid {
       chk.type = 'checkbox';
       chk.className = 'cg-row-check';
       chk.checked = this._checkedRows.has(rowIndex);
-      chk.style.cursor = 'pointer';
+      if (this.rowCheckboxDisabled && this.rowCheckboxDisabled(this.data[rowIndex], rowIndex)) {
+        chk.disabled = true;
+        chk.checked = false;
+        this._checkedRows.delete(rowIndex);
+        chk.style.cursor = 'not-allowed';
+        chk.title = '선택할 수 없는 항목입니다';
+      } else {
+        chk.style.cursor = 'pointer';
+      }
       chk.style.accentColor = '#3c82c4';
       td.appendChild(chk);
       tr.appendChild(td);
@@ -1101,13 +1111,15 @@ class wwGrid {
     this._theadEl.addEventListener('change', e => {
       if (e.target.classList.contains('cg-header-check')) {
         const checked = e.target.checked;
-        this.data.forEach((_, i) => {
-          if (checked) this._checkedRows.add(i);
-          else         this._checkedRows.delete(i);
+        this.data.forEach((row, i) => {
+          const disabled = this.rowCheckboxDisabled && this.rowCheckboxDisabled(row, i);
+          if (checked && !disabled) this._checkedRows.add(i);
+          else                      this._checkedRows.delete(i);
         });
-        this._tbodyEl.querySelectorAll('.cg-row-check').forEach(c => c.checked = checked);
+        this._tbodyEl.querySelectorAll('.cg-row-check').forEach(c => { if (!c.disabled) c.checked = checked; });
         this._tbodyEl.querySelectorAll('tr').forEach(tr => {
-          tr.classList.toggle('cg-row-selected', checked);
+          const ri = parseInt(tr.dataset.rowIndex, 10);
+          tr.classList.toggle('cg-row-selected', this._checkedRows.has(ri));
         });
         this._updateFooter();
       }

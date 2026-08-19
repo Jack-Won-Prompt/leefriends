@@ -79,7 +79,7 @@
               return wrap;
           } },
         { header: '발주일', name: 'created_at', width: 150 },
-    ], @json($gridRows));
+    ], @json($gridRows), { rowCheckboxDisabled: (row) => row.status === 'canceled' });
 
     // 행 클릭 → 상세 탭(매장 발주 주문 상세와 동일 구성 재사용)
     ww.bindRowDetail('hqShipGrid', grid, 'show_url', 'order_no');
@@ -87,6 +87,11 @@
     document.getElementById('btnPickingSlip').addEventListener('click', function () {
         const rows = grid.getCheckedRows();
         if (!rows.length) { alert('출고지시서를 출력할 발주를 선택하세요.'); return; }
+        const canceled = rows.filter((r) => r.status === 'canceled');
+        if (canceled.length) {
+            alert('취소된 발주가 포함되어 출고지시서를 출력할 수 없습니다.\n대상: ' + canceled.map((r) => r.order_no).join(', '));
+            return;
+        }
         const pend = rows.filter((r) => r.has_pending);
         if (pend.length) {
             alert('미확인 단가(싯가) 품목이 있는 발주가 포함되어 출고지시서를 출력할 수 없습니다.\n대상: ' + pend.map((r) => r.order_no).join(', ') + '\n단가 확정 후 다시 시도하세요.');

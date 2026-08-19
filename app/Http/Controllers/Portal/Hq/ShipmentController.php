@@ -44,6 +44,7 @@ class ShipmentController extends BaseShipmentController
         $query = Order::with('store')
             ->withCount('items')
             ->withExists(['items as has_pending' => fn ($q) => $q->where('price_pending', true)])
+            ->where('status', '!=', 'canceled')   // 취소 발주는 출고 화면 조회에서 제외
             ->latest();
 
         if ($store !== 'all') {
@@ -82,6 +83,13 @@ class ShipmentController extends BaseShipmentController
             ->orderBy('id')
             ->get();
         abort_if($orders->isEmpty(), 404, '선택된 발주가 없습니다.');
+
+        $canceled = $orders->where('status', 'canceled');
+        abort_if(
+            $canceled->isNotEmpty(),
+            422,
+            '취소된 발주가 포함되어 출고지시서를 출력할 수 없습니다. ('.$canceled->pluck('order_no')->join(', ').')'
+        );
 
         $pending = $orders->filter->hasPendingPrice();
         abort_if(
