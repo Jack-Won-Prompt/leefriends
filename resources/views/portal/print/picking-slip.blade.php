@@ -10,7 +10,7 @@
     .slip { background: #fff; width: 210mm; min-height: 297mm; margin: 12px auto; padding: 15mm 13mm; page-break-after: always; }
     .slip:last-child { page-break-after: auto; }
 
-    .head { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid #FF9F1C; padding-bottom: 12px; }
+    .head { display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 3px solid #28798B; padding-bottom: 12px; }
     .head h1 { font-size: 34px; letter-spacing: 12px; color: #111827; }
     .head .meta { text-align: right; font-size: 15px; color: #4b5563; line-height: 1.7; }
 

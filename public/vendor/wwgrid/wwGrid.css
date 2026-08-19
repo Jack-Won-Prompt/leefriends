@@ -7,7 +7,7 @@
 /* ── CSS 변수 기본값 (인스턴스별 el.style.setProperty로 오버라이드) ── */
 /* 값은 호스트 페이지의 디자인 토큰(Figma DS)을 따라간다.
    토큰이 없는 환경(그리드 단독 사용)에서도 깨지지 않도록 뒤에 원래 값을 fallback 으로 둔다.
-   예전 강조색 #3c82c4 는 브랜드와 무관한 범용 파랑이었다. */
+   예전 강조색 #28798B 는 브랜드와 무관한 범용 파랑이었다. */
 .cg-root {
   --cg-accent:            var(--primary,       #28798B);  /* 강조색 (버튼, 정렬 아이콘, 편집 테두리) */
   --cg-accent-dark:       var(--primary-dark,  #0B5C6E);  /* 강조색 어둡게 (hover) */
@@ -272,15 +272,15 @@
 }
 .cg-cal-day:hover       { background: #ddeeff; }
 .cg-cal-day.other-month { color: #bbb; }
-.cg-cal-day.today       { font-weight: 700; color: #3c82c4; }
-.cg-cal-day.selected    { background: #3c82c4; color: #fff; }
-.cg-cal-day.selected:hover { background: #2a6aad; }
+.cg-cal-day.today       { font-weight: 700; color: #28798B; }
+.cg-cal-day.selected    { background: #28798B; color: #fff; }
+.cg-cal-day.selected:hover { background: #0B5C6E; }
 .cg-cal-footer { display: flex; justify-content: flex-end; margin-top: 6px; gap: 4px; }
 .cg-cal-btn {
   padding: 3px 10px; border-radius: 3px; border: 1px solid var(--cg-border);
   background: #f0f3f7; cursor: pointer; font-size: 12px;
 }
-.cg-cal-btn.primary { background: #3c82c4; color: #fff; border-color: #3c82c4; }
+.cg-cal-btn.primary { background: #28798B; color: #fff; border-color: #28798B; }
 .cg-cal-btn:hover { opacity: 0.85; }
 
 /* ── Toolbar ── */
@@ -379,7 +379,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 14px 18px;
-  background: linear-gradient(135deg, #3c82c4 0%, #2a6aad 100%);
+  background: linear-gradient(135deg, #28798B 0%, #0B5C6E 100%);
   flex-shrink: 0;
   gap: 10px;
 }
@@ -458,7 +458,7 @@
   box-sizing: border-box;
 }
 .cg-modal-search:focus {
-  border-color: #3c82c4;
+  border-color: #28798B;
   background: #fff;
   box-shadow: 0 0 0 3px rgba(60,130,196,0.13);
 }
@@ -470,7 +470,7 @@
   gap: 4px;
   font-size: 11px;
   font-weight: 600;
-  color: #3c82c4;
+  color: #28798B;
   background: rgba(60,130,196,0.08);
   border: 1px solid rgba(60,130,196,0.2);
   border-radius: 20px;
@@ -514,14 +514,14 @@
   background: linear-gradient(90deg, rgba(60,130,196,0.1) 0%, rgba(60,130,196,0.04) 100%);
   font-weight: 600;
   color: #1a3a5c;
-  border-left: 3px solid #3c82c4;
+  border-left: 3px solid #28798B;
   padding-left: 11px;
 }
 .cg-modal-item.selected:hover { padding-left: 15px; }
 .cg-modal-item.selected::after {
   content: '✓';
   font-size: 12px;
-  color: #3c82c4;
+  color: #28798B;
   font-weight: 700;
   margin-left: auto;
   padding-left: 8px;
@@ -545,7 +545,7 @@
 }
 .cg-modal-item.selected .cg-modal-item-sub {
   background: rgba(60,130,196,0.1);
-  color: #3c82c4;
+  color: #28798B;
 }
 
 .cg-modal-empty {
@@ -592,14 +592,14 @@
   align-items: center;
   gap: 5px;
   font-size: 11px;
-  color: #3c82c4;
+  color: #28798B;
   font-weight: 600;
 }
 .cg-spinner {
   display: inline-block;
   width: 12px; height: 12px;
   border: 2px solid rgba(60,130,196,0.25);
-  border-top-color: #3c82c4;
+  border-top-color: #28798B;
   border-radius: 50%;
   animation: cg-spin 0.7s linear infinite;
   flex-shrink: 0;

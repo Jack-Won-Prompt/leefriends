@@ -995,7 +995,7 @@ class wwGrid {
       } else {
         chk.style.cursor = 'pointer';
       }
-      chk.style.accentColor = '#3c82c4';
+      chk.style.accentColor = '#28798B';
       td.appendChild(chk);
       tr.appendChild(td);
     }
@@ -1879,7 +1879,7 @@ class wwGrid {
         <pre style="flex:1;overflow:auto;background:#f5f5f5;border:1px solid #ddd;border-radius:4px;padding:12px;font-size:12px;margin:0 0 12px;">${json}</pre>
         <div style="display:flex;gap:8px;justify-content:flex-end;">
           <button id="cg-copy-btn" style="padding:6px 16px;border-radius:3px;border:1px solid #b0bcc8;background:#fff;cursor:pointer;font-size:13px;">클립보드 복사</button>
-          <button id="cg-close-btn" style="padding:6px 16px;border-radius:3px;border:1px solid #3c82c4;background:#3c82c4;color:#fff;cursor:pointer;font-size:13px;">닫기</button>
+          <button id="cg-close-btn" style="padding:6px 16px;border-radius:3px;border:1px solid #28798B;background:#28798B;color:#fff;cursor:pointer;font-size:13px;">닫기</button>
         </div>
       </div>
     `;

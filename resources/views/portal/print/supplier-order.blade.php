@@ -7,7 +7,7 @@
     @font-face { font-family: 'nanum'; font-weight: bold; src: url('{{ storage_path('fonts/NanumGothicBold.ttf') }}') format('truetype'); }
     * { font-family: 'nanum', sans-serif; }
     body { color: #1f2937; font-size: 12px; margin: 0; }
-    .title { background: #FF9F1C; color: #fff; padding: 16px 22px; text-align: center; }
+    .title { background: #28798B; color: #fff; padding: 16px 22px; text-align: center; }
     .title h1 { margin: 0; font-size: 22px; letter-spacing: 8px; }
     .title .no { font-size: 12px; opacity: .9; margin-top: 4px; }
     .wrap { padding: 22px; }

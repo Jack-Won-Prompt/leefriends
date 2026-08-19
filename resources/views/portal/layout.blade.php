@@ -11,15 +11,38 @@
     <script>
         tailwind.config = { theme: { extend: {
             fontFamily: { sans: ['Pretendard Variable','Pretendard','sans-serif'] },
-            colors: { mango: { 50:'#FFF9ED',100:'#FFF1D2',400:'#FFB23D',500:'#FF9F1C',600:'#F2784B',700:'#D45A1F' } },
+            // 브랜드 색상: ce-admin 틸(teal) 램프. 화면 전반의 mango-* 유틸리티가 그대로 틸로 리테마됨.
+            colors: { mango: { 50:'#E9F9FB',100:'#D3F1F7',200:'#A9DCE7',300:'#72BCCC',400:'#4898A9',500:'#28798B',600:'#0B5C6E',700:'#044456',800:'#003847',900:'#022C3A' } },
         }}}
     </script>
     <style>
+        /* ===== ce-admin 디자인 토큰 ===== */
+        :root{
+            --primary:#28798B; --primary-light:#E9F9FB; --primary-dark:#0B5C6E; --primary-accent:#72BCCC;
+            --bg:#F3F5F7; --bg-card:#FFFFFF; --bg-secondary:#F9FAFC;
+            --border:#E8EAEC; --border-light:#F3F5F7;
+            --text-primary:#101317; --text-secondary:#333940; --text-muted:#999EA4;
+            --success:#12B76A; --warning:#F59E0B; --danger:#D73D3F; --info:#0EA5E9;
+            --radius:8px; --radius-lg:12px;
+        }
         [x-cloak]{display:none!important}
+        /* 조밀한 어드민 밀도 — 기본 13px */
+        html{font-size:13px}
+        body{background:var(--bg); color:var(--text-secondary); -webkit-font-smoothing:antialiased; font-size:13px}
         /* 좁은 열에서 헤더·액션 버튼·상태 뱃지 텍스트가 세로로 줄바꿈되지 않도록 */
         table th, table td button, table td .rounded-full { white-space: nowrap; }
         /* 화면 폰트 하나로 통일 — 코드·번호 등 monospace 도 본문 폰트(Pretendard)로 */
         .font-mono, code, pre, kbd, samp { font-family: 'Pretendard Variable', Pretendard, sans-serif !important; }
+        /* 플랫 카드 — 그림자 최소화, ce-admin 스타일 */
+        .shadow-sm{ box-shadow:0 1px 2px rgba(13,27,42,.04) !important }
+        .shadow, .shadow-md{ box-shadow:0 1px 3px rgba(13,27,42,.06),0 1px 2px rgba(13,27,42,.04) !important }
+        /* 입력 포커스 링 — 틸 */
+        input:focus, select:focus, textarea:focus{ outline:none }
+        /* 스크롤바 */
+        ::-webkit-scrollbar{width:10px;height:10px}
+        ::-webkit-scrollbar-thumb{background:#D0D5DA;border-radius:8px;border:2px solid transparent;background-clip:content-box}
+        ::-webkit-scrollbar-thumb:hover{background:#B4BBC2;background-clip:content-box}
+        ::-webkit-scrollbar-track{background:transparent}
     </style>
     @stack('head')
 </head>
@@ -148,7 +171,7 @@
     };
     $badge = ['hq' => 'bg-mango-500', 'store' => 'bg-emerald-500', 'supplier' => 'bg-sky-500'][$role] ?? 'bg-neutral-500';
 @endphp
-<body class="font-sans bg-neutral-100 text-neutral-800">
+<body class="font-sans text-neutral-800">
 @php $panelMode = request()->boolean('panel'); @endphp
 @if ($panelMode)
     {{-- 패널(옆 탭) 모드 — 사이드바·헤더 없이 상세 내용만. 리스트 화면이 이 #panel-root 를
@@ -169,44 +192,45 @@
     </div>
 @else
 <div class="flex min-h-screen">
-    {{-- Sidebar --}}
-    <aside class="hidden lg:flex w-64 shrink-0 flex-col bg-neutral-900 text-neutral-300 sticky top-0 h-screen">
-        <a href="{{ route('portal.dashboard') }}" class="flex items-center gap-2 h-16 px-6 border-b border-white/10">
+    {{-- Sidebar — ce-admin 화이트 플로팅 패널 --}}
+    <aside class="hidden lg:flex w-64 shrink-0 sticky top-0 h-screen p-2.5">
+      <div class="flex flex-col w-full bg-white rounded-xl border border-neutral-200 overflow-hidden">
+        <a href="{{ route('portal.dashboard') }}" class="flex items-center gap-2 h-14 px-4 border-b border-neutral-100">
             <span class="text-2xl">🥭</span>
-            <span class="font-black text-white"><span class="text-mango-400">LEE</span>FRIENDS</span>
+            <span class="font-black text-neutral-900"><span class="text-mango-500">LEE</span>FRIENDS</span>
         </a>
-        <div class="px-6 py-4 border-b border-white/10">
+        <div class="px-4 py-3 border-b border-neutral-100">
             <span class="inline-flex items-center gap-1.5 text-xs font-bold text-white {{ $badge }} px-2.5 py-1 rounded-full">{{ $roleLabel }} 포털</span>
             @if ($role === 'store' && $user->store)
-                <p class="text-sm text-white/80 mt-2 font-semibold">{{ $user->store->name }}</p>
+                <p class="text-sm text-neutral-700 mt-2 font-semibold">{{ $user->store->name }}</p>
             @elseif ($role === 'supplier' && $user->supplier)
-                <p class="text-sm text-white/80 mt-2 font-semibold">{{ $user->supplier->name }}</p>
+                <p class="text-sm text-neutral-700 mt-2 font-semibold">{{ $user->supplier->name }}</p>
             @endif
         </div>
-        <nav class="flex-1 min-h-0 p-3 space-y-1 overflow-y-auto">
+        <nav class="flex-1 min-h-0 p-2.5 space-y-0.5 overflow-y-auto">
             @foreach ($nav as [$groupLabel, $groupIcon, $children])
                 @php $groupActive = collect($children)->contains(fn ($c) => $isChildActive($c)); @endphp
                 @if (count($children) === 1 && empty($children[0][2]) && in_array($children[0][0], ['portal.dashboard', 'portal.chat.index', 'portal.hq.notices.index', 'portal.notices.index', 'portal.staff.index', 'portal.schedules.index'], true))
                     {{-- 단일 링크 그룹 (대시보드) --}}
                     @php [$r, $label, $also] = $children[0]; $active = $isChildActive($children[0]); @endphp
                     <a href="{{ route($r) }}"
-                       class="flex items-center gap-3 px-4 py-2.5 rounded-xl font-semibold transition {{ $active ? 'bg-mango-500 text-white' : 'hover:bg-white/5 hover:text-white' }}">
+                       class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-semibold transition {{ $active ? 'bg-mango-50 text-mango-600 font-bold' : 'text-neutral-700 hover:bg-neutral-50 hover:text-mango-600' }}">
                         <span>{{ $groupIcon }}</span> {{ $label }}
                     </a>
                 @else
                     <div x-data="{ open: {{ $groupActive ? 'true' : 'false' }} }">
                         <button type="button" @click="open = !open"
-                                class="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl font-bold transition {{ $groupActive ? 'text-white' : 'text-neutral-400 hover:text-white hover:bg-white/5' }}">
+                                class="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-bold transition {{ $groupActive ? 'text-mango-600' : 'text-neutral-600 hover:text-mango-600 hover:bg-neutral-50' }}">
                             <span>{{ $groupIcon }}</span>
                             <span class="flex-1 text-left">{{ $groupLabel }}</span>
-                            <svg class="w-4 h-4 transition-transform" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 9l6 6 6-6"/></svg>
+                            <svg class="w-4 h-4 transition-transform text-neutral-400" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 9l6 6 6-6"/></svg>
                         </button>
-                        <div x-show="open" x-collapse class="mt-1 ml-3 pl-3 border-l border-white/10 space-y-0.5">
+                        <div x-show="open" x-collapse class="mt-0.5 ml-3 pl-3 border-l border-neutral-200 space-y-0.5">
                             @foreach ($children as $child)
                                 @php [$r, $label, $also] = $child; $active = $isChildActive($child); @endphp
                                 <a href="{{ route($r) }}"
-                                   class="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition {{ $active ? 'bg-mango-500 text-white' : 'text-neutral-300 hover:bg-white/5 hover:text-white' }}">
-                                    <span class="w-1.5 h-1.5 rounded-full {{ $active ? 'bg-white' : 'bg-white/30' }}"></span>
+                                   class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-semibold transition {{ $active ? 'bg-mango-50 text-mango-600 font-bold' : 'text-neutral-600 hover:bg-neutral-50 hover:text-mango-600' }}">
+                                    <span class="w-1.5 h-1.5 rounded-full {{ $active ? 'bg-mango-500' : 'bg-neutral-300' }}"></span>
                                     {{ $label }}
                                     @if ($r === 'portal.hq.registrations.index' && $pendingSignups > 0)
                                         <span class="ml-auto inline-flex items-center justify-center min-w-5 h-5 px-1.5 rounded-full bg-rose-500 text-white text-[11px] font-bold">{{ $pendingSignups }}</span>
@@ -218,12 +242,13 @@
                 @endif
             @endforeach
         </nav>
-        <div class="p-4 border-t border-white/10">
-            <a href="{{ route('home') }}" target="_blank" class="block px-4 py-2 text-sm hover:text-white">홈페이지 ↗</a>
+        <div class="p-3 border-t border-neutral-100">
+            <a href="{{ route('home') }}" target="_blank" class="block px-3 py-1.5 text-sm text-neutral-500 hover:text-neutral-900">홈페이지 ↗</a>
             <form method="POST" action="{{ route('portal.logout') }}">@csrf
-                <button class="w-full text-left px-4 py-2 text-sm text-rose-400 hover:text-rose-300">로그아웃</button>
+                <button class="w-full text-left px-3 py-1.5 text-sm text-rose-500 hover:text-rose-600">로그아웃</button>
             </form>
         </div>
+      </div>
     </aside>
 
     <div class="flex-1 flex flex-col min-w-0">
