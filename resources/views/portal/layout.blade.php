@@ -38,8 +38,9 @@
         .shadow, .shadow-md{ box-shadow:0 1px 3px rgba(13,27,42,.06),0 1px 2px rgba(13,27,42,.04) !important }
         /* 카드 라운드 통일 — ce-admin 12px */
         .rounded-2xl{ border-radius:12px !important }
-        /* 사이드바 메뉴 글자 키우기 (html 13px 기준이라 text-sm 이 작게 보임) */
-        aside nav a, aside nav button { font-size:14.5px !important }
+        /* 사이드바 메뉴 글자 키우기 (html 13px 기준이라 text-sm 이 작게 보임) + 줄바꿈 방지 */
+        aside nav a, aside nav button { font-size:14.5px !important; white-space:nowrap; }
+        aside nav .flex-1 { min-width:0; }   /* 그룹 라벨 영역 축소 허용(캐럿 유지) */
         /* 입력 포커스 링 — 틸 */
         input:focus, select:focus, textarea:focus{ outline:none }
         /* 스크롤바 */
@@ -120,7 +121,7 @@
 @else
 <div class="flex min-h-screen">
     {{-- Sidebar — ce-admin 화이트 플로팅 패널 --}}
-    <aside class="hidden lg:flex w-64 shrink-0 sticky top-0 h-screen p-2.5">
+    <aside class="hidden lg:flex w-72 shrink-0 sticky top-0 h-screen p-2.5">
       <div class="flex flex-col w-full bg-white rounded-xl border border-neutral-200 overflow-hidden">
         <a href="{{ route('portal.dashboard') }}" class="flex items-center gap-2 h-14 px-4 border-b border-neutral-100">
             <span class="text-2xl">🥭</span>
