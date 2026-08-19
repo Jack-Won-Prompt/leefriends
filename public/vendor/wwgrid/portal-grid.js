@@ -44,9 +44,10 @@
             [[id + '-btnList', onList], [id + '-btnDetail', !onList]].forEach(([bid, act]) => {
                 const b = document.getElementById(bid);
                 if (!b) return;
-                b.classList.toggle('border-mango-500', act);
-                b.classList.toggle('text-mango-600', act);
-                b.classList.toggle('border-transparent', !act);
+                // ce-admin 세그먼트 컨트롤: 활성 = 흰색 알약
+                b.classList.toggle('bg-white', act);
+                b.classList.toggle('text-neutral-900', act);
+                b.classList.toggle('shadow-sm', act);
                 b.classList.toggle('text-neutral-400', !act);
             });
         },

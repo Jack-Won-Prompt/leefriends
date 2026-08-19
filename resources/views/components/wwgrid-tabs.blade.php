@@ -3,11 +3,11 @@
      사용: <x-wwgrid-tabs gid="fooGrid"> ...그리드+페이지네이션... </x-wwgrid-tabs> --}}
 @props(['gid', 'count' => null])
 
-<div class="flex items-center gap-1 border-b border-neutral-200 mb-2">
+<div class="inline-flex items-center gap-0.5 p-0.5 rounded-lg bg-neutral-200/80 mb-3">
     <button type="button" id="{{ $gid }}-btnList" onclick="ww.switchTab('{{ $gid }}','list')"
-            class="px-4 py-2.5 text-sm font-extrabold border-b-2 border-mango-500 text-mango-600 -mb-px transition">📋 리스트@if (! is_null($count)) <span class="font-bold text-neutral-400">(합계 <span class="text-mango-600">{{ number_format($count) }}</span>건)</span>@endif</button>
+            class="inline-flex items-center h-8 px-3.5 rounded-md text-sm font-bold bg-white text-neutral-900 shadow-sm transition">📋 리스트@if (! is_null($count)) <span class="ml-1 font-bold text-neutral-400">(합계 <span class="text-mango-600">{{ number_format($count) }}</span>건)</span>@endif</button>
     <button type="button" id="{{ $gid }}-btnDetail" onclick="ww.switchTab('{{ $gid }}','detail')" disabled
-            class="px-4 py-2.5 text-sm font-extrabold border-b-2 border-transparent text-neutral-300 -mb-px transition">
+            class="inline-flex items-center h-8 px-3.5 rounded-md text-sm font-bold text-neutral-400 transition">
         📄 상세보기<span id="{{ $gid }}-detailLabel" class="ml-1 font-bold"></span>
     </button>
 </div>

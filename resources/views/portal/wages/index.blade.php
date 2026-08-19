@@ -52,11 +52,11 @@
 @endphp
 
 {{-- 정직원 / 아르바이트 탭 --}}
-<div class="flex items-center gap-1 border-b border-neutral-200 mb-2">
+<div class="inline-flex items-center gap-0.5 p-0.5 rounded-lg bg-neutral-200/80 mb-3">
     <button type="button" id="wagesTabReg" onclick="wagesTab('reg')"
-            class="px-4 py-2.5 text-sm font-extrabold border-b-2 border-mango-500 text-mango-600 -mb-px transition">🧑‍💼 정직원 <span class="font-bold text-neutral-400">({{ number_format(count($regularRows)) }})</span></button>
+            class="inline-flex items-center h-8 px-3.5 rounded-md text-sm font-bold bg-white text-neutral-900 shadow-sm transition">🧑‍💼 정직원 <span class="ml-1 font-bold text-neutral-400">({{ number_format(count($regularRows)) }})</span></button>
     <button type="button" id="wagesTabPart" onclick="wagesTab('part')"
-            class="px-4 py-2.5 text-sm font-extrabold border-b-2 border-transparent text-neutral-400 -mb-px transition">🕐 아르바이트 <span class="font-bold text-neutral-300">({{ number_format(count($rows)) }})</span></button>
+            class="inline-flex items-center h-8 px-3.5 rounded-md text-sm font-bold text-neutral-500 transition">🕐 아르바이트 <span class="ml-1 font-bold text-neutral-400">({{ number_format(count($rows)) }})</span></button>
 </div>
 
 <div id="wagesPaneReg">
@@ -172,10 +172,10 @@
         document.getElementById('wagesPaneReg').classList.toggle('hidden', !reg);
         document.getElementById('wagesPanePart').classList.toggle('hidden', reg);
         const setActive = (btn, active) => {
-            btn.classList.toggle('border-mango-500', active);
-            btn.classList.toggle('text-mango-600', active);
-            btn.classList.toggle('border-transparent', !active);
-            btn.classList.toggle('text-neutral-400', !active);
+            btn.classList.toggle('bg-white', active);
+            btn.classList.toggle('text-neutral-900', active);
+            btn.classList.toggle('shadow-sm', active);
+            btn.classList.toggle('text-neutral-500', !active);
         };
         setActive(document.getElementById('wagesTabReg'), reg);
         setActive(document.getElementById('wagesTabPart'), !reg);
