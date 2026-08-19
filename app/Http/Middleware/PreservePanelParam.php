@@ -17,6 +17,11 @@ class PreservePanelParam
 {
     public function handle(Request $request, Closure $next)
     {
+        // 매장으로 보기 시작/종료는 상단창(_top)에서 전체 셸을 다시 로드해야 하므로 panel 유지 제외
+        if ($request->routeIs('portal.hq.stores.impersonate', 'portal.impersonate.stop')) {
+            return $next($request);
+        }
+
         $fromPanel = $request->boolean('panel')
             || str_contains((string) $request->headers->get('referer'), 'panel=1');
 

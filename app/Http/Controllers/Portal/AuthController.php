@@ -51,6 +51,24 @@ class AuthController extends Controller
         return back()->withErrors(['email' => '이메일 또는 비밀번호가 올바르지 않습니다.'])->onlyInput('email');
     }
 
+    /** 매장으로 보기 종료 — 원래 본사 계정으로 복귀 */
+    public function stopImpersonate(Request $request)
+    {
+        $originalId = $request->session()->pull('impersonator_id');
+        if (! $originalId) {
+            return redirect()->route('portal.dashboard');
+        }
+
+        $hq = \App\Models\User::find($originalId);
+        if ($hq) {
+            Auth::login($hq);
+            return redirect()->route('portal.hq.stores.index')->with('success', '본사 관리자 화면으로 돌아왔습니다.');
+        }
+
+        Auth::logout();
+        return redirect()->route('portal.login');
+    }
+
     public function logout(Request $request)
     {
         Auth::logout();

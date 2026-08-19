@@ -213,6 +213,14 @@
                 <h1 class="text-lg font-extrabold text-neutral-900 leading-none truncate">@yield('title', '포털')</h1>
             </div>
             <div class="flex items-center gap-2 text-sm">
+                @if (session('impersonator_id'))
+                    {{-- 본사가 매장으로 보기 중 — 본사로 돌아가기 --}}
+                    <form method="POST" action="{{ route('portal.impersonate.stop') }}">@csrf
+                        <button class="inline-flex items-center gap-1.5 h-9 rounded-lg bg-amber-500 hover:bg-amber-600 text-white px-3 text-sm font-bold shadow-sm transition" title="본사 관리자 화면으로 돌아가기">
+                            👁 매장 화면 보기 중{{ $user->store ? ' · '.$user->store->name : '' }} <span class="ml-1 rounded bg-white/25 px-1.5 py-0.5 text-[11px]">← 본사로 돌아가기</span>
+                        </button>
+                    </form>
+                @endif
                 @if (in_array($role, ['hq', 'store', 'supplier'], true))
                     @php $todaySchedules = \App\Models\Schedule::forUser($user)->onDate(today())->orderBy('id')->get(); @endphp
                     <div class="relative" x-data="{ open: false }">
@@ -482,7 +490,7 @@
     const hasPanel = (u) => new URLSearchParams(parseA(u).search).has('panel');
     const withPanel = (u) => { const a = parseA(u); const p = new URLSearchParams(a.search); p.set('panel', '1'); return a.pathname + '?' + p.toString(); };
     const isInternal = (a) => { try { const u = new URL(a.href); return u.origin === location.origin && u.pathname.indexOf('/portal') !== -1; } catch (e) { return false; } };
-    const addPanelInput = (form) => { if (form && !form.querySelector('input[name="panel"]')) { const i = document.createElement('input'); i.type = 'hidden'; i.name = 'panel'; i.value = '1'; form.appendChild(i); } };
+    const addPanelInput = (form) => { if (!form || form.target === '_top' || form.dataset.noPanel) return; if (!form.querySelector('input[name="panel"]')) { const i = document.createElement('input'); i.type = 'hidden'; i.name = 'panel'; i.value = '1'; form.appendChild(i); } };
     const initForms = () => document.querySelectorAll('form').forEach(addPanelInput);
     if (document.readyState !== 'loading') initForms(); else document.addEventListener('DOMContentLoaded', initForms);
     document.addEventListener('submit', (e) => { if (e.target instanceof HTMLFormElement) addPanelInput(e.target); }, true);

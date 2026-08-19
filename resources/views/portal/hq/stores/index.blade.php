@@ -29,6 +29,8 @@
             'email' => $st->email ?: '',
             'acc_state' => $state,
             'has_email' => (bool) $st->email,
+            'can_impersonate' => $state === 'active',
+            'impersonate_url' => route('portal.hq.stores.impersonate', $st),
             'reinvite_url' => route('portal.hq.stores.reinvite', $st),
             'destroy_url' => route('portal.hq.stores.destroy', $st),
             'confirm' => '매장 «'.$st->name.'»을(를) 삭제할까요? 계정·채팅·재고도 함께 삭제되며 되돌릴 수 없습니다.',
@@ -185,6 +187,14 @@
         const b = document.createElement('button'); b.textContent = label; b.className = 'text-[11px] font-semibold text-emerald-600 hover:underline'; f.appendChild(b);
         return f;
     };
+    // 매장으로 보기 — 상단창(_top)에서 전체 셸을 매장 계정으로 다시 로드
+    const impersonateForm = (action) => {
+        const f = document.createElement('form'); f.method = 'POST'; f.action = action; f.target = '_top';
+        const t = document.createElement('input'); t.type = 'hidden'; t.name = '_token'; t.value = CSRF; f.appendChild(t);
+        const b = document.createElement('button'); b.type = 'submit'; b.textContent = '🖥 매장으로 보기';
+        b.className = 'inline-flex items-center gap-1 rounded-lg bg-mango-500 hover:bg-mango-600 text-white font-bold px-3 py-1.5 text-xs transition';
+        f.appendChild(b); return f;
+    };
     ww.grid('hqStoresGrid', [
         { header: '매장명', name: 'name', width: 180, renderer: (v) => ww.el('span', 'font-bold text-neutral-900', v) },
         { header: '지역', name: 'region', width: 110, renderer: (v) => v ? v : ww.dash() },
@@ -204,6 +214,10 @@
               if (row.has_email) wrap.appendChild(reinviteForm(row.reinvite_url, '초대 메일 발송'));
               return wrap;
           } },
+        { header: '매장 화면', name: 'impersonate_url', width: 150, align: 'center', sortable: false, exportable: false,
+          renderer: (v, row) => row.can_impersonate
+              ? impersonateForm(v)
+              : ww.el('span', 'text-[11px] text-neutral-300', '계정 준비 후 가능') },
         { header: '관리', name: 'destroy_url', width: 110, align: 'center', sortable: false, exportable: false,
           renderer: (v, row) => {
               const wrap = ww.el('div', 'flex items-center justify-center whitespace-nowrap');

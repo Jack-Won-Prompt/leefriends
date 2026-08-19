@@ -9,6 +9,7 @@ use App\Models\Order;
 use App\Models\Store;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -22,6 +23,30 @@ class StoreController extends Controller
         $stores = Store::with('account')->orderBy('name')->paginate(20);
 
         return view('portal.hq.stores.index', compact('stores'));
+    }
+
+    /**
+     * 매장으로 보기 — 본사 관리자가 매장으로 로그인하지 않고 해당 매장 계정으로
+     * 전환(임퍼스네이션)해 매장 포털 메뉴·화면을 그대로 확인한다.
+     * 원래 본사 계정 id 를 세션에 보관해 '본사로 돌아가기'로 복귀한다.
+     */
+    public function impersonate(Store $store)
+    {
+        $account = $store->account;   // 매장 포털 계정(role=store)
+        if (! $account) {
+            return back()->withErrors(['store' => "«{$store->name}»은(는) 매장 계정이 없어 화면을 볼 수 없습니다. 먼저 초대해 계정을 생성해 주세요."]);
+        }
+        if ($account->invite_token) {
+            return back()->withErrors(['store' => "«{$store->name}»은(는) 아직 비밀번호 설정(초대 대기) 중이라 화면을 볼 수 없습니다."]);
+        }
+
+        // 중첩 임퍼스네이션 방지 — 이미 다른 계정으로 보고 있으면 최초 본사 id 유지
+        if (! session()->has('impersonator_id')) {
+            session(['impersonator_id' => Auth::id()]);
+        }
+        Auth::login($account);
+
+        return redirect()->route('portal.dashboard');
     }
 
     /** 신규 매장을 이메일로 초대 (매장 생성 + 초대 메일) */

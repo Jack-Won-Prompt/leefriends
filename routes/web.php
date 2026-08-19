@@ -93,6 +93,9 @@ Route::prefix('portal')->name('portal.')->group(function () {
     Route::middleware('role:hq,store,supplier')->group(function () {
         Route::get('/', [Portal\DashboardController::class, 'index'])->name('dashboard');
 
+        // 매장으로 보기 종료(본사 복귀) — 임퍼스네이션 중에는 역할이 store 이므로 공용 그룹에 둔다
+        Route::post('impersonate/stop', [Portal\AuthController::class, 'stopImpersonate'])->name('impersonate.stop');
+
         // 알림 (전 역할)
         Route::get('notifications', [Portal\NotificationController::class, 'index'])->name('notifications.index');
         Route::post('notifications/read-all', [Portal\NotificationController::class, 'readAll'])->name('notifications.read_all');
@@ -261,6 +264,7 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::resource('suppliers', Portal\Hq\SupplierController::class)->except(['show', 'create', 'edit']);
             // 매장 관리 + 초대
             Route::get('stores', [Portal\Hq\StoreController::class, 'index'])->name('stores.index');
+            Route::post('stores/{store}/impersonate', [Portal\Hq\StoreController::class, 'impersonate'])->name('stores.impersonate');
             Route::post('stores/invite', [Portal\Hq\StoreController::class, 'invite'])->name('stores.invite');
             Route::post('stores/{store}/reinvite', [Portal\Hq\StoreController::class, 'reinvite'])->name('stores.reinvite');
             Route::patch('stores/{store}', [Portal\Hq\StoreController::class, 'update'])->name('stores.update');
