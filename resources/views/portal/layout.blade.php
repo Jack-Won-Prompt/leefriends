@@ -36,6 +36,8 @@
         /* 플랫 카드 — 그림자 최소화, ce-admin 스타일 */
         .shadow-sm{ box-shadow:0 1px 2px rgba(13,27,42,.04) !important }
         .shadow, .shadow-md{ box-shadow:0 1px 3px rgba(13,27,42,.06),0 1px 2px rgba(13,27,42,.04) !important }
+        /* 카드 라운드 통일 — ce-admin 12px */
+        .rounded-2xl{ border-radius:12px !important }
         /* 입력 포커스 링 — 틸 */
         input:focus, select:focus, textarea:focus{ outline:none }
         /* 스크롤바 */
@@ -252,16 +254,16 @@
     </aside>
 
     <div class="flex-1 flex flex-col min-w-0">
-        <header class="h-16 bg-white border-b border-neutral-200 flex items-center justify-between px-5 lg:px-8 sticky top-0 z-30">
+        <header class="h-16 bg-transparent flex items-center justify-between px-4 lg:px-4 sticky top-0 z-30">
             <div class="min-w-0">
                 <p class="text-[11px] font-bold text-neutral-400 leading-none mb-1">{{ $roleLabel }} 포털 <span class="text-neutral-300">›</span> @yield('title', '포털')</p>
                 <h1 class="text-lg font-extrabold text-neutral-900 leading-none truncate">@yield('title', '포털')</h1>
             </div>
-            <div class="flex items-center gap-3 text-sm">
+            <div class="flex items-center gap-2 text-sm">
                 @if (in_array($role, ['hq', 'store', 'supplier'], true))
                     @php $todaySchedules = \App\Models\Schedule::forUser($user)->onDate(today())->orderBy('id')->get(); @endphp
                     <div class="relative" x-data="{ open: false }">
-                        <button @click="open = !open" class="relative w-10 h-10 grid place-items-center rounded-xl hover:bg-neutral-100" title="오늘 일정">
+                        <button @click="open = !open" class="relative w-9 h-9 grid place-items-center rounded-lg bg-white border border-neutral-200 text-neutral-700 hover:bg-mango-50 hover:border-mango-200 hover:text-mango-600 transition" title="오늘 일정">
                             <span class="text-xl">📅</span>
                             @if ($todaySchedules->count() > 0)
                                 <span class="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 grid place-items-center text-[10px] font-bold text-white bg-mango-500 rounded-full">{{ $todaySchedules->count() }}</span>
@@ -289,7 +291,7 @@
                     $unreadCount = $user->notifications()->whereNull('read_at')->count();
                 @endphp
                 <div class="relative" x-data="{ open: false }">
-                    <button @click="open = !open" class="relative w-10 h-10 grid place-items-center rounded-xl hover:bg-neutral-100">
+                    <button @click="open = !open" class="relative w-9 h-9 grid place-items-center rounded-lg bg-white border border-neutral-200 text-neutral-700 hover:bg-mango-50 hover:border-mango-200 hover:text-mango-600 transition">
                         <span class="text-xl">🔔</span>
                         <span id="noti-badge" data-count="{{ $unreadCount }}"
                               class="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 grid place-items-center text-[10px] font-bold text-white bg-rose-500 rounded-full {{ $unreadCount > 0 ? '' : 'hidden' }}">{{ $unreadCount > 99 ? '99+' : $unreadCount }}</span>
@@ -318,9 +320,12 @@
                         <a href="{{ route('portal.notifications.index') }}" class="block text-center py-2.5 text-sm font-bold text-neutral-500 hover:bg-neutral-50 border-t border-neutral-100">전체 보기</a>
                     </div>
                 </div>
-                <span class="text-neutral-500">{{ $user->name }} ({{ $roleLabel }})</span>
+                <span class="inline-flex items-center gap-1.5 h-9 rounded-lg bg-white border border-neutral-200 px-3 text-sm font-semibold text-neutral-700">
+                    <span class="w-6 h-6 rounded-full bg-mango-500 text-white grid place-items-center text-[11px] font-bold">{{ mb_substr($user->name, 0, 1) }}</span>
+                    {{ $user->name }} <span class="text-neutral-400 font-normal">({{ $roleLabel }})</span>
+                </span>
                 <form method="POST" action="{{ route('portal.logout') }}">@csrf
-                    <button class="rounded-lg bg-neutral-100 hover:bg-neutral-200 px-3 py-1.5 font-semibold">로그아웃</button>
+                    <button class="h-9 rounded-lg bg-white border border-neutral-200 hover:bg-neutral-50 px-3 text-sm font-semibold text-neutral-600">로그아웃</button>
                 </form>
             </div>
         </header>
