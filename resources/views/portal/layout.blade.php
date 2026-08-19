@@ -139,7 +139,7 @@
     } else {
         $nav[] = ['출근관리', '🕐', [
             ['portal.attendance.approvals', '출근 승인', []],
-            ['portal.wages.index', '아르바이트 급여', []],
+            ['portal.wages.index', '급여 관리', []],
         ]];
     }
     $isChildActive = function ($child) {
