@@ -16,11 +16,33 @@ use Illuminate\Http\Request;
 class TaxInvoiceController extends Controller
 {
     /** 발행 이력 (본사→매장) */
-    public function index()
+    public function index(Request $request)
     {
+        $status = $request->query('status', 'all');
+        $from = $request->query('from') ?: null;
+        $to = $request->query('to') ?: null;
+        if ($from && $to && $from > $to) {
+            [$from, $to] = [$to, $from];
+        }
+
+        $query = TaxInvoice::where('direction', 'hq_to_store')
+            ->with(['store', 'order', 'issuer'])->latest();
+        if (array_key_exists($status, TaxInvoice::STATUSES)) {
+            $query->where('status', $status);
+        }
+        if ($from) {
+            $query->whereDate('created_at', '>=', $from);
+        }
+        if ($to) {
+            $query->whereDate('created_at', '<=', $to);
+        }
+
         return view('portal.hq.tax_invoices.index', [
-            'invoices' => TaxInvoice::where('direction', 'hq_to_store')
-                ->with(['store', 'order', 'issuer'])->latest()->paginate(20),
+            'invoices' => $query->paginate(20)->withQueryString(),
+            'statuses' => TaxInvoice::STATUSES,
+            'status' => $status,
+            'from' => $from,
+            'to' => $to,
         ]);
     }
 

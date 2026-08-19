@@ -4,20 +4,7 @@
 @section('content')
 @php $polling = $selected && ! $selected->isDone(); @endphp
 
-<x-wms.page-head title="계좌연동 입금확인" subtitle="등록된 계좌의 입금내역을 수집하고, 입금자↔매장 매핑으로 매장 주문과 대사합니다." icon="🏦">
-    <x-slot:actions>
-        <form method="POST" action="{{ route('portal.hq.bank.auto_charge') }}" class="inline">
-            @csrf
-            <input type="hidden" name="acc" value="{{ $selAcc }}">
-            <button type="submit" class="inline-flex items-center gap-1 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-4 py-2 text-sm transition">💰 예치금 자동충전</button>
-        </form>
-        <form method="POST" action="{{ route('portal.hq.bank.auto_match') }}" class="inline">
-            @csrf
-            <input type="hidden" name="acc" value="{{ $selAcc }}">
-            <button type="submit" class="inline-flex items-center gap-1 rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm transition">⚡ 자동 대사</button>
-        </form>
-    </x-slot:actions>
-</x-wms.page-head>
+<x-wms.page-head title="계좌연동 입금확인" subtitle="등록된 계좌의 입금내역을 수집하고, 입금자↔매장 매핑으로 매장 주문과 대사합니다." icon="🏦" />
 
 @if ($accountsError)
     <div class="mb-5 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 px-5 py-3.5 text-sm font-medium">
@@ -34,31 +21,46 @@
 
 {{-- 계좌 선택 + 기간 수집 --}}
 <x-wms.panel class="mb-5">
-    <form method="GET" action="{{ route('portal.hq.bank.index') }}" class="px-5 pt-5 flex flex-wrap items-end gap-3">
-        <div>
-            <label class="block text-xs font-semibold text-neutral-500 mb-1">계좌</label>
-            <select name="acc" onchange="this.form.submit()" class="rounded-xl border-neutral-200 text-sm py-2 min-w-[15rem]">
-                @foreach ($accounts as $a)
-                    <option value="{{ $a->bankCode }}|{{ $a->accountNumber }}" @selected($selAcc === $a->bankCode.'|'.$a->accountNumber)>
-                        {{ $a->accountName ?: '계좌' }} · {{ $a->accountNumber }}
-                    </option>
-                @endforeach
-            </select>
+    <div class="px-5 py-5 flex flex-wrap items-end gap-3">
+        <form method="GET" action="{{ route('portal.hq.bank.index') }}" class="flex items-end gap-3">
+            <div>
+                <label class="block text-xs font-semibold text-neutral-500 mb-1">계좌</label>
+                <select name="acc" onchange="this.form.submit()" class="rounded-xl border-neutral-200 text-sm py-2 min-w-[15rem]">
+                    @foreach ($accounts as $a)
+                        <option value="{{ $a->bankCode }}|{{ $a->accountNumber }}" @selected($selAcc === $a->bankCode.'|'.$a->accountNumber)>
+                            {{ $a->accountName ?: '계좌' }} · {{ $a->accountNumber }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+        </form>
+        <form method="POST" action="{{ route('portal.hq.bank.request') }}" class="flex flex-wrap items-end gap-3">
+            @csrf
+            <input type="hidden" name="acc" value="{{ $selAcc }}">
+            <div>
+                <label class="block text-xs font-semibold text-neutral-500 mb-1">시작일</label>
+                <input type="date" name="start_date" value="{{ old('start_date', $defStart) }}" class="rounded-xl border-neutral-200 text-sm py-2">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-neutral-500 mb-1">종료일</label>
+                <input type="date" name="end_date" value="{{ old('end_date', $defEnd) }}" class="rounded-xl border-neutral-200 text-sm py-2">
+            </div>
+            <button type="submit" @disabled(! $selAcc) class="inline-flex items-center gap-1 rounded-xl bg-neutral-800 hover:bg-neutral-900 disabled:opacity-40 text-white font-bold px-5 py-2.5 text-sm transition">🔄 입금내역 수집</button>
+        </form>
+        {{-- 자동 처리 액션 (검색 필터 내부) --}}
+        <div class="ml-auto flex items-end gap-2">
+            <form method="POST" action="{{ route('portal.hq.bank.auto_charge') }}">
+                @csrf
+                <input type="hidden" name="acc" value="{{ $selAcc }}">
+                <button type="submit" class="inline-flex items-center gap-1 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-4 py-2.5 text-sm transition">💰 예치금 자동충전</button>
+            </form>
+            <form method="POST" action="{{ route('portal.hq.bank.auto_match') }}">
+                @csrf
+                <input type="hidden" name="acc" value="{{ $selAcc }}">
+                <button type="submit" class="inline-flex items-center gap-1 rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2.5 text-sm transition">⚡ 자동 대사</button>
+            </form>
         </div>
-    </form>
-    <form method="POST" action="{{ route('portal.hq.bank.request') }}" class="px-5 pb-5 pt-3 flex flex-wrap items-end gap-3">
-        @csrf
-        <input type="hidden" name="acc" value="{{ $selAcc }}">
-        <div>
-            <label class="block text-xs font-semibold text-neutral-500 mb-1">시작일</label>
-            <input type="date" name="start_date" value="{{ old('start_date', $defStart) }}" class="rounded-xl border-neutral-200 text-sm py-2">
-        </div>
-        <div>
-            <label class="block text-xs font-semibold text-neutral-500 mb-1">종료일</label>
-            <input type="date" name="end_date" value="{{ old('end_date', $defEnd) }}" class="rounded-xl border-neutral-200 text-sm py-2">
-        </div>
-        <button type="submit" @disabled(! $selAcc) class="inline-flex items-center gap-1 rounded-xl bg-neutral-800 hover:bg-neutral-900 disabled:opacity-40 text-white font-bold px-5 py-2.5 text-sm transition">🔄 입금내역 수집</button>
-    </form>
+    </div>
 </x-wms.panel>
 
 {{-- 수집 진행 --}}

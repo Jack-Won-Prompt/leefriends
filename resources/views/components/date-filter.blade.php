@@ -1,7 +1,7 @@
 @props(['from' => null, 'to' => null, 'label' => '조회 기간'])
 
 {{-- 날짜 기간 필터. 기존 GET 파라미터(정렬/상태 등)는 hidden 으로 보존. --}}
-<form method="GET" class="flex flex-wrap items-end gap-2 mb-4">
+<form method="GET" class="flex flex-wrap items-end gap-3 mb-3 rounded-2xl bg-white shadow-sm border border-neutral-100 p-4">
     @foreach (request()->except(['from', 'to', 'page']) as $k => $v)
         @if (! is_array($v))<input type="hidden" name="{{ $k }}" value="{{ $v }}">@endif
     @endforeach

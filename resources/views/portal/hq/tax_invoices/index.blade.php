@@ -5,6 +5,24 @@
 <div x-data="{ open: null }" @open-hq-taxinvoice.window="open = $event.detail.id">
 <x-wms.page-head title="세금계산서 (발행)" subtitle="본사 → 매장 발행 내역" icon="🧾" />
 
+<x-wms.filter :action="route('portal.hq.tax_invoices.index')" cols="grid-cols-2 md:grid-cols-3">
+    <x-wms.field label="상태">
+        <select name="status" class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+            <option value="all">전체</option>
+            @foreach ($statuses as $k => $label)
+                <option value="{{ $k }}" @selected($status === $k)>{{ $label }}</option>
+            @endforeach
+        </select>
+    </x-wms.field>
+    <x-wms.field label="발행일 기간">
+        <div class="flex items-center gap-1.5">
+            <input type="date" name="from" value="{{ $from }}" class="w-full min-w-0 rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+            <span class="text-neutral-400 shrink-0">~</span>
+            <input type="date" name="to" value="{{ $to }}" class="w-full min-w-0 rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+        </div>
+    </x-wms.field>
+</x-wms.filter>
+
 @include('portal.partials.wwgrid-assets')
 @php
     $gridRows = $invoices->map(fn ($inv) => [
