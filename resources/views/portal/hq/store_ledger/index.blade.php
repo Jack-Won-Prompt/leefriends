@@ -2,25 +2,14 @@
 @section('title', '매장 원장(정산)')
 
 @section('content')
-<x-wms.page-head title="매장 원장(정산)" subtitle="매장별 예치금 잔액·미수금을 관리합니다. 발주는 차감, 입금은 충전됩니다." icon="📒">
-    <x-slot:actions>
-        <form method="GET" class="flex items-center gap-2">
-            <input type="text" name="q" value="{{ $q }}" placeholder="매장 검색" class="rounded-xl border-neutral-200 text-sm py-2">
-            <button class="rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-600 font-bold px-3.5 py-2 text-sm">검색</button>
-        </form>
-    </x-slot:actions>
-</x-wms.page-head>
+<x-wms.page-head title="매장 원장(정산)" subtitle="매장별 예치금 잔액·미수금을 관리합니다. 발주는 차감, 입금은 충전됩니다." icon="📒" />
 
-<div class="grid sm:grid-cols-2 gap-4 mb-6">
-    <div class="rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-white p-6">
-        <p class="text-white/80 font-semibold text-sm">예치금 잔액 합계</p>
-        <p class="text-3xl font-black mt-1">{{ number_format($totals['prepaid']) }}<span class="text-lg">원</span></p>
-    </div>
-    <div class="rounded-2xl bg-gradient-to-br from-rose-500 to-rose-600 text-white p-6">
-        <p class="text-white/80 font-semibold text-sm">미수금 합계</p>
-        <p class="text-3xl font-black mt-1">{{ number_format($totals['unpaid']) }}<span class="text-lg">원</span></p>
-    </div>
-</div>
+<x-wms.filter :action="url()->current()" cols="grid-cols-1 md:grid-cols-3">
+    <x-wms.field label="매장명">
+        <input type="text" name="q" value="{{ $q }}" placeholder="매장명 검색"
+               class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+    </x-wms.field>
+</x-wms.filter>
 
 @include('portal.partials.wwgrid-assets')
 @php

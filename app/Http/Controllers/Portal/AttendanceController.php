@@ -170,8 +170,8 @@ class AttendanceController extends Controller
 
         $status = $request->query('status', 'all');
         $userId = $request->query('user') ?: null;
-        $from = $request->query('from') ?: null;
-        $to = $request->query('to') ?: null;
+        $from = $request->query('from') ?: today()->toDateString();
+        $to = $request->query('to') ?: today()->toDateString();
 
         // 소속 전 직원(정직원+아르바이트) — 필터 + 출퇴근 등록 대상
         $staff = \App\Models\User::where('role', $me->role)

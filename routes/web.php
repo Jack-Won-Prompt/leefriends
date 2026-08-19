@@ -360,6 +360,10 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::post('notices', [Portal\Hq\NoticeController::class, 'store'])->name('notices.store');
             Route::delete('notices/{notice}', [Portal\Hq\NoticeController::class, 'destroy'])->name('notices.destroy');
 
+            // 환경 설정 — 사이드바 메뉴 표시/숨김
+            Route::get('settings', [Portal\Hq\SettingsController::class, 'index'])->name('settings.index');
+            Route::post('settings/toggle', [Portal\Hq\SettingsController::class, 'toggle'])->name('settings.toggle');
+
             // 창업 문의 (온라인 접수 확인/관리)
             Route::get('inquiries', [Portal\Hq\InquiryController::class, 'index'])->name('inquiries.index');
             Route::get('inquiries/{inquiry}', [Portal\Hq\InquiryController::class, 'show'])->name('inquiries.show');

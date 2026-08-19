@@ -19,6 +19,18 @@ class StatementController extends Controller
 {
     use \App\Support\FiltersByDate;
 
+    /** 거래명세서 이력은 발송일 from/to 기본값을 오늘로 (period 없는 단순 필터) */
+    protected function dateRange(Request $request): array
+    {
+        $from = $request->query('from') ?: today()->toDateString();
+        $to = $request->query('to') ?: today()->toDateString();
+        if ($from > $to) {
+            [$from, $to] = [$to, $from];
+        }
+
+        return [$from, $to];
+    }
+
     /** 발송 이력 목록 */
     public function index(Request $request)
     {

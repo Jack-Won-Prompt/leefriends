@@ -35,8 +35,8 @@ class ShipmentController extends BaseShipmentController
     public function index(Request $request)
     {
         $store = $request->query('store', 'all');
-        $from = $request->query('from') ?: null;
-        $to = $request->query('to') ?: null;
+        $from = $request->query('from') ?: today()->toDateString();
+        $to = $request->query('to') ?: today()->toDateString();
         if ($from && $to && $from > $to) {
             [$from, $to] = [$to, $from];
         }

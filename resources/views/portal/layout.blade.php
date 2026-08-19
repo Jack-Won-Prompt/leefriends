@@ -38,6 +38,8 @@
         .shadow, .shadow-md{ box-shadow:0 1px 3px rgba(13,27,42,.06),0 1px 2px rgba(13,27,42,.04) !important }
         /* 카드 라운드 통일 — ce-admin 12px */
         .rounded-2xl{ border-radius:12px !important }
+        /* 사이드바 메뉴 글자 키우기 (html 13px 기준이라 text-sm 이 작게 보임) */
+        aside nav a, aside nav button { font-size:14.5px !important }
         /* 입력 포커스 링 — 틸 */
         input:focus, select:focus, textarea:focus{ outline:none }
         /* 스크롤바 */
@@ -64,104 +66,8 @@
     $roleLabel = \App\Models\User::ROLES[$role] ?? '사용자';
     // 본사 사이드바 — 승인 대기 중인 회원가입 신청 수 (뱃지)
     $pendingSignups = $role === 'hq' ? \App\Models\User::pendingApproval()->count() : 0;
-    // 2레벨 메뉴: 각 그룹 = [그룹명, 아이콘, 자식[]]. 자식 = [route, label, also[]]. 자식이 비면 그룹 자체가 링크.
-    $menus = [
-        'hq' => [
-            ['대시보드', '📊', [['portal.dashboard', '대시보드', []]]],
-            ['채팅', '💬', [['portal.chat.index', '채팅', []]]],
-            ['주문 · 판매', '📦', [
-                ['portal.hq.orders.index', '매장 발주 주문', ['portal.hq.orders.show']],
-                ['portal.hq.sales_orders.index', '판매주문', []],
-                ['portal.hq.purchase_orders.index', '공급처 구매발주', ['portal.hq.purchase_orders.create']],
-                ['portal.hq.supplier_orders.index', '공급사 발주 현황', []],
-            ]],
-            ['물류관리', '🚚', [
-                ['portal.hq.logistics.inbound', '입고관리', []],
-                ['portal.hq.logistics.inventory', '재고관리', []],
-                ['portal.hq.shipments.index', '출고관리', ['portal.hq.shipments.create','portal.hq.shipments.show']],
-            ]],
-            ['정산 · 현황', '📈', [
-                ['portal.hq.sales', '매출 현황', []],
-                ['portal.hq.statements.create', '거래명세서 작성', []],
-                ['portal.hq.statements.index', '거래명세서 이력', []],
-                ['portal.hq.tax_invoices.create', '세금계산서 발행', []],
-                ['portal.hq.tax_invoices.index', '세금계산서 발행이력', []],
-                ['portal.hq.invoices.index', '세금계산서(수취)', []],
-                ['portal.hq.hometax.index', '매출/매입 관리', []],
-                ['portal.hq.bank.index', '계좌 입금확인', []],
-                ['portal.hq.store_payments.index', '매장별 입금현황', ['portal.hq.store_payments.show']],
-                ['portal.hq.store_ledger.index', '매장 원장(정산)', ['portal.hq.store_ledger.show']],
-            ]],
-            ['기준정보', '🗂️', [
-                ['portal.hq.products.index', '품목 관리', []],
-                ['portal.hq.categories.index', '카테고리 관리', []],
-                ['portal.hq.suppliers.index', '공급처 관리', []],
-                ['portal.hq.stores.index', '매장 관리', []],
-                ['portal.hq.registrations.index', '회원 승인', []],
-                ['portal.hq.couriers.index', '택배사 관리', []],
-                ['portal.hq.fruit_storages.index', '과일 보관 관리', []],
-            ]],
-            ['홈페이지', '🏠', [
-                ['portal.hq.menus.index', '메뉴 관리', []],
-                ['portal.hq.blog.index', '블로그', []],
-                ['portal.hq.clips.index', '네이버 클립', []],
-                ['portal.hq.analytics.index', '방문 분석', []],
-            ]],
-            ['일정 관리', '📅', [['portal.schedules.index', '일정 관리', []]]],
-            ['직원 관리', '👥', [['portal.staff.index', '직원 관리', []]]],
-            ['공지사항', '📢', [['portal.hq.notices.index', '공지사항', []]]],
-            ['창업 문의', '📨', [
-                ['portal.hq.inquiries.index', '창업 문의', ['portal.hq.inquiries.show']],
-            ]],
-        ],
-        'store' => [
-            ['대시보드', '📊', [['portal.dashboard', '대시보드', []]]],
-            ['채팅', '💬', [['portal.chat.index', '본사 채팅', []]]],
-            ['공지사항', '📢', [['portal.notices.index', '공지사항', []]]],
-            ['발주', '🛒', [
-                ['portal.store.orders.create', '재료 발주하기', []],
-                ['portal.store.orders.index', '발주 내역', ['portal.store.orders.show','portal.store.orders.edit']],
-                ['portal.store.sample_orders.create', '샘플 주문하기', []],
-                ['portal.store.sample_orders.index', '샘플 주문 내역', []],
-            ]],
-            ['입고 · 재고', '📦', [
-                ['portal.store.inbound', '입고예정 · 배송', ['portal.store.shipments.show']],
-                ['portal.store.inventory.index', '재고 관리', ['portal.store.inventory.movements']],
-            ]],
-            ['현황', '📈', [
-                ['portal.store.purchases', '구매 현황', []],
-                ['portal.store.statements.index', '거래명세서(수취)', []],
-                ['portal.store.tax_invoices.index', '세금계산서', ['portal.store.tax_invoices.show']],
-            ]],
-            ['보관 가이드', '🧊', [['portal.store.fruit_storages.index', '과일 보관 가이드', []]]],
-            ['일정 관리', '📅', [['portal.schedules.index', '일정 관리', []]]],
-            ['직원 관리', '👥', [['portal.staff.index', '직원 관리', []]]],
-        ],
-        'supplier' => [
-            ['대시보드', '📊', [['portal.dashboard', '대시보드', []]]],
-            ['채팅', '💬', [['portal.chat.index', '본사 채팅', []]]],
-            ['공지사항', '📢', [['portal.notices.index', '공지사항', []]]],
-            ['물품', '🗂️', [
-                ['portal.supplier.products.index', '물품 관리', []],
-            ]],
-            ['주문 · 판매', '📦', [
-                ['portal.supplier.orders.index', '주문 관리', ['portal.supplier.orders.show']],
-                ['portal.supplier.sales_orders.index', '판매주문', []],
-                ['portal.supplier.purchase_orders.index', '본사 구매발주', []],
-            ]],
-            ['출고 · 배송', '🚚', [
-                ['portal.supplier.shipments.index', '출고 관리', ['portal.supplier.shipments.create','portal.supplier.shipments.show']],
-            ]],
-            ['정산 · 현황', '📈', [
-                ['portal.supplier.sales', '매출 현황', []],
-                ['portal.supplier.statements.create', '거래명세서 작성', []],
-                ['portal.supplier.statements.index', '거래명세서 이력', []],
-                ['portal.supplier.invoices.index', '세금계산서 발행이력', ['portal.supplier.invoices.create']],
-            ]],
-            ['일정 관리', '📅', [['portal.schedules.index', '일정 관리', []]]],
-            ['직원 관리', '👥', [['portal.staff.index', '직원 관리', []]]],
-        ],
-    ];
+    // 2레벨 메뉴 정의는 App\Support\PortalMenu 로 이동(환경설정 화면과 공유)
+    $menus = \App\Support\PortalMenu::menus();
     $nav = $menus[$role] ?? $menus['hq'];
     // 출근관리 — 아르바이트는 출근관리만, 정직원은 기존 메뉴 + 출근 승인/급여
     if ($user->isPartTime()) {
@@ -176,6 +82,15 @@
             ['portal.attendance.approvals', '출근 관리', []],
             ['portal.wages.index', '급여 관리', []],
         ]];
+    }
+    // 환경설정에서 숨긴 메뉴 제외 (자식이 모두 숨겨진 그룹은 그룹째 제거)
+    $hiddenMenus = \App\Models\MenuSetting::hiddenRoutes();
+    if (! empty($hiddenMenus)) {
+        $nav = collect($nav)->map(function ($group) use ($hiddenMenus) {
+            [$g, $icon, $children] = $group;
+            $children = array_values(array_filter($children, fn ($c) => ! in_array($c[0], $hiddenMenus, true)));
+            return [$g, $icon, $children];
+        })->filter(fn ($group) => count($group[2]) > 0)->values()->all();
     }
     $isChildActive = function ($child) {
         [$r, , $also] = $child;
@@ -266,7 +181,6 @@
     <div class="flex-1 flex flex-col min-w-0">
         <header class="h-16 bg-transparent flex items-center justify-between px-4 lg:px-4 sticky top-0 z-30">
             <div class="min-w-0">
-                <p class="text-[11px] font-bold text-neutral-400 leading-none mb-1">{{ $roleLabel }} 포털 <span class="text-neutral-300">›</span> @yield('title', '포털')</p>
                 <h1 class="text-lg font-extrabold text-neutral-900 leading-none truncate">@yield('title', '포털')</h1>
             </div>
             <div class="flex items-center gap-2 text-sm">

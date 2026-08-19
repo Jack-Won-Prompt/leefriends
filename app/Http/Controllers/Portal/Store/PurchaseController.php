@@ -13,8 +13,8 @@ class PurchaseController extends Controller
     {
         $storeId = Auth::user()->store_id;
         $period = $request->query('period', 'all');
-        $from = $request->query('from') ?: null;
-        $to = $request->query('to') ?: null;
+        $from = $request->query('from') ?: today()->toDateString();
+        $to = $request->query('to') ?: today()->toDateString();
         if ($from && $to && $from > $to) {
             [$from, $to] = [$to, $from];
         }

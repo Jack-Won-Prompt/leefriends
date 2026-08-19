@@ -19,8 +19,8 @@ class TaxInvoiceController extends Controller
     public function index(Request $request)
     {
         $status = $request->query('status', 'all');
-        $from = $request->query('from') ?: null;
-        $to = $request->query('to') ?: null;
+        $from = $request->query('from') ?: today()->toDateString();
+        $to = $request->query('to') ?: today()->toDateString();
         if ($from && $to && $from > $to) {
             [$from, $to] = [$to, $from];
         }
