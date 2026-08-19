@@ -1,11 +1,11 @@
 {{-- 기간 필터. $routeName, $period 필요 / $from, $to (선택) --}}
 @php $from = $from ?? request('from'); $to = $to ?? request('to'); $hasRange = $from || $to; @endphp
-<div class="flex flex-wrap items-center gap-3 mb-6">
+<div class="flex flex-wrap items-center gap-3 mb-3 rounded-2xl bg-white shadow-sm border border-neutral-100 p-4">
     {{-- 빠른 기간 --}}
     <div class="flex gap-2">
         @foreach (['all' => '전체', 'month' => '이번 달'] as $key => $label)
             <a href="{{ route($routeName, $key === 'all' ? [] : ['period' => $key]) }}"
-               class="px-4 py-2 rounded-full text-sm font-bold transition {{ ! $hasRange && $period === $key ? 'bg-mango-500 text-white' : 'bg-white text-neutral-600 hover:bg-mango-50' }}">{{ $label }}</a>
+               class="px-4 py-2 rounded-full text-sm font-bold transition {{ ! $hasRange && $period === $key ? 'bg-mango-500 text-white' : 'bg-neutral-100 text-neutral-600 hover:bg-mango-50 hover:text-mango-600' }}">{{ $label }}</a>
         @endforeach
     </div>
 

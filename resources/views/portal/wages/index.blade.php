@@ -5,7 +5,7 @@
 <x-wms.page-head title="직원 급여" subtitle="정직원 월급여(정시 기준 ± 지각·오버타임) · 아르바이트 시급 정산 및 입금 처리" icon="💵" />
 
 {{-- 기간 조회 --}}
-<form method="GET" action="{{ route('portal.wages.index') }}" class="flex flex-wrap items-end gap-3 mb-5">
+<form method="GET" action="{{ route('portal.wages.index') }}" class="flex flex-wrap items-end gap-3 mb-3 rounded-2xl bg-white shadow-sm border border-neutral-100 p-4">
     <div>
         <label class="block text-xs font-semibold text-neutral-500 mb-1">시작일</label>
         <input type="date" name="from" value="{{ $from }}" class="rounded-xl border-neutral-200 text-sm py-2">

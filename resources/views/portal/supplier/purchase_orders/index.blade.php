@@ -6,7 +6,7 @@
 <div x-data="{ open: null }" @po-open.window="open = $event.detail.id">
 <x-wms.page-head title="본사 구매발주" subtitle="본사가 우리 공급처에 등록한 매입 발주입니다. 발주번호를 클릭하면 상세가 열립니다." icon="🧾" />
 
-<form method="GET" class="flex flex-wrap items-center gap-2 mb-4">
+<form method="GET" class="flex flex-wrap items-center gap-2 mb-3 rounded-2xl bg-white shadow-sm border border-neutral-100 p-4">
     <select name="status" class="rounded-xl border-neutral-200 text-sm py-2">
         <option value="all">전체 상태</option>
         @foreach (\App\Models\PurchaseOrder::STATUSES as $k => $v)<option value="{{ $k }}" @selected($status === $k)>{{ $v }}</option>@endforeach

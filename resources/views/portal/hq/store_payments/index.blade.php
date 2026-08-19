@@ -15,7 +15,7 @@
     $btn = 'inline-flex items-center justify-center rounded-xl px-3.5 py-2 text-sm font-bold transition';
     $isRange = ! $month && ($from || $to);
 @endphp
-<div class="flex flex-wrap items-end justify-between gap-4 mb-6">
+<div class="flex flex-wrap items-end justify-between gap-4 mb-3 rounded-2xl bg-white shadow-sm border border-neutral-100 p-4">
     <div class="flex flex-wrap items-center gap-1.5">
         <a href="{{ route('portal.hq.store_payments.index') }}"
            class="{{ $btn }} {{ ! $month && ! $isRange ? 'bg-mango-500 text-white' : 'bg-white border border-neutral-200 text-neutral-600 hover:bg-neutral-50' }}">전체</a>

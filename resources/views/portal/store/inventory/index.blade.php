@@ -26,7 +26,7 @@
 </div>
 
 {{-- 검색 --}}
-<form method="GET" class="mb-5 flex gap-2">
+<form method="GET" class="mb-3 flex gap-2 rounded-2xl bg-white shadow-sm border border-neutral-100 p-4">
     <input type="text" name="q" value="{{ $keyword }}" placeholder="품목명 검색"
            class="rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 w-full sm:w-72">
     <button class="rounded-xl bg-neutral-900 text-white font-bold px-5">검색</button>

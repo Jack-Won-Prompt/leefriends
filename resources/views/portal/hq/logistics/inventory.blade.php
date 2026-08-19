@@ -17,7 +17,7 @@
 </x-wms.page-head>
 
 {{-- 검색/필터 --}}
-<form method="GET" class="flex flex-wrap items-end gap-3 mb-5">
+<form method="GET" class="flex flex-wrap items-end gap-3 mb-3 rounded-2xl bg-white shadow-sm border border-neutral-100 p-4">
     <div>
         <label class="block text-xs font-semibold text-neutral-500 mb-1">품목 검색</label>
         <input type="text" name="q" value="{{ $keyword }}" placeholder="품목명·코드" class="rounded-xl border-neutral-200 text-sm py-2 min-w-[14rem]">

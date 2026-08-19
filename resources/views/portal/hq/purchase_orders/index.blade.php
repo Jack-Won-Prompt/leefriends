@@ -8,7 +8,7 @@
     </x-slot:actions>
 </x-wms.page-head>
 
-<form method="GET" class="flex flex-wrap items-center gap-2 mb-4">
+<form method="GET" class="flex flex-wrap items-center gap-2 mb-3 rounded-2xl bg-white shadow-sm border border-neutral-100 p-4">
     <select name="supplier" class="rounded-xl border-neutral-200 text-sm py-2">
         <option value="all">전체 공급처</option>
         @foreach ($suppliers as $s)<option value="{{ $s->id }}" @selected((string) $supplier === (string) $s->id)>{{ $s->name }}</option>@endforeach

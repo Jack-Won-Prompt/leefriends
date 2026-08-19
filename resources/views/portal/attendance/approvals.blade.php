@@ -6,7 +6,7 @@
 <x-wms.page-head title="출근 승인" subtitle="출근·퇴근 시간을 확인하고 승인합니다. 정직원·아르바이트 출퇴근을 직접 등록할 수도 있습니다." icon="✅" />
 
 {{-- 필터 --}}
-<form method="GET" action="{{ route('portal.attendance.approvals') }}" class="flex flex-wrap items-end gap-3 mb-5">
+<form method="GET" action="{{ route('portal.attendance.approvals') }}" class="flex flex-wrap items-end gap-3 mb-3 rounded-2xl bg-white shadow-sm border border-neutral-100 p-4">
     <div>
         <label class="block text-xs font-semibold text-neutral-500 mb-1">상태</label>
         <select name="status" class="rounded-xl border-neutral-200 text-sm py-2">
