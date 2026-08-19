@@ -51,17 +51,27 @@
     ]))->values();
 @endphp
 
-{{-- 정직원 (월급여) --}}
-<div class="mb-2 mt-1 font-extrabold text-neutral-800 text-sm">🧑‍💼 정직원 <span class="font-normal text-neutral-400">· 월 정액 급여 (지각 차감 · 오버타임 ×1.5 가산)</span></div>
-<x-wms.panel>
-    <div id="wagesRegularGrid"></div>
-</x-wms.panel>
+{{-- 정직원 / 아르바이트 탭 --}}
+<div class="flex items-center gap-1 border-b border-neutral-200 mb-2">
+    <button type="button" id="wagesTabReg" onclick="wagesTab('reg')"
+            class="px-4 py-2.5 text-sm font-extrabold border-b-2 border-mango-500 text-mango-600 -mb-px transition">🧑‍💼 정직원 <span class="font-bold text-neutral-400">({{ number_format(count($regularRows)) }})</span></button>
+    <button type="button" id="wagesTabPart" onclick="wagesTab('part')"
+            class="px-4 py-2.5 text-sm font-extrabold border-b-2 border-transparent text-neutral-400 -mb-px transition">🕐 아르바이트 <span class="font-bold text-neutral-300">({{ number_format(count($rows)) }})</span></button>
+</div>
 
-{{-- 아르바이트 (시급) --}}
-<div class="mb-2 mt-6 font-extrabold text-neutral-800 text-sm">🕐 아르바이트 <span class="font-normal text-neutral-400">· 시급 × 근무시간</span></div>
-<x-wms.panel>
-    <div id="wagesGrid"></div>
-</x-wms.panel>
+<div id="wagesPaneReg">
+    <p class="mb-2 text-xs text-neutral-400">월 정액 급여 · 정시 출·퇴근 시 정액, 지각 차감 · 오버타임 ×1.5 가산</p>
+    <x-wms.panel>
+        <div id="wagesRegularGrid"></div>
+    </x-wms.panel>
+</div>
+
+<div id="wagesPanePart" class="hidden">
+    <p class="mb-2 text-xs text-neutral-400">시급 × 근무시간</p>
+    <x-wms.panel>
+        <div id="wagesGrid"></div>
+    </x-wms.panel>
+</div>
 
 @push('scripts')
 <script>
@@ -155,6 +165,23 @@
         { header: '입금', name: 'paid', width: 130, renderer: paidCell },
         { header: '처리', name: 'action', width: 160, align: 'right', sortable: false, exportable: false, renderer: actionCell },
     ], @json($partRows));
+
+    // 정직원 / 아르바이트 탭 전환
+    window.wagesTab = function (which) {
+        const reg = which === 'reg';
+        document.getElementById('wagesPaneReg').classList.toggle('hidden', !reg);
+        document.getElementById('wagesPanePart').classList.toggle('hidden', reg);
+        const setActive = (btn, active) => {
+            btn.classList.toggle('border-mango-500', active);
+            btn.classList.toggle('text-mango-600', active);
+            btn.classList.toggle('border-transparent', !active);
+            btn.classList.toggle('text-neutral-400', !active);
+        };
+        setActive(document.getElementById('wagesTabReg'), reg);
+        setActive(document.getElementById('wagesTabPart'), !reg);
+        // 숨겨졌던 그리드 fit 높이 재계산
+        window.dispatchEvent(new Event('resize'));
+    };
 })();
 </script>
 @endpush
