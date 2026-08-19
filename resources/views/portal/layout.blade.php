@@ -292,9 +292,10 @@
         try { s = s.replace(/^[^\p{L}\p{N}]+/u, ''); } catch (e) { s = s.replace(/^[^가-힣A-Za-z0-9]+/, ''); }
         return s.replace(/\s+\d+$/, '').trim() || '화면';
     };
-    // 경로가 사이드바 메뉴와 일치하면 그 메뉴 라벨을 반환(탭 이름을 메뉴명과 일치시키기 위함)
+    // 경로가 사이드바 메뉴와 일치하면 그 메뉴 라벨을 반환(탭 이름을 메뉴명과 일치시키기 위함).
+    // 상단 브랜드 로고(LEEFRIENDS)도 대시보드 경로라 nav 안의 메뉴 링크만 대상으로 한다.
     const menuTitleForPath = (path) => {
-        const links = document.querySelectorAll('aside a[href]');
+        const links = document.querySelectorAll('aside nav a[href]');
         for (let i = 0; i < links.length; i++) { if (norm(links[i].getAttribute('href')) === path) return menuLabel(links[i]); }
         return null;
     };
