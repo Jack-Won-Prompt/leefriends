@@ -138,7 +138,7 @@
         ];
     } else {
         $nav[] = ['출근관리', '🕐', [
-            ['portal.attendance.approvals', '출근 승인', []],
+            ['portal.attendance.approvals', '출근 관리', []],
             ['portal.wages.index', '급여 관리', []],
         ]];
     }
