@@ -8,7 +8,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <script>
         tailwind.config = { theme: { extend: {
-            fontFamily: { sans: ['Pretendard Variable','Pretendard','sans-serif'] },
+            fontFamily: { sans: ['Pretendard Variable','Pretendard','-apple-system','BlinkMacSystemFont','Segoe UI','Apple SD Gothic Neo','Malgun Gothic','sans-serif'] },
             colors: { mango: { 50:'#FFF9ED',400:'#FFB23D',500:'#FF9F1C',600:'#F2784B' } },
         }}}
     </script>

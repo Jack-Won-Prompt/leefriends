@@ -10,7 +10,7 @@
     <script src="https://cdn.tailwindcss.com?plugins=forms"></script>
     <script>
         tailwind.config = { theme: { extend: {
-            fontFamily: { sans: ['Pretendard Variable','Pretendard','sans-serif'] },
+            fontFamily: { sans: ['Pretendard Variable','Pretendard','-apple-system','BlinkMacSystemFont','Segoe UI','Apple SD Gothic Neo','Malgun Gothic','sans-serif'] },
             // 브랜드 색상: ce-admin 틸(teal) 램프. 화면 전반의 mango-* 유틸리티가 그대로 틸로 리테마됨.
             colors: { mango: { 50:'#E9F9FB',100:'#D3F1F7',200:'#A9DCE7',300:'#72BCCC',400:'#4898A9',500:'#28798B',600:'#0B5C6E',700:'#044456',800:'#003847',900:'#022C3A' } },
         }}}
@@ -31,8 +31,12 @@
         body{background:var(--bg); color:var(--text-secondary); -webkit-font-smoothing:antialiased; font-size:13px}
         /* 좁은 열에서 헤더·액션 버튼·상태 뱃지 텍스트가 세로로 줄바꿈되지 않도록 */
         table th, table td button, table td .rounded-full { white-space: nowrap; }
-        /* 화면 폰트 하나로 통일 — 코드·번호 등 monospace 도 본문 폰트(Pretendard)로 */
-        .font-mono, code, pre, kbd, samp { font-family: 'Pretendard Variable', Pretendard, sans-serif !important; }
+        /* 화면 전체 폰트 하나로 통일 — 코드·번호·모든 요소가 동일 폰트(Pretendard)로 */
+        *, ::before, ::after,
+        body, button, input, select, textarea,
+        .font-mono, code, pre, kbd, samp {
+            font-family: "Pretendard Variable","Pretendard",-apple-system,BlinkMacSystemFont,"Segoe UI","Apple SD Gothic Neo","Malgun Gothic",sans-serif !important;
+        }
         /* 플랫 카드 — 그림자 최소화, ce-admin 스타일 */
         .shadow-sm{ box-shadow:0 1px 2px rgba(13,27,42,.04) !important }
         .shadow, .shadow-md{ box-shadow:0 1px 3px rgba(13,27,42,.06),0 1px 2px rgba(13,27,42,.04) !important }
@@ -319,8 +323,9 @@
     // 경로가 사이드바 메뉴와 일치하면 그 메뉴 라벨을 반환(탭 이름을 메뉴명과 일치시키기 위함).
     // 상단 브랜드 로고(LEEFRIENDS)도 대시보드 경로라 nav 안의 메뉴 링크만 대상으로 한다.
     const menuTitleForPath = (path) => {
+        const target = String(path).split('?')[0];   // 경로(pathname)만 비교 — 필터 쿼리(?status=...)가 붙어도 메뉴명으로
         const links = document.querySelectorAll('aside nav a[href]');
-        for (let i = 0; i < links.length; i++) { if (norm(links[i].getAttribute('href')) === path) return menuLabel(links[i]); }
+        for (let i = 0; i < links.length; i++) { if (parse(links[i].getAttribute('href')).pathname === target) return menuLabel(links[i]); }
         return null;
     };
 
@@ -376,11 +381,18 @@
 
     function openTab(url, title) {
         const path = norm(stripPanel(url));
-        const menuT = menuTitleForPath(path);   // 메뉴와 일치하면 메뉴 라벨을 우선
+        const menuT = menuTitleForPath(path);   // 메뉴(경로 일치)면 메뉴 라벨을 탭 제목으로
         if (menuT) title = menuT;
-        const ex = tabs.find(t => norm(t.url) === path);
+        // 메뉴 화면은 필터 쿼리와 무관하게 경로 기준 1탭으로 재사용, 그 외에는 전체 경로(쿼리 포함) 기준
+        const bare = (p) => String(p).split('?')[0];
+        const ex = tabs.find(t => menuT ? bare(norm(t.url)) === bare(path) : norm(t.url) === path);
         if (ex) {
-            if (title) { ex.title = title; ex.titled = true; }   // 메뉴 클릭이면 탭 이름을 메뉴 라벨로 고정
+            if (title) { ex.title = title; ex.titled = true; }   // 메뉴명으로 탭 제목 고정
+            const newUrl = stripPanel(url);
+            if (norm(ex.url) !== norm(newUrl)) {   // 필터 등 URL 변경 → iframe 재로딩
+                ex.url = newUrl;
+                if (ex.frame) ex.frame.src = withPanel(newUrl);
+            }
             activate(ex.id);
             return;
         }

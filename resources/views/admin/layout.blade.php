@@ -10,7 +10,7 @@
     <script>
         tailwind.config = {
             theme: { extend: {
-                fontFamily: { sans: ['Pretendard Variable','Pretendard','sans-serif'] },
+                fontFamily: { sans: ['Pretendard Variable','Pretendard','-apple-system','BlinkMacSystemFont','Segoe UI','Apple SD Gothic Neo','Malgun Gothic','sans-serif'] },
                 colors: { mango: { 50:'#FFF9ED',100:'#FFF1D2',400:'#FFB23D',500:'#FF9F1C',600:'#F2784B',700:'#D45A1F' } },
             }},
         }
