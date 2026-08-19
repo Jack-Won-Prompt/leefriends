@@ -57,6 +57,16 @@
         'approve_url' => route('portal.attendance.approve', $a),
         'reject_url' => route('portal.attendance.reject', $a),
     ])->values();
+    $staffRows = collect($staff)->map(fn ($u) => [
+        'name' => $u->name,
+        'is_regular' => $u->employment_type === 'regular',
+        'emp_label' => $u->employment_type === 'regular' ? '정직원' : '아르바이트',
+        'pay' => $u->employment_type === 'regular'
+            ? number_format((int) $u->monthly_salary).'원/월'
+            : number_format((int) $u->hourly_wage).'원/시',
+        'work' => $u->employment_type === 'regular' ? (($u->work_start ?: '09:00').' ~ '.($u->work_end ?: '18:00')) : '—',
+        'manage_url' => route('portal.attendance.manage', $u->id),
+    ])->values();
     $leaveRows = $leaves->map(fn ($l) => [
         'id' => $l->id,
         'user_name' => $l->user->name ?? '-',
@@ -72,10 +82,18 @@
 
 {{-- 출퇴근 / 휴무 탭 --}}
 <div class="flex items-center gap-1 border-b border-neutral-200 mb-2">
+    <button type="button" id="attTabStaff" onclick="attTab('staff')"
+            class="px-4 py-2.5 text-sm font-extrabold border-b-2 border-transparent text-neutral-400 -mb-px transition">👥 직원 <span class="font-bold text-neutral-300">({{ number_format(count($staff)) }})</span></button>
     <button type="button" id="attTabWork" onclick="attTab('work')"
             class="px-4 py-2.5 text-sm font-extrabold border-b-2 border-mango-500 text-mango-600 -mb-px transition">🕐 출퇴근 <span class="font-bold text-neutral-400">({{ number_format($attendances->total()) }})</span></button>
     <button type="button" id="attTabLeave" onclick="attTab('leave')"
             class="px-4 py-2.5 text-sm font-extrabold border-b-2 border-transparent text-neutral-400 -mb-px transition">🌴 휴무 <span class="font-bold text-neutral-300">({{ number_format($leaves->total()) }})</span></button>
+</div>
+
+<div id="attPaneStaff" class="hidden">
+    <x-wms.panel>
+        <div id="staffOverviewGrid"></div>
+    </x-wms.panel>
 </div>
 
 <div id="attPaneWork">
@@ -171,6 +189,17 @@
     const APPROVE_CLS = 'rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-3 py-1.5 text-xs';
     const REJECT_CLS = 'rounded-lg border border-neutral-200 hover:bg-neutral-50 text-neutral-500 font-bold px-3 py-1.5 text-xs';
 
+    // ── 직원 개요 그리드 ──
+    ww.grid('staffOverviewGrid', [
+        { header: '직원', name: 'name', width: 160, renderer: (v) => ww.el('span', 'font-bold text-neutral-900', v) },
+        { header: '구분', name: 'emp_label', width: 110, align: 'center',
+          renderer: (v, row) => ww.badge(v, row.is_regular ? 'bg-sky-100 text-sky-700' : 'bg-amber-100 text-amber-700') },
+        { header: '급여', name: 'pay', width: 140, align: 'right', renderer: (v) => ww.el('span', 'tabular-nums text-neutral-700', v) },
+        { header: '표준근무', name: 'work', width: 150, align: 'center', renderer: (v) => ww.el('span', 'text-neutral-500', v) },
+        { header: '출퇴근', name: 'manage_url', width: 150, align: 'right', sortable: false, exportable: false,
+          renderer: (v) => { const a = document.createElement('a'); a.href = v; a.textContent = '🕐 출퇴근 관리'; a.className = 'text-xs font-semibold text-mango-600 hover:underline'; return a; } },
+    ], @json($staffRows));
+
     // ── 출퇴근 그리드 ──
     const attGrid = ww.grid('attGrid', [
         { header: '직원', name: 'user_name', width: 130,
@@ -254,19 +283,19 @@
         });
     });
 
-    // 출퇴근 / 휴무 탭 전환
+    // 직원 / 출퇴근 / 휴무 탭 전환
     window.attTab = function (which) {
-        const work = which === 'work';
-        document.getElementById('attPaneWork').classList.toggle('hidden', !work);
-        document.getElementById('attPaneLeave').classList.toggle('hidden', work);
-        const setActive = (btn, active) => {
+        const panes = { staff: 'attPaneStaff', work: 'attPaneWork', leave: 'attPaneLeave' };
+        const tabs = { staff: 'attTabStaff', work: 'attTabWork', leave: 'attTabLeave' };
+        Object.keys(panes).forEach((k) => {
+            document.getElementById(panes[k]).classList.toggle('hidden', k !== which);
+            const btn = document.getElementById(tabs[k]);
+            const active = k === which;
             btn.classList.toggle('border-mango-500', active);
             btn.classList.toggle('text-mango-600', active);
             btn.classList.toggle('border-transparent', !active);
             btn.classList.toggle('text-neutral-400', !active);
-        };
-        setActive(document.getElementById('attTabWork'), work);
-        setActive(document.getElementById('attTabLeave'), !work);
+        });
         window.dispatchEvent(new Event('resize'));
     };
 })();

@@ -180,7 +180,7 @@ class AttendanceController extends Controller
             ->when($me->role === 'store', fn ($q) => $q->where('store_id', $me->store_id))
             ->when($me->role === 'supplier', fn ($q) => $q->where('supplier_id', $me->supplier_id))
             ->orderBy('employment_type')->orderBy('name')
-            ->get(['id', 'name', 'employment_type']);
+            ->get(['id', 'name', 'employment_type', 'monthly_salary', 'hourly_wage', 'work_start', 'work_end']);
         $parttimers = $staff;   // 하위 호환(뷰 필터)
 
         $attQ = Attendance::forOrg($me)->with('user');
