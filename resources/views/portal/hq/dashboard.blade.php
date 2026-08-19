@@ -38,7 +38,7 @@
                     </thead>
                     <tbody class="divide-y divide-neutral-100">
                         @foreach ($recentOrders as $o)
-                            <tr class="hover:bg-mango-50/40 transition cursor-pointer" onclick="location.href='{{ route('portal.hq.orders.show', $o) }}'">
+                            <tr class="hover:bg-mango-50/40 transition cursor-pointer" onclick="wsGo('{{ route('portal.hq.orders.show', $o) }}')">
                                 <td class="px-6 py-3.5 font-bold text-neutral-900">{{ $o->order_no }}</td>
                                 <td class="px-6 py-3.5">{{ $o->store->name ?? '-' }}</td>
                                 <td class="px-6 py-3.5 text-right font-semibold">{{ number_format($o->store_amount) }}원</td>

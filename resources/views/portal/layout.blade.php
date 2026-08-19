@@ -450,13 +450,31 @@
     const initForms = () => document.querySelectorAll('form').forEach(addPanelInput);
     if (document.readyState !== 'loading') initForms(); else document.addEventListener('DOMContentLoaded', initForms);
     document.addEventListener('submit', (e) => { if (e.target instanceof HTMLFormElement) addPanelInput(e.target); }, true);
+    // 다른 페이지(경로)로 가는 링크는 새 화면 탭으로, 같은 페이지(필터·페이지네이션 등)는 현재 탭에서 panel 유지.
     document.addEventListener('click', (e) => {
         const a = e.target.closest('a[href]'); if (!a) return;
         if ((a.target && a.target !== '_self') || a.hasAttribute('download')) return;
         const href = a.getAttribute('href'); if (!href || href.charAt(0) === '#' || /^(javascript:|mailto:|tel:)/i.test(href)) return;
-        if (!isInternal(a) || hasPanel(a.href)) return;
-        a.setAttribute('href', withPanel(a.href));
+        if (!isInternal(a)) return;
+        if (a.closest('[id$="-detail"]')) return;   // 리스트 상세 임베드 영역은 openDetail 이 처리
+        let u; try { u = new URL(a.href); } catch (err) { return; }
+        if (u.pathname !== location.pathname) {      // 다른 페이지 → 새 화면 탭
+            e.preventDefault();
+            try { window.top.ceOpenTab(u.pathname + u.search, a.dataset.wsTab || (a.textContent || '').trim().slice(0, 30)); }
+            catch (err2) { location.href = a.href; }
+            return;
+        }
+        if (! hasPanel(a.href)) a.setAttribute('href', withPanel(a.href));   // 같은 페이지 → panel 유지
     }, true);
+
+    // onclick="location.href='...'" (그리드 행 등) 도 다른 페이지면 새 탭으로 열기
+    window.wsGo = function (url) {
+        try {
+            const u = new URL(url, location.origin);
+            if (u.pathname !== location.pathname && window.top && window.top.ceOpenTab) { window.top.ceOpenTab(u.pathname + u.search, ''); return; }
+        } catch (e) {}
+        location.href = url;
+    };
 })();
 </script>
 

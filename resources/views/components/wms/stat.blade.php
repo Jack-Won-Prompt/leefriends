@@ -11,7 +11,7 @@
     ][$variant] ?? 'from-neutral-400 to-neutral-500';
     $tag = $href ? 'a' : 'div';
 @endphp
-<{{ $tag }} @if ($href) href="{{ $href }}" @endif
+<{{ $tag }} @if ($href) href="{{ $href }}" data-ws-tab @endif
    class="rounded-2xl bg-white p-5 shadow-sm border border-neutral-100 {{ $href ? 'hover:shadow-md transition' : '' }} block">
     <div class="flex items-start justify-between">
         <p class="text-sm text-neutral-500 font-medium">{{ $label }}</p>

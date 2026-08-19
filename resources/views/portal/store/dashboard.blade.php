@@ -34,7 +34,7 @@
                     </thead>
                     <tbody class="divide-y divide-neutral-100">
                         @foreach ($recentOrders as $o)
-                            <tr class="hover:bg-mango-50/40 transition cursor-pointer" onclick="location.href='{{ route('portal.store.orders.show', $o) }}'">
+                            <tr class="hover:bg-mango-50/40 transition cursor-pointer" onclick="wsGo('{{ route('portal.store.orders.show', $o) }}')">
                                 <td class="px-6 py-3.5 font-bold text-neutral-900">{{ $o->order_no }}</td>
                                 <td class="px-6 py-3.5 text-right font-semibold">{{ number_format($o->store_amount) }}원</td>
                                 <td class="px-6 py-3.5">@include('portal.partials.order-status', ['status' => $o->status, 'label' => $o->status_label])</td>
