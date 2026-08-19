@@ -70,33 +70,40 @@
     ])->values();
 @endphp
 
-{{-- 출퇴근 일괄 승인 툴바 --}}
-<div id="attBulkBar" class="mb-3 flex items-center gap-3 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 hidden">
-    <span class="text-sm font-bold text-emerald-800">선택 <span id="attBulkCount"></span>건</span>
-    <form id="attBulkForm" method="POST" action="{{ route('portal.attendance.bulk_approve') }}" onsubmit="return confirm('선택한 출퇴근 기록을 일괄 승인할까요?')">
-        @csrf
-        <button type="submit" class="rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-4 py-2 text-sm transition">✅ 선택 승인</button>
-    </form>
-    <button type="button" id="attBulkClear" class="text-xs text-neutral-500 hover:underline">선택 해제</button>
+{{-- 출퇴근 / 휴무 탭 --}}
+<div class="flex items-center gap-1 border-b border-neutral-200 mb-2">
+    <button type="button" id="attTabWork" onclick="attTab('work')"
+            class="px-4 py-2.5 text-sm font-extrabold border-b-2 border-mango-500 text-mango-600 -mb-px transition">🕐 출퇴근 <span class="font-bold text-neutral-400">({{ number_format($attendances->total()) }})</span></button>
+    <button type="button" id="attTabLeave" onclick="attTab('leave')"
+            class="px-4 py-2.5 text-sm font-extrabold border-b-2 border-transparent text-neutral-400 -mb-px transition">🌴 휴무 <span class="font-bold text-neutral-300">({{ number_format($leaves->total()) }})</span></button>
 </div>
 
-{{-- 출퇴근 --}}
-<x-wms.panel class="mb-6">
-    <div class="px-5 py-3 border-b border-neutral-100 text-sm font-bold text-neutral-700">출퇴근</div>
-    <div id="attGrid"></div>
-    @if ($attendances->hasPages())
-        <div class="px-5 py-3 border-t border-neutral-100">{{ $attendances->links() }}</div>
-    @endif
-</x-wms.panel>
+<div id="attPaneWork">
+    {{-- 출퇴근 일괄 승인 툴바 --}}
+    <div id="attBulkBar" class="mb-3 flex items-center gap-3 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 hidden">
+        <span class="text-sm font-bold text-emerald-800">선택 <span id="attBulkCount"></span>건</span>
+        <form id="attBulkForm" method="POST" action="{{ route('portal.attendance.bulk_approve') }}" onsubmit="return confirm('선택한 출퇴근 기록을 일괄 승인할까요?')">
+            @csrf
+            <button type="submit" class="rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-4 py-2 text-sm transition">✅ 선택 승인</button>
+        </form>
+        <button type="button" id="attBulkClear" class="text-xs text-neutral-500 hover:underline">선택 해제</button>
+    </div>
+    <x-wms.panel>
+        <div id="attGrid"></div>
+        @if ($attendances->hasPages())
+            <div class="px-5 py-3 border-t border-neutral-100">{{ $attendances->links() }}</div>
+        @endif
+    </x-wms.panel>
+</div>
 
-{{-- 휴무 --}}
-<x-wms.panel>
-    <div class="px-5 py-3 border-b border-neutral-100 text-sm font-bold text-neutral-700">휴무</div>
-    <div id="leaveGrid"></div>
-    @if ($leaves->hasPages())
-        <div class="px-5 py-3 border-t border-neutral-100">{{ $leaves->links() }}</div>
-    @endif
-</x-wms.panel>
+<div id="attPaneLeave" class="hidden">
+    <x-wms.panel>
+        <div id="leaveGrid"></div>
+        @if ($leaves->hasPages())
+            <div class="px-5 py-3 border-t border-neutral-100">{{ $leaves->links() }}</div>
+        @endif
+    </x-wms.panel>
+</div>
 
 {{-- 출퇴근 등록 모달 (정직원·아르바이트 공통) --}}
 <div x-show="regOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @keydown.escape.window="regOpen = false">
@@ -246,6 +253,22 @@
             bulkForm.appendChild(i);
         });
     });
+
+    // 출퇴근 / 휴무 탭 전환
+    window.attTab = function (which) {
+        const work = which === 'work';
+        document.getElementById('attPaneWork').classList.toggle('hidden', !work);
+        document.getElementById('attPaneLeave').classList.toggle('hidden', work);
+        const setActive = (btn, active) => {
+            btn.classList.toggle('border-mango-500', active);
+            btn.classList.toggle('text-mango-600', active);
+            btn.classList.toggle('border-transparent', !active);
+            btn.classList.toggle('text-neutral-400', !active);
+        };
+        setActive(document.getElementById('attTabWork'), work);
+        setActive(document.getElementById('attTabLeave'), !work);
+        window.dispatchEvent(new Event('resize'));
+    };
 })();
 </script>
 @endpush
