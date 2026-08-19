@@ -1840,7 +1840,13 @@ class wwGrid {
    * @param {boolean} [opts.includeSummary]         - Sum 행 포함 여부
    */
   downloadExcel(opts = {}) {
-    ExcelExporter.download(this, opts);
+    // 체크된 행이 있으면 체크된 행만, 없으면 전체 조회 리스트를 내보낸다.
+    // (opts.checkedOnly 를 명시하면 그 값을 우선한다)
+    const o = Object.assign({}, opts);
+    if (o.checkedOnly === undefined) {
+      o.checkedOnly = this.getCheckedRows().length > 0;
+    }
+    ExcelExporter.download(this, o);
   }
 
   /** 서버 전송용 JSON 문자열 */
