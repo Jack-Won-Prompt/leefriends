@@ -371,6 +371,12 @@
     const withPanel = (u) => { const a = parse(u); const p = new URLSearchParams(a.search); p.set('panel', '1'); return a.pathname + '?' + p.toString(); };
     const cleanTitle = (t) => (t || '').replace(/\s*·\s*LEEFRIENDS.*$/, '').replace(/\s*·\s*포털.*$/, '').trim() || '화면';
     const isPortal = (path) => path.indexOf('/portal') !== -1 && path.indexOf('/portal/login') === -1;
+    // 메뉴 링크 텍스트에서 선두 아이콘(이모지)·후미 배지 숫자를 떼어 라벨만
+    const menuLabel = (a) => {
+        let s = (a.textContent || '').replace(/\s+/g, ' ').trim();
+        try { s = s.replace(/^[^\p{L}\p{N}]+/u, ''); } catch (e) { s = s.replace(/^[^가-힣A-Za-z0-9]+/, ''); }
+        return s.replace(/\s+\d+$/, '').trim() || '화면';
+    };
 
     function persist() {
         try { sessionStorage.setItem(KEY, JSON.stringify({ tabs: tabs.map(t => ({ url: t.url, title: t.title })), active: (tabs.find(t => t.id === activeId) || {}).url })); } catch (e) {}
@@ -412,7 +418,7 @@
             const loc = doc.location.pathname + doc.location.search;
             if (loc.indexOf('/portal/login') !== -1) { window.top.location.href = stripPanel(loc); return; }  // 세션만료 → 상단창 로그인
             const cur = stripPanel(loc); if (cur) t.url = cur;
-            const ti = cleanTitle(doc.title); if (ti) t.title = ti;
+            if (!t.titled) { const ti = cleanTitle(doc.title); if (ti) t.title = ti; }   // 메뉴 라벨 탭은 제목 유지
             renderTabs(); persist(); if (t.id === activeId) syncHeader(t);
         } catch (e) {}
     }
@@ -421,7 +427,7 @@
         const path = norm(stripPanel(url));
         const ex = tabs.find(t => norm(t.url) === path);
         if (ex) { activate(ex.id); return; }
-        const t = { id: ++seq, url: stripPanel(url), title: title || '화면', frame: null };
+        const t = { id: ++seq, url: stripPanel(url), title: title || '화면', titled: !!title, frame: null };
         tabs.push(t); activate(t.id);
     }
     window.ceOpenTab = openTab;
@@ -444,7 +450,7 @@
         const href = a.getAttribute('href'); if (!href || href.charAt(0) === '#') return;
         const path = norm(href); if (!isPortal(path)) return;
         e.preventDefault();
-        openTab(href, a.textContent.trim());
+        openTab(href, menuLabel(a));
     });
 
     // 초기화: 세션 복원 + 현재 URL 탭
@@ -452,7 +458,7 @@
     const curUrl = stripPanel(location.pathname + location.search);
     const curTitle = cleanTitle(document.title);
     if (saved && Array.isArray(saved.tabs) && saved.tabs.length) {
-        saved.tabs.forEach(s => tabs.push({ id: ++seq, url: s.url, title: s.title || '화면', frame: null }));
+        saved.tabs.forEach(s => tabs.push({ id: ++seq, url: s.url, title: s.title || '화면', titled: true, frame: null }));
         let cur = tabs.find(t => norm(t.url) === norm(curUrl));
         if (!cur && isPortal(norm(curUrl))) { cur = { id: ++seq, url: curUrl, title: curTitle, frame: null }; tabs.push(cur); }
         renderTabs();
