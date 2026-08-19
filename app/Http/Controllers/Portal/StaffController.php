@@ -30,14 +30,19 @@ class StaffController extends Controller
             'phone' => ['nullable', 'string', 'max:30'],
             'employment_type' => ['required', Rule::in(array_keys(User::EMPLOYMENT_TYPES))],
             'hourly_wage' => ['nullable', 'required_if:employment_type,part_time', 'integer', 'min:0', 'max:1000000'],
+            'monthly_salary' => ['nullable', 'required_if:employment_type,regular', 'integer', 'min:0', 'max:100000000'],
+            'work_start' => ['nullable', 'date_format:H:i'],
+            'work_end' => ['nullable', 'date_format:H:i'],
+            'standard_workdays' => ['nullable', 'integer', 'min:1', 'max:31'],
         ], [
             'email.unique' => '이미 사용 중인 이메일입니다.',
             'password.required' => '임시 비밀번호를 입력해 주세요.',
             'hourly_wage.required_if' => '아르바이트는 시급을 입력해 주세요.',
+            'monthly_salary.required_if' => '정직원은 월 급여를 입력해 주세요.',
         ]);
 
         $me = Auth::user();
-        User::create([
+        User::create(array_merge([
             'name' => $data['name'],
             'email' => $data['email'],
             'phone' => $data['phone'] ?? null,
@@ -49,7 +54,7 @@ class StaffController extends Controller
             'supplier_id' => $me->supplier_id,
             'is_admin' => false,
             'email_verified_at' => now(),
-        ]);
+        ], $this->salaryFields($data)));
 
         return back()->with('success', "직원 «{$data['name']}» 계정을 등록했습니다. (임시 비밀번호로 로그인 후 변경 안내)");
     }
@@ -65,9 +70,14 @@ class StaffController extends Controller
             'password' => ['nullable', 'string', 'min:4', 'max:100'],
             'employment_type' => ['required', Rule::in(array_keys(User::EMPLOYMENT_TYPES))],
             'hourly_wage' => ['nullable', 'required_if:employment_type,part_time', 'integer', 'min:0', 'max:1000000'],
+            'monthly_salary' => ['nullable', 'required_if:employment_type,regular', 'integer', 'min:0', 'max:100000000'],
+            'work_start' => ['nullable', 'date_format:H:i'],
+            'work_end' => ['nullable', 'date_format:H:i'],
+            'standard_workdays' => ['nullable', 'integer', 'min:1', 'max:31'],
         ], [
             'email.unique' => '이미 사용 중인 이메일입니다.',
             'hourly_wage.required_if' => '아르바이트는 시급을 입력해 주세요.',
+            'monthly_salary.required_if' => '정직원은 월 급여를 입력해 주세요.',
         ]);
 
         $user->name = $data['name'];
@@ -75,12 +85,28 @@ class StaffController extends Controller
         $user->phone = $data['phone'] ?? null;
         $user->employment_type = $data['employment_type'];
         $user->hourly_wage = $data['employment_type'] === 'part_time' ? (int) $data['hourly_wage'] : null;
+        $user->fill($this->salaryFields($data));
         if (! empty($data['password'])) {
             $user->password = $data['password']; // 비밀번호 재설정(입력 시에만)
         }
         $user->save();
 
         return back()->with('success', "«{$user->name}» 계정을 수정했습니다.");
+    }
+
+    /** 정직원 급여/표준근무 필드 (아르바이트는 모두 null) */
+    private function salaryFields(array $data): array
+    {
+        if (($data['employment_type'] ?? null) !== 'regular') {
+            return ['monthly_salary' => null, 'work_start' => null, 'work_end' => null, 'standard_workdays' => null];
+        }
+
+        return [
+            'monthly_salary' => (int) ($data['monthly_salary'] ?? 0),
+            'work_start' => $data['work_start'] ?: '09:00',
+            'work_end' => $data['work_end'] ?: '18:00',
+            'standard_workdays' => (int) ($data['standard_workdays'] ?? 22) ?: 22,
+        ];
     }
 
     public function destroy(User $user)

@@ -5,9 +5,9 @@
 @php $meId = auth()->id(); @endphp
 <div x-data="{
         open: false, mode: 'create',
-        form: { id: null, name: '', email: '', phone: '', password: '', employment_type: 'regular', hourly_wage: '' },
-        openCreate() { this.mode = 'create'; this.form = { id: null, name: '', email: '', phone: '', password: '', employment_type: 'regular', hourly_wage: '' }; this.open = true; },
-        openEdit(u) { this.mode = 'edit'; this.form = { id: u.id, name: u.name, email: u.email, phone: u.phone || '', password: '', employment_type: u.employment_type || 'regular', hourly_wage: u.hourly_wage || '' }; this.open = true; },
+        form: { id: null, name: '', email: '', phone: '', password: '', employment_type: 'regular', hourly_wage: '', monthly_salary: '', work_start: '09:00', work_end: '18:00', standard_workdays: 22 },
+        openCreate() { this.mode = 'create'; this.form = { id: null, name: '', email: '', phone: '', password: '', employment_type: 'regular', hourly_wage: '', monthly_salary: '', work_start: '09:00', work_end: '18:00', standard_workdays: 22 }; this.open = true; },
+        openEdit(u) { this.mode = 'edit'; this.form = { id: u.id, name: u.name, email: u.email, phone: u.phone || '', password: '', employment_type: u.employment_type || 'regular', hourly_wage: u.hourly_wage || '', monthly_salary: u.monthly_salary || '', work_start: u.work_start || '09:00', work_end: u.work_end || '18:00', standard_workdays: u.standard_workdays || 22 }; this.open = true; },
         action() { return this.mode === 'create' ? '{{ route('portal.staff.store') }}' : '{{ url('portal/staff') }}/' + this.form.id; },
      }"
      @staff-edit-open.window="openEdit($event.detail)">
@@ -27,9 +27,10 @@
         'employment_type' => $u->employment_type,
         'is_part' => $u->employment_type === 'part_time',
         'hourly_wage' => (int) $u->hourly_wage,
+        'monthly_salary' => (int) $u->monthly_salary,
         'phone' => $u->phone ?: '-',
         'created_at' => $u->created_at->format('Y.m.d'),
-        'edit' => ['id' => $u->id, 'name' => $u->name, 'email' => $u->email, 'phone' => $u->phone, 'employment_type' => $u->employment_type, 'hourly_wage' => (int) $u->hourly_wage],
+        'edit' => ['id' => $u->id, 'name' => $u->name, 'email' => $u->email, 'phone' => $u->phone, 'employment_type' => $u->employment_type, 'hourly_wage' => (int) $u->hourly_wage, 'monthly_salary' => (int) $u->monthly_salary, 'work_start' => $u->work_start, 'work_end' => $u->work_end, 'standard_workdays' => (int) $u->standard_workdays],
         'destroy_url' => route('portal.staff.destroy', $u),
         'can_delete' => $u->id !== $meId,
     ])->values();
@@ -87,6 +88,32 @@
                        class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm" placeholder="예: 10030">
                 <p class="text-[11px] text-neutral-400 mt-1">아르바이트는 로그인 시 출근관리(출퇴근·휴무)만 이용합니다.</p>
             </div>
+            <div x-show="form.employment_type === 'regular'" x-cloak class="space-y-3">
+                <div>
+                    <label class="block text-sm font-bold text-neutral-700 mb-1.5">월 급여 (원) *</label>
+                    <input type="number" name="monthly_salary" x-model.number="form.monthly_salary" min="0" max="100000000" step="1000"
+                           :required="form.employment_type === 'regular'"
+                           class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm" placeholder="예: 2500000">
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <div>
+                        <label class="block text-xs font-bold text-neutral-700 mb-1.5">표준 출근</label>
+                        <input type="time" name="work_start" x-model="form.work_start"
+                               class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-neutral-700 mb-1.5">표준 퇴근</label>
+                        <input type="time" name="work_end" x-model="form.work_end"
+                               class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-neutral-700 mb-1.5">월 근무일</label>
+                        <input type="number" name="standard_workdays" x-model.number="form.standard_workdays" min="1" max="31"
+                               class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm" placeholder="22">
+                    </div>
+                </div>
+                <p class="text-[11px] text-neutral-400">정시 출·퇴근이면 월 급여 그대로, 지각은 차감·오버타임은 가산(×1.5)해 정산합니다.</p>
+            </div>
             <div class="flex gap-2 pt-1">
                 <button type="submit" class="flex-1 rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2.5 text-sm transition" x-text="mode === 'create' ? '등록' : '저장'"></button>
                 <button type="button" @click="open = false" class="rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-600 font-bold px-4 py-2.5 text-sm">취소</button>
@@ -110,8 +137,8 @@
         { header: '이메일 (로그인 ID)', name: 'email', width: 220 },
         { header: '구분', name: 'employment_type', width: 110, align: 'center',
           renderer: (v) => v === 'part_time' ? ww.badge('아르바이트', 'bg-sky-100 text-sky-700') : ww.badge('정직원', 'bg-neutral-100 text-neutral-500') },
-        { header: '시급', name: 'hourly_wage', width: 110, align: 'right',
-          renderer: (v, row) => row.is_part ? ww.num(v) + '원' : '-' },
+        { header: '급여', name: 'hourly_wage', width: 130, align: 'right',
+          renderer: (v, row) => row.is_part ? (ww.num(v) + '원/시') : (row.monthly_salary ? ww.num(row.monthly_salary) + '원/월' : '-') },
         { header: '휴대폰', name: 'phone', width: 150 },
         { header: '등록일', name: 'created_at', width: 120 },
         { header: '관리', name: 'destroy_url', width: 130, align: 'right', sortable: false, exportable: false,

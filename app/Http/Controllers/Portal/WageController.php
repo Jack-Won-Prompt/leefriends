@@ -60,10 +60,49 @@ class WageController extends Controller
             $grandAmount += $amount;
         }
 
+        // 정직원 — 월 정액 급여 ± 지각 차감 · 오버타임(×1.5) 가산
+        $regulars = User::where('role', $me->role)->where('employment_type', 'regular')
+            ->where('id', '!=', $me->id)
+            ->when($me->role === 'store', fn ($q) => $q->where('store_id', $me->store_id))
+            ->when($me->role === 'supplier', fn ($q) => $q->where('supplier_id', $me->supplier_id))
+            ->orderBy('name')->get();
+
+        $regularRows = [];
+        foreach ($regulars as $u) {
+            $atts = Attendance::where('user_id', $u->id)->where('status', 'approved')
+                ->whereNotNull('clock_out_at')
+                ->whereBetween('work_date', [$from, $to])->get();
+
+            $lateMin = (int) $atts->sum(fn ($a) => $a->lateMinutes());
+            $otMin = (int) $atts->sum(fn ($a) => $a->overtimeMinutes());
+            $perMin = $u->salaryPerMinute();
+            $lateDeduct = (int) round($lateMin * $perMin);
+            $otAdd = (int) round($otMin * $perMin * 1.5);
+            $base = (int) $u->monthly_salary;
+            $amount = max(0, $base - $lateDeduct + $otAdd);
+
+            $settlement = WageSettlement::where('user_id', $u->id)
+                ->whereDate('period_from', $from)->whereDate('period_to', $to)->first();
+
+            $regularRows[] = [
+                'user' => $u,
+                'days' => $atts->count(),
+                'base' => $base,
+                'late_min' => $lateMin,
+                'ot_min' => $otMin,
+                'late_deduct' => $lateDeduct,
+                'ot_add' => $otAdd,
+                'amount' => $amount,
+                'settlement' => $settlement,
+            ];
+            $grandAmount += $amount;
+        }
+
         return view('portal.wages.index', [
             'from' => $from,
             'to' => $to,
             'rows' => $rows,
+            'regularRows' => $regularRows,
             'grandAmount' => $grandAmount,
         ]);
     }
@@ -83,8 +122,9 @@ class WageController extends Controller
         ]);
 
         $user = User::findOrFail($data['user_id']);
-        // 같은 소속 아르바이트만
-        $ok = $user->role === $me->role && $user->employment_type === 'part_time'
+        // 같은 소속 직원(정직원·아르바이트)만
+        $ok = $user->role === $me->role
+            && in_array($user->employment_type, ['regular', 'part_time'], true)
             && (int) $user->store_id === (int) $me->store_id
             && (int) $user->supplier_id === (int) $me->supplier_id;
         abort_unless($ok, 403);

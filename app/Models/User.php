@@ -33,6 +33,10 @@ class User extends Authenticatable
         'role',
         'employment_type',
         'hourly_wage',
+        'monthly_salary',
+        'work_start',
+        'work_end',
+        'standard_workdays',
         'store_id',
         'supplier_id',
         'invite_token',
@@ -88,6 +92,8 @@ class User extends Authenticatable
             'password' => 'hashed',
             'is_admin' => 'boolean',
             'hourly_wage' => 'integer',
+            'monthly_salary' => 'integer',
+            'standard_workdays' => 'integer',
         ];
     }
 
@@ -116,6 +122,40 @@ class User extends Authenticatable
     public function isPartTime(): bool
     {
         return $this->employment_type === 'part_time';
+    }
+
+    public function isRegular(): bool
+    {
+        return $this->employment_type === 'regular';
+    }
+
+    /** 표준 출근/퇴근 시각 ('HH:MM'), 미설정 시 09:00~18:00 기본값 */
+    public function workStart(): string
+    {
+        return $this->work_start ?: '09:00';
+    }
+
+    public function workEnd(): string
+    {
+        return $this->work_end ?: '18:00';
+    }
+
+    /** 표준 1일 근무 분(퇴근-출근). 오류 시 0 */
+    public function standardDailyMinutes(): int
+    {
+        [$sh, $sm] = array_map('intval', explode(':', $this->workStart()) + [1 => 0]);
+        [$eh, $em] = array_map('intval', explode(':', $this->workEnd()) + [1 => 0]);
+
+        return max(0, ($eh * 60 + $em) - ($sh * 60 + $sm));
+    }
+
+    /** 정직원 급여 기준 분당 단가 = 월급 ÷ (표준 1일 분 × 월 표준 근무일) */
+    public function salaryPerMinute(): float
+    {
+        $days = (int) ($this->standard_workdays ?: 22);
+        $denom = $this->standardDailyMinutes() * max(1, $days);
+
+        return $denom > 0 ? ((int) $this->monthly_salary) / $denom : 0.0;
     }
 
     public function getEmploymentLabelAttribute(): string

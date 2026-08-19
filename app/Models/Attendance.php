@@ -54,6 +54,38 @@ class Attendance extends Model
         return (int) round($this->hours() * (int) ($this->user->hourly_wage ?? 0));
     }
 
+    /** 지각 분: 표준 출근시각보다 늦게 출근한 분 (정직원 급여 재계산용) */
+    public function lateMinutes(): int
+    {
+        if (! $this->clock_in_at || ! $this->user) {
+            return 0;
+        }
+        $std = $this->workDateAt($this->user->workStart());
+        $actual = ($this->clock_in_at->hour * 60) + $this->clock_in_at->minute;
+
+        return max(0, $actual - $std);
+    }
+
+    /** 오버타임 분: 표준 퇴근시각 이후 근무한 분 (정직원 급여 재계산용) */
+    public function overtimeMinutes(): int
+    {
+        if (! $this->clock_out_at || ! $this->user) {
+            return 0;
+        }
+        $std = $this->workDateAt($this->user->workEnd());
+        $actual = ($this->clock_out_at->hour * 60) + $this->clock_out_at->minute;
+
+        return max(0, $actual - $std);
+    }
+
+    /** 'HH:MM' → 그 날의 분(자정 기준) */
+    private function workDateAt(string $hm): int
+    {
+        [$h, $m] = array_map('intval', explode(':', $hm) + [1 => 0]);
+
+        return $h * 60 + $m;
+    }
+
     public function statusLabel(): string
     {
         return self::STATUS_LABELS[$this->status] ?? $this->status;

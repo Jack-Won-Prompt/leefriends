@@ -12,7 +12,12 @@
      }"
      @att-mng-edit-open.window="openEdit($event.detail)">
 
-<x-wms.page-head :title="$user->name.' 출퇴근 관리'" :subtitle="'시급 '.number_format($user->hourly_wage).'원 · 날짜별 출퇴근 시간 등록·수정·승인'" icon="🕐">
+@php
+    $payLabel = $user->isRegular()
+        ? '월급 '.number_format((int) $user->monthly_salary).'원 · 표준 '.$user->workStart().'~'.$user->workEnd()
+        : '시급 '.number_format((int) $user->hourly_wage).'원';
+@endphp
+<x-wms.page-head :title="$user->name.' 출퇴근 관리'" :subtitle="$payLabel.' · 날짜별 출퇴근 시간 등록·수정·승인'" icon="🕐">
     <x-slot:actions>
         <button type="button" @click="openNew('{{ now()->format('Y-m-d') }}')" class="inline-flex items-center gap-1 rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm transition">＋ 출퇴근 등록</button>
         <a href="{{ route('portal.wages.index', ['from' => $from, 'to' => $to]) }}"

@@ -2,7 +2,12 @@
 @section('title', '출근 승인')
 
 @section('content')
-<x-wms.page-head title="출근 승인" subtitle="출근·퇴근 시간을 확인하고 승인합니다. 여러 건을 한 번에 승인할 수 있습니다." icon="✅" />
+<div x-data="{ regOpen: false, uid: '' }">
+<x-wms.page-head title="출근 승인" subtitle="출근·퇴근 시간을 확인하고 승인합니다. 정직원·아르바이트 출퇴근을 직접 등록할 수도 있습니다." icon="✅">
+    <x-slot:actions>
+        <button type="button" @click="regOpen = true" class="inline-flex items-center gap-1 rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm transition">＋ 출퇴근 등록</button>
+    </x-slot:actions>
+</x-wms.page-head>
 
 {{-- 필터 --}}
 <form method="GET" action="{{ route('portal.attendance.approvals') }}" class="flex flex-wrap items-end gap-3 mb-5">
@@ -19,8 +24,8 @@
         <label class="block text-xs font-semibold text-neutral-500 mb-1">직원</label>
         <select name="user" class="rounded-xl border-neutral-200 text-sm py-2 min-w-[9rem]">
             <option value="">전체</option>
-            @foreach ($parttimers as $p)
-                <option value="{{ $p->id }}" @selected((int)$userId === $p->id)>{{ $p->name }}</option>
+            @foreach ($staff as $p)
+                <option value="{{ $p->id }}" @selected((int)$userId === $p->id)>{{ $p->name }} ({{ $p->employment_type === 'regular' ? '정직원' : '아르바이트' }})</option>
             @endforeach
         </select>
     </div>
@@ -92,6 +97,48 @@
         <div class="px-5 py-3 border-t border-neutral-100">{{ $leaves->links() }}</div>
     @endif
 </x-wms.panel>
+
+{{-- 출퇴근 등록 모달 (정직원·아르바이트 공통) --}}
+<div x-show="regOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @keydown.escape.window="regOpen = false">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6" @click.outside="regOpen = false">
+        <h3 class="text-lg font-extrabold text-neutral-900 mb-4">🕐 출퇴근 등록</h3>
+        <form :action="'{{ url('portal/attendance/manage') }}/' + uid" method="POST"
+              @submit="if (!uid) { $event.preventDefault(); alert('직원을 선택해 주세요.'); }">
+            @csrf
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-sm font-bold text-neutral-700 mb-1.5">직원 *</label>
+                    <select x-model="uid" class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+                        <option value="">직원을 선택하세요</option>
+                        @foreach ($staff as $s)
+                            <option value="{{ $s->id }}">{{ $s->name }} ({{ $s->employment_type === 'regular' ? '정직원' : '아르바이트' }})</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-neutral-700 mb-1.5">근무일 *</label>
+                    <input type="date" name="work_date" value="{{ now()->format('Y-m-d') }}" required class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-sm font-bold text-neutral-700 mb-1.5">출근 *</label>
+                        <input type="time" name="clock_in" required class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-neutral-700 mb-1.5">퇴근</label>
+                        <input type="time" name="clock_out" class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+                    </div>
+                </div>
+                <p class="text-[11px] text-neutral-400">퇴근 시간까지 입력하면 자동으로 승인 처리됩니다.</p>
+                <div class="flex gap-2 pt-1">
+                    <button type="submit" class="flex-1 rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2.5 text-sm">등록</button>
+                    <button type="button" @click="regOpen = false" class="rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-600 font-bold px-4 py-2.5 text-sm">취소</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+</div>{{-- /x-data --}}
 
 @push('scripts')
 <script>

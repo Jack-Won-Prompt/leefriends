@@ -173,10 +173,15 @@ class AttendanceController extends Controller
         $from = $request->query('from') ?: null;
         $to = $request->query('to') ?: null;
 
-        $parttimers = \App\Models\User::where('role', $me->role)->where('employment_type', 'part_time')
+        // 소속 전 직원(정직원+아르바이트) — 필터 + 출퇴근 등록 대상
+        $staff = \App\Models\User::where('role', $me->role)
+            ->whereIn('employment_type', ['regular', 'part_time'])
+            ->where('id', '!=', $me->id)
             ->when($me->role === 'store', fn ($q) => $q->where('store_id', $me->store_id))
             ->when($me->role === 'supplier', fn ($q) => $q->where('supplier_id', $me->supplier_id))
-            ->orderBy('name')->get(['id', 'name']);
+            ->orderBy('employment_type')->orderBy('name')
+            ->get(['id', 'name', 'employment_type']);
+        $parttimers = $staff;   // 하위 호환(뷰 필터)
 
         $attQ = Attendance::forOrg($me)->with('user');
         $leaveQ = Leave::forOrg($me)->with('user');
@@ -202,7 +207,7 @@ class AttendanceController extends Controller
         $leaves = $leaveQ->orderByRaw("status = 'pending' desc")->latest('leave_date')
             ->paginate(15, ['*'], 'lp')->withQueryString();
 
-        return view('portal.attendance.approvals', compact('attendances', 'leaves', 'parttimers', 'status', 'userId', 'from', 'to'));
+        return view('portal.attendance.approvals', compact('attendances', 'leaves', 'staff', 'parttimers', 'status', 'userId', 'from', 'to'));
     }
 
     public function approve(Attendance $attendance)
@@ -340,12 +345,12 @@ class AttendanceController extends Controller
         return back()->with('success', '출퇴근 시간을 수정했습니다.');
     }
 
-    /** 대상 아르바이트가 내 소속인지 검증 */
+    /** 대상 직원(정직원·아르바이트 모두)이 내 소속인지 검증 */
     private function assertManageable(\App\Models\User $user): void
     {
         $me = Auth::user();
         abort_if($me->isPartTime(), 403);
-        $ok = $user->employment_type === 'part_time'
+        $ok = in_array($user->employment_type, ['regular', 'part_time'], true)
             && $user->role === $me->role
             && (int) $user->store_id === (int) $me->store_id
             && (int) $user->supplier_id === (int) $me->supplier_id;
