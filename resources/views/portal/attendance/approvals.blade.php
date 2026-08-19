@@ -3,11 +3,7 @@
 
 @section('content')
 <div x-data="{ regOpen: false, uid: '' }">
-<x-wms.page-head title="출근 승인" subtitle="출근·퇴근 시간을 확인하고 승인합니다. 정직원·아르바이트 출퇴근을 직접 등록할 수도 있습니다." icon="✅">
-    <x-slot:actions>
-        <button type="button" @click="regOpen = true" class="inline-flex items-center gap-1 rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm transition">＋ 출퇴근 등록</button>
-    </x-slot:actions>
-</x-wms.page-head>
+<x-wms.page-head title="출근 승인" subtitle="출근·퇴근 시간을 확인하고 승인합니다. 정직원·아르바이트 출퇴근을 직접 등록할 수도 있습니다." icon="✅" />
 
 {{-- 필터 --}}
 <form method="GET" action="{{ route('portal.attendance.approvals') }}" class="flex flex-wrap items-end gap-3 mb-5">
@@ -39,6 +35,7 @@
     </div>
     <button type="submit" class="rounded-xl bg-neutral-800 hover:bg-neutral-900 text-white font-bold px-4 py-2.5 text-sm transition">조회</button>
     <a href="{{ route('portal.attendance.approvals') }}" class="rounded-xl border border-neutral-200 hover:bg-neutral-50 text-neutral-500 font-bold px-4 py-2.5 text-sm">초기화</a>
+    <button type="button" @click="regOpen = true" class="inline-flex items-center gap-1 rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2.5 text-sm transition">＋ 출퇴근 등록</button>
 </form>
 
 @include('portal.partials.wwgrid-assets')
