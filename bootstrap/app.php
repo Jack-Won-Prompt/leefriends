@@ -22,6 +22,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             \App\Http\Middleware\RestrictPartTime::class,
             \App\Http\Middleware\LogPageVisit::class, // 공개 페이지 방문 로깅
+            \App\Http\Middleware\PreservePanelParam::class, // 화면 탭(iframe) 리다이렉트 panel=1 유지
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {

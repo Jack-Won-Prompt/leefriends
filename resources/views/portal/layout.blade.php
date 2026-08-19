@@ -423,6 +423,11 @@
             const doc = t.frame.contentDocument; if (!doc) return;
             const loc = doc.location.pathname + doc.location.search;
             if (loc.indexOf('/portal/login') !== -1) { window.top.location.href = stripPanel(loc); return; }  // 세션만료 → 상단창 로그인
+            // iframe 이 전체 셸(사이드바+워크스페이스)을 로드했으면 중첩이므로 panel 모드로 다시 로드
+            if (doc.getElementById('ws') && !new URLSearchParams(doc.location.search).has('panel')) {
+                t.frame.src = withPanel(stripPanel(loc));
+                return;
+            }
             const cur = stripPanel(loc); if (cur) t.url = cur;
             if (!t.titled) { const ti = cleanTitle(doc.title); if (ti) t.title = ti; }   // 메뉴 라벨 탭은 제목 유지
             renderTabs(); persist(); if (t.id === activeId) syncHeader(t);
@@ -515,6 +520,28 @@
             cancel() { this.open = false; this._form = null; },
         };
     }
+</script>
+
+{{-- 화면 탭(iframe) 내부: 폼·링크가 panel=1 을 유지해 전체 셸이 중첩 로드되는 것을 방지 --}}
+<script>
+(function () {
+    if (window.self === window.top) return;   // 탭(iframe) 안에서만
+    const parseA = (u) => { const a = document.createElement('a'); a.href = u; return a; };
+    const hasPanel = (u) => new URLSearchParams(parseA(u).search).has('panel');
+    const withPanel = (u) => { const a = parseA(u); const p = new URLSearchParams(a.search); p.set('panel', '1'); return a.pathname + '?' + p.toString(); };
+    const isInternal = (a) => { try { const u = new URL(a.href); return u.origin === location.origin && u.pathname.indexOf('/portal') !== -1; } catch (e) { return false; } };
+    const addPanelInput = (form) => { if (form && !form.querySelector('input[name="panel"]')) { const i = document.createElement('input'); i.type = 'hidden'; i.name = 'panel'; i.value = '1'; form.appendChild(i); } };
+    const initForms = () => document.querySelectorAll('form').forEach(addPanelInput);
+    if (document.readyState !== 'loading') initForms(); else document.addEventListener('DOMContentLoaded', initForms);
+    document.addEventListener('submit', (e) => { if (e.target instanceof HTMLFormElement) addPanelInput(e.target); }, true);
+    document.addEventListener('click', (e) => {
+        const a = e.target.closest('a[href]'); if (!a) return;
+        if ((a.target && a.target !== '_self') || a.hasAttribute('download')) return;
+        const href = a.getAttribute('href'); if (!href || href.charAt(0) === '#' || /^(javascript:|mailto:|tel:)/i.test(href)) return;
+        if (!isInternal(a) || hasPanel(a.href)) return;
+        a.setAttribute('href', withPanel(a.href));
+    }, true);
+})();
 </script>
 
 {{-- 실시간 토스트 알림 (Pusher) --}}
