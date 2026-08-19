@@ -90,10 +90,9 @@
                     <thead>
                         <tr>
                             <th style="width:8%;" class="c">No</th>
-                            <th style="width:44%;">품목</th>
-                            <th style="width:16%;">규격</th>
-                            <th style="width:16%;">공급구분</th>
-                            <th style="width:16%;" class="r">수량</th>
+                            <th style="width:56%;">품목</th>
+                            <th style="width:18%;">규격</th>
+                            <th style="width:18%;" class="r">수량</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -102,18 +101,11 @@
                                 <td class="c">{{ $i + 1 }}</td>
                                 <td><b>{{ $it->product_name }}</b></td>
                                 <td>{{ $it->unit }}</td>
-                                <td>
-                                    @if ($it->supply_type === 'supplier')
-                                        <span class="sup-dir">{{ $it->supplier_name ?: '공급처' }} 직배송</span>
-                                    @else
-                                        <span class="sup-hq">본사</span>
-                                    @endif
-                                </td>
                                 <td class="r">{{ number_format($it->qty) }}{{ $it->unit }}</td>
                             </tr>
                         @endforeach
                         <tr class="tfoot">
-                            <td colspan="4" class="r">합계 수량</td>
+                            <td colspan="3" class="r">합계 수량</td>
                             <td class="r">{{ number_format($o->items->sum('qty')) }}</td>
                         </tr>
                     </tbody>
