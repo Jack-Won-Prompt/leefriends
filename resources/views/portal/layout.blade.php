@@ -45,6 +45,16 @@
         ::-webkit-scrollbar-thumb{background:#D0D5DA;border-radius:8px;border:2px solid transparent;background-clip:content-box}
         ::-webkit-scrollbar-thumb:hover{background:#B4BBC2;background-clip:content-box}
         ::-webkit-scrollbar-track{background:transparent}
+        /* ===== MDI 워크스페이스 탭 ===== */
+        #ws-tabs::-webkit-scrollbar{height:0}
+        .ws-tab{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 8px 0 14px;border-radius:10px 10px 0 0;background:transparent;color:#656C74;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;border:1px solid transparent;border-bottom:none;max-width:220px}
+        .ws-tab:hover{background:rgba(255,255,255,.6)}
+        .ws-tab.active{background:#fff;color:#101317;border-color:#E8EAEC}
+        .ws-tab .t{overflow:hidden;text-overflow:ellipsis}
+        .ws-tab-x{width:18px;height:18px;display:grid;place-items:center;border-radius:5px;color:#999EA4;font-size:16px;line-height:1;border:none;background:transparent;cursor:pointer;flex:0 0 auto}
+        .ws-tab-x:hover{background:#F3F5F7;color:#D73D3F}
+        .ws-frame{position:absolute;inset:0;width:100%;height:100%;border:0;background:#F3F5F7;display:none}
+        .ws-frame.active{display:block}
     </style>
     @stack('head')
 </head>
@@ -330,26 +340,128 @@
             </div>
         </header>
 
-        <main class="flex-1 p-3 lg:p-4">
-            @if (session('success'))
-                <div class="mb-5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 px-5 py-3.5 text-sm font-medium">{{ session('success') }}</div>
-            @endif
-            @if (session('error'))
-                <div class="mb-5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 px-5 py-3.5 text-sm font-medium">{{ session('error') }}</div>
-            @endif
-            @if ($errors->any())
-                <div class="mb-5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 px-5 py-3.5 text-sm">
-                    <ul class="list-disc list-inside space-y-1">@foreach ($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
-                </div>
-            @endif
-
-            @yield('content')
-        </main>
+        {{-- MDI 워크스페이스 — 메뉴를 누르면 화면이 상단 탭(iframe)으로 열린다. 실제 화면은 ?panel=1 모드로 iframe 안에 렌더됨. --}}
+        <div id="ws" class="flex-1 flex flex-col min-w-0 overflow-hidden"
+             data-home-url="{{ route('portal.dashboard') }}" data-home-title="대시보드">
+            <div id="ws-tabs" class="shrink-0 flex items-stretch gap-1 px-2.5 pt-1.5 overflow-x-auto"></div>
+            <div id="ws-frames" class="flex-1 min-h-0 relative"></div>
+        </div>
     </div>
 </div>
 @endif
 <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+{{-- MDI 워크스페이스: 메뉴 클릭 → 화면이 상단 탭(iframe, ?panel=1)으로 열림 --}}
+<script>
+(function () {
+    if (window.self !== window.top) return;               // 탭(iframe) 내부에서는 실행 안 함
+    const ws = document.getElementById('ws');
+    const tabsEl = document.getElementById('ws-tabs');
+    const framesEl = document.getElementById('ws-frames');
+    if (!ws || !tabsEl || !framesEl) return;
+
+    const KEY = 'ww_ws_tabs';
+    const homeUrl = ws.dataset.homeUrl;
+    let seq = 0, tabs = [], activeId = null;
+
+    const parse = (u) => { const a = document.createElement('a'); a.href = u; return a; };
+    const norm = (u) => { const a = parse(u); return a.pathname + a.search; };
+    const stripPanel = (u) => { const a = parse(u); const p = new URLSearchParams(a.search); p.delete('panel'); const q = p.toString(); return a.pathname + (q ? '?' + q : ''); };
+    const withPanel = (u) => { const a = parse(u); const p = new URLSearchParams(a.search); p.set('panel', '1'); return a.pathname + '?' + p.toString(); };
+    const cleanTitle = (t) => (t || '').replace(/\s*·\s*LEEFRIENDS.*$/, '').replace(/\s*·\s*포털.*$/, '').trim() || '화면';
+    const isPortal = (path) => path.indexOf('/portal') !== -1 && path.indexOf('/portal/login') === -1;
+
+    function persist() {
+        try { sessionStorage.setItem(KEY, JSON.stringify({ tabs: tabs.map(t => ({ url: t.url, title: t.title })), active: (tabs.find(t => t.id === activeId) || {}).url })); } catch (e) {}
+    }
+    function syncHeader(t) { const h = document.querySelector('header h1'); if (h && t) h.textContent = t.title; }
+
+    function renderTabs() {
+        tabsEl.innerHTML = '';
+        tabs.forEach((t) => {
+            const el = document.createElement('div');
+            el.className = 'ws-tab' + (t.id === activeId ? ' active' : '');
+            const s = document.createElement('span'); s.className = 't'; s.textContent = t.title; el.appendChild(s);
+            const x = document.createElement('button'); x.type = 'button'; x.className = 'ws-tab-x'; x.innerHTML = '&times;'; x.title = '탭 닫기';
+            x.addEventListener('click', (e) => { e.stopPropagation(); closeTab(t.id); });
+            el.appendChild(x);
+            el.addEventListener('click', () => activate(t.id));
+            el.addEventListener('auxclick', (e) => { if (e.button === 1) { e.preventDefault(); closeTab(t.id); } });
+            tabsEl.appendChild(el);
+        });
+    }
+
+    function activate(id) {
+        const t = tabs.find(t => t.id === id); if (!t) return;
+        activeId = id;
+        if (!t.frame) {
+            t.frame = document.createElement('iframe');
+            t.frame.className = 'ws-frame';
+            t.frame.src = withPanel(t.url);
+            t.frame.addEventListener('load', () => onFrameLoad(t));
+            framesEl.appendChild(t.frame);
+        }
+        tabs.forEach(o => { if (o.frame) o.frame.classList.toggle('active', o.id === id); });
+        renderTabs(); persist(); syncHeader(t);
+    }
+
+    function onFrameLoad(t) {
+        try {
+            const doc = t.frame.contentDocument; if (!doc) return;
+            const loc = doc.location.pathname + doc.location.search;
+            if (loc.indexOf('/portal/login') !== -1) { window.top.location.href = stripPanel(loc); return; }  // 세션만료 → 상단창 로그인
+            const cur = stripPanel(loc); if (cur) t.url = cur;
+            const ti = cleanTitle(doc.title); if (ti) t.title = ti;
+            renderTabs(); persist(); if (t.id === activeId) syncHeader(t);
+        } catch (e) {}
+    }
+
+    function openTab(url, title) {
+        const path = norm(stripPanel(url));
+        const ex = tabs.find(t => norm(t.url) === path);
+        if (ex) { activate(ex.id); return; }
+        const t = { id: ++seq, url: stripPanel(url), title: title || '화면', frame: null };
+        tabs.push(t); activate(t.id);
+    }
+    window.ceOpenTab = openTab;
+
+    function closeTab(id) {
+        const idx = tabs.findIndex(t => t.id === id); if (idx < 0) return;
+        if (tabs[idx].frame) tabs[idx].frame.remove();
+        tabs.splice(idx, 1);
+        if (activeId === id) {
+            const next = tabs[idx] || tabs[idx - 1];
+            if (next) activate(next.id); else openTab(homeUrl, '대시보드');
+        } else { renderTabs(); persist(); }
+    }
+
+    // 사이드바 메뉴 클릭 → 탭으로 열기
+    const aside = document.querySelector('aside');
+    if (aside) aside.addEventListener('click', (e) => {
+        const a = e.target.closest('a[href]'); if (!a) return;
+        if (a.target === '_blank' || e.metaKey || e.ctrlKey || e.shiftKey) return;
+        const href = a.getAttribute('href'); if (!href || href.charAt(0) === '#') return;
+        const path = norm(href); if (!isPortal(path)) return;
+        e.preventDefault();
+        openTab(href, a.textContent.trim());
+    });
+
+    // 초기화: 세션 복원 + 현재 URL 탭
+    let saved = null; try { saved = JSON.parse(sessionStorage.getItem(KEY) || 'null'); } catch (e) {}
+    const curUrl = stripPanel(location.pathname + location.search);
+    const curTitle = cleanTitle(document.title);
+    if (saved && Array.isArray(saved.tabs) && saved.tabs.length) {
+        saved.tabs.forEach(s => tabs.push({ id: ++seq, url: s.url, title: s.title || '화면', frame: null }));
+        let cur = tabs.find(t => norm(t.url) === norm(curUrl));
+        if (!cur && isPortal(norm(curUrl))) { cur = { id: ++seq, url: curUrl, title: curTitle, frame: null }; tabs.push(cur); }
+        renderTabs();
+        activate((cur || tabs.find(t => t.url === saved.active) || tabs[0]).id);
+    } else {
+        openTab(curUrl, curTitle);
+    }
+})();
+</script>
 
 {{-- 전역 커스텀 확인 다이얼로그 — data-confirm="메시지" 폼에 적용 --}}
 <div x-data="confirmDialog()" x-init="init()">
@@ -393,6 +505,7 @@
 <script src="https://js.pusher.com/8.4/pusher.min.js"></script>
 <script>
 (function () {
+    if (window.self !== window.top) return;   // 워크스페이스 탭(iframe)에서는 상단창만 실시간 연결
     const KEY = @json(config('broadcasting.connections.pusher.key'));
     const CLUSTER = @json(config('broadcasting.connections.pusher.options.cluster'));
     const USER_ID = @json(auth()->id());
