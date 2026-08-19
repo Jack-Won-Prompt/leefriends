@@ -5,6 +5,11 @@
 <x-wms.page-head title="출고 관리" icon="🚚" />
 
 <x-wms.filter :action="route('portal.hq.shipments.index')" cols="grid-cols-2 md:grid-cols-3">
+    <x-slot:actions>
+        <button type="button" id="btnPickingSlip"
+                class="inline-flex items-center gap-1 rounded-lg bg-mango-500 hover:bg-mango-600 text-white px-4 py-1.5 text-xs font-bold transition">🖨️ 출고지시서 출력</button>
+        <a href="{{ route('portal.hq.shipments.index') }}" class="inline-flex items-center gap-1 rounded-lg bg-white border border-neutral-200 px-3 py-1.5 text-xs font-bold text-neutral-500 hover:bg-neutral-100">새로고침</a>
+    </x-slot:actions>
     <x-wms.field label="매장">
         <select name="store" class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
             <option value="all">전체 매장</option>
@@ -21,12 +26,6 @@
         </div>
     </x-wms.field>
 </x-wms.filter>
-
-<x-wms.toolbar :count="$orders->total()">
-    <button type="button" id="btnPickingSlip"
-            class="inline-flex items-center gap-1 rounded-lg bg-mango-500 hover:bg-mango-600 text-white px-4 py-1.5 text-xs font-bold transition">🖨️ 출고지시서 출력</button>
-    <a href="{{ route('portal.hq.shipments.index') }}" class="inline-flex items-center gap-1 rounded-lg bg-white border border-neutral-200 px-3 py-1.5 text-xs font-bold text-neutral-500 hover:bg-neutral-100">새로고침</a>
-</x-wms.toolbar>
 
 @include('portal.partials.wwgrid-assets')
 @php
@@ -46,7 +45,7 @@
     ])->values();
 @endphp
 
-<x-wwgrid-tabs gid="hqShipGrid">
+<x-wwgrid-tabs gid="hqShipGrid" :count="$orders->total()">
     <x-wms.panel>
         <div id="hqShipGrid"></div>
     </x-wms.panel>

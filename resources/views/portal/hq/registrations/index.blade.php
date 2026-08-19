@@ -12,8 +12,6 @@
 
 <x-wms.page-head title="회원가입 승인" subtitle="자가 가입한 제품 구매자 · 공급자 신청을 검토하고 승인/반려합니다" icon="📝" />
 
-<x-wms.toolbar :count="$pending->total()" />
-
 @include('portal.partials.wwgrid-assets')
 @php
     $gridRows = $pending->map(function ($u) {
@@ -35,7 +33,7 @@
     })->values();
 @endphp
 
-<x-wms.panel>
+<x-wms.panel :title="'목록 (합계 '.number_format($pending->total()).'건)'">
     <div id="hqRegistrationsGrid"></div>
 </x-wms.panel>
 

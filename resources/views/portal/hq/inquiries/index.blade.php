@@ -16,8 +16,6 @@
     @endforeach
 </div>
 
-<x-wms.toolbar :count="$inquiries->total()" />
-
 @include('portal.partials.wwgrid-assets')
 @php
     $gridRows = $inquiries->map(fn ($iq) => [
@@ -32,7 +30,7 @@
     ])->values();
 @endphp
 
-<x-wwgrid-tabs gid="hqInquiriesGrid">
+<x-wwgrid-tabs gid="hqInquiriesGrid" :count="$inquiries->total()">
     <x-wms.panel>
         <div id="hqInquiriesGrid"></div>
     </x-wms.panel>

@@ -20,8 +20,6 @@
 
 <x-date-filter :from="$from" :to="$to" label="발주일 기간" />
 
-<x-wms.toolbar :count="$orders->total()" />
-
 @include('portal.partials.wwgrid-assets')
 @php
     $gridRows = $orders->map(fn ($o) => [
@@ -37,7 +35,7 @@
     ])->values();
 @endphp
 
-<x-wwgrid-tabs gid="storeOrdersGrid">
+<x-wwgrid-tabs gid="storeOrdersGrid" :count="$orders->total()">
     <x-wms.panel>
         <div id="storeOrdersGrid"></div>
     </x-wms.panel>

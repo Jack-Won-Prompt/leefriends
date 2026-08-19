@@ -11,8 +11,6 @@
     </x-slot:actions>
 </x-wms.page-head>
 
-<x-wms.toolbar :count="$notices->total()" />
-
 @include('portal.partials.wwgrid-assets')
 @php
     $gridRows = $notices->map(fn ($n) => [
@@ -27,7 +25,7 @@
     ])->values();
 @endphp
 
-<x-wms.panel>
+<x-wms.panel :title="'목록 (합계 '.number_format($notices->total()).'건)'">
     <div id="hqNoticesGrid"></div>
 </x-wms.panel>
 

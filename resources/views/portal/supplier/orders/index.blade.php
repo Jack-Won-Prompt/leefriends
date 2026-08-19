@@ -21,8 +21,6 @@
     </x-wms.field>
 </x-wms.filter>
 
-<x-wms.toolbar :count="$orders->total()" />
-
 @include('portal.partials.wwgrid-assets')
 @php
     $gridRows = $orders->map(function ($o) {
@@ -46,7 +44,7 @@
     })->values();
 @endphp
 
-<x-wwgrid-tabs gid="supplierOrdersGrid">
+<x-wwgrid-tabs gid="supplierOrdersGrid" :count="$orders->total()">
     <x-wms.panel>
         <div id="supplierOrdersGrid"></div>
     </x-wms.panel>

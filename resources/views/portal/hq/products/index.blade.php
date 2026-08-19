@@ -58,8 +58,6 @@
     </x-wms.field>
 </x-wms.filter>
 
-<x-wms.toolbar :count="$products->total()" />
-
 @include('portal.partials.wwgrid-assets')
 @php
     $gridRows = $products->map(fn ($p) => [
@@ -93,7 +91,7 @@
     ])->values();
 @endphp
 
-<x-wms.panel>
+<x-wms.panel :title="'목록 (합계 '.number_format($products->total()).'건)'">
     <div id="hqProductsGrid"></div>
 </x-wms.panel>
 

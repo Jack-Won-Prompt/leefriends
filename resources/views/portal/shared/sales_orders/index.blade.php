@@ -30,8 +30,6 @@
     </x-wms.field>
 </x-wms.filter>
 
-<x-wms.toolbar :count="$salesOrders->total()" />
-
 @include('portal.partials.wwgrid-assets')
 @php
     $lifecycleCls = [
@@ -58,7 +56,7 @@
     ])->values();
 @endphp
 
-<x-wms.panel>
+<x-wms.panel :title="'목록 (합계 '.number_format($salesOrders->total()).'건)'">
     <div id="salesOrdersGrid"></div>
 </x-wms.panel>
 

@@ -13,8 +13,6 @@
     </x-slot:actions>
 </x-wms.page-head>
 
-<x-wms.toolbar :count="$changes->total()" label="변경 내역" />
-
 @include('portal.partials.wwgrid-assets')
 @php
     $gridRows = $changes->map(fn ($c) => [
@@ -30,7 +28,7 @@
     ])->values();
 @endphp
 
-<x-wms.panel>
+<x-wms.panel :title="'목록 (합계 '.number_format($changes->total()).'건)'">
     <div id="orderChangesGrid"></div>
 </x-wms.panel>
 

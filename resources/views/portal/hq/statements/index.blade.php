@@ -9,13 +9,13 @@
     </x-slot:actions>
 </x-wms.page-head>
 
-<x-date-filter :from="$from" :to="$to" label="발송일 기간" />
-
-<x-wms.toolbar :count="$statements->total()" label="발송 이력">
-    <a href="{{ route('portal.hq.statements.excel_bulk', ['from' => $from, 'to' => $to]) }}"
-       id="btnStmtExcelBulk"
-       class="inline-flex items-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 text-xs font-bold transition">⬇️ 엑셀 (선택 / 전체)</a>
-</x-wms.toolbar>
+<x-date-filter :from="$from" :to="$to" label="발송일 기간">
+    <x-slot:actions>
+        <a href="{{ route('portal.hq.statements.excel_bulk', ['from' => $from, 'to' => $to]) }}"
+           id="btnStmtExcelBulk"
+           class="inline-flex items-center gap-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-sm font-bold transition">⬇️ 엑셀 (선택 / 전체)</a>
+    </x-slot:actions>
+</x-date-filter>
 
 @include('portal.partials.wwgrid-assets')
 @php
@@ -47,7 +47,7 @@
     })->values();
 @endphp
 
-<x-wms.panel>
+<x-wms.panel :title="'발송 이력 (합계 '.number_format($statements->total()).'건)'">
     <div id="hqStatementsGrid"></div>
 </x-wms.panel>
 

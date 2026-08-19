@@ -27,8 +27,6 @@
     </x-wms.field>
 </x-wms.filter>
 
-<x-wms.toolbar :count="$shipments->total()" />
-
 @include('portal.partials.wwgrid-assets')
 @php
     $gridRows = $shipments->map(fn ($s) => [
@@ -45,7 +43,7 @@
     ])->values();
 @endphp
 
-<x-wwgrid-tabs gid="shipmentsGrid">
+<x-wwgrid-tabs gid="shipmentsGrid" :count="$shipments->total()">
     <x-wms.panel>
         <div id="shipmentsGrid"></div>
     </x-wms.panel>

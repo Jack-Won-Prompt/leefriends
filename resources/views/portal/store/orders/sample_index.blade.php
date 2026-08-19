@@ -8,8 +8,6 @@
     </x-slot:actions>
 </x-wms.page-head>
 
-<x-wms.toolbar :count="$orders->total()" />
-
 @include('portal.partials.wwgrid-assets')
 @php
     $gridRows = $orders->map(fn ($o) => [
@@ -22,7 +20,7 @@
     ])->values();
 @endphp
 
-<x-wwgrid-tabs gid="sampleOrdersGrid">
+<x-wwgrid-tabs gid="sampleOrdersGrid" :count="$orders->total()">
     <x-wms.panel>
         <div id="sampleOrdersGrid"></div>
     </x-wms.panel>

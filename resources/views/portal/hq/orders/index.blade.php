@@ -5,6 +5,9 @@
 <x-wms.page-head title="매장 발주 주문" subtitle="매장이 접수한 구매주문을 조회합니다" icon="📦" />
 
 <x-wms.filter :action="route('portal.hq.orders.index')" cols="grid-cols-2 md:grid-cols-4">
+    <x-slot:actions>
+        <a href="{{ route('portal.hq.orders.index') }}" class="inline-flex items-center gap-1 rounded-lg bg-white border border-neutral-200 px-3 py-1.5 text-xs font-bold text-neutral-500 hover:bg-neutral-100">새로고침</a>
+    </x-slot:actions>
     <x-wms.field label="진행상태">
         <select name="status" class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
             <option value="all">전체</option>
@@ -37,10 +40,6 @@
     </x-wms.field>
 </x-wms.filter>
 
-<x-wms.toolbar :count="$orders->total()">
-    <a href="{{ route('portal.hq.orders.index') }}" class="inline-flex items-center gap-1 rounded-lg bg-white border border-neutral-200 px-3 py-1.5 text-xs font-bold text-neutral-500 hover:bg-neutral-100">새로고침</a>
-</x-wms.toolbar>
-
 @include('portal.partials.wwgrid-assets')
 @php
     $gridRows = $orders->map(fn ($o) => [
@@ -61,7 +60,7 @@
     ])->values();
 @endphp
 
-<x-wwgrid-tabs gid="hqOrdersGrid">
+<x-wwgrid-tabs gid="hqOrdersGrid" :count="$orders->total()">
     <x-wms.panel>
         <div id="hqOrdersGrid"></div>
     </x-wms.panel>

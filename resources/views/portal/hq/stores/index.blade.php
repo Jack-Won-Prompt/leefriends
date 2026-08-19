@@ -17,8 +17,6 @@
     </x-slot:actions>
 </x-wms.page-head>
 
-<x-wms.toolbar :count="$stores->total()" />
-
 @include('portal.partials.wwgrid-assets')
 @php
     $gridRows = $stores->map(function ($st) {
@@ -44,7 +42,7 @@
     })->values();
 @endphp
 
-<x-wms.panel>
+<x-wms.panel :title="'목록 (합계 '.number_format($stores->total()).'건)'">
     <div id="hqStoresGrid"></div>
 </x-wms.panel>
 

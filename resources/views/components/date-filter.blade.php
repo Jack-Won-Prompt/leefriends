@@ -17,4 +17,5 @@
     @if ($from || $to)
         <a href="{{ url()->current() }}" class="rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-500 font-bold px-3 py-2 text-sm">초기화</a>
     @endif
+    @isset($actions)<div class="ml-auto flex items-end gap-2">{{ $actions }}</div>@endisset
 </form>

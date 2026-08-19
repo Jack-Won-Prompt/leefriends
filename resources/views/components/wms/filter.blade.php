@@ -9,6 +9,7 @@
             {{ $title }}
         </span>
         <div class="flex items-center gap-2">
+            @isset($actions)<div class="flex items-center gap-2 mr-1">{{ $actions }}</div>@endisset
             <a href="{{ url()->current() }}" class="inline-flex items-center gap-1 rounded-lg bg-white border border-neutral-200 px-3 py-1.5 text-xs font-bold text-neutral-500 hover:bg-neutral-100">초기화</a>
             <button type="submit" class="inline-flex items-center gap-1 rounded-lg bg-mango-500 hover:bg-mango-600 px-4 py-1.5 text-xs font-bold text-white">검색</button>
             <button type="button" @click="open = !open" class="w-7 h-7 grid place-items-center rounded-lg text-neutral-400 hover:bg-neutral-100">
