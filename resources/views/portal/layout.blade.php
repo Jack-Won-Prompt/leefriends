@@ -377,6 +377,12 @@
         try { s = s.replace(/^[^\p{L}\p{N}]+/u, ''); } catch (e) { s = s.replace(/^[^가-힣A-Za-z0-9]+/, ''); }
         return s.replace(/\s+\d+$/, '').trim() || '화면';
     };
+    // 경로가 사이드바 메뉴와 일치하면 그 메뉴 라벨을 반환(탭 이름을 메뉴명과 일치시키기 위함)
+    const menuTitleForPath = (path) => {
+        const links = document.querySelectorAll('aside a[href]');
+        for (let i = 0; i < links.length; i++) { if (norm(links[i].getAttribute('href')) === path) return menuLabel(links[i]); }
+        return null;
+    };
 
     function persist() {
         try { sessionStorage.setItem(KEY, JSON.stringify({ tabs: tabs.map(t => ({ url: t.url, title: t.title })), active: (tabs.find(t => t.id === activeId) || {}).url })); } catch (e) {}
@@ -425,8 +431,14 @@
 
     function openTab(url, title) {
         const path = norm(stripPanel(url));
+        const menuT = menuTitleForPath(path);   // 메뉴와 일치하면 메뉴 라벨을 우선
+        if (menuT) title = menuT;
         const ex = tabs.find(t => norm(t.url) === path);
-        if (ex) { activate(ex.id); return; }
+        if (ex) {
+            if (title) { ex.title = title; ex.titled = true; }   // 메뉴 클릭이면 탭 이름을 메뉴 라벨로 고정
+            activate(ex.id);
+            return;
+        }
         const t = { id: ++seq, url: stripPanel(url), title: title || '화면', titled: !!title, frame: null };
         tabs.push(t); activate(t.id);
     }
