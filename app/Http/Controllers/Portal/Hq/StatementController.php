@@ -104,6 +104,35 @@ class StatementController extends Controller
     }
 
     /** 거래명세서 1건을 고급 스타일 엑셀(.xlsx)로 다운로드 */
+    /**
+     * 여러 거래명세서를 한 엑셀 파일(시트별)로 다운로드.
+     * ids[] 가 있으면 체크된 명세서만, 없으면 조회된(기간필터) 전체.
+     */
+    public function excelBulk(Request $request, \App\Services\Export\StatementExcel $exporter)
+    {
+        $ids = array_values(array_filter(array_map('intval', (array) $request->query('ids', []))));
+
+        $query = Statement::with(['store', 'sender', 'taxInvoice', 'order'])->latest('sent_at');
+        if ($ids) {
+            $query->whereIn('id', $ids);
+        } else {
+            [$from, $to] = $this->dateRange($request);
+            $this->applyDateRange($query, $from, $to, 'sent_at');
+        }
+        $statements = $query->get();
+        abort_if($statements->isEmpty(), 404, '내보낼 거래명세서가 없습니다.');
+
+        $book = $exporter->buildMany($statements);
+        $filename = '거래명세서_' . now()->format('Ymd') . '_' . $statements->count() . '건.xlsx';
+
+        return response()->streamDownload(function () use ($book) {
+            (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($book))->save('php://output');
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'no-store, no-cache, must-revalidate',
+        ]);
+    }
+
     public function excel(Statement $statement, \App\Services\Export\StatementExcel $exporter)
     {
         $book = $exporter->build($statement);

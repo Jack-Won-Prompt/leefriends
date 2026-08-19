@@ -346,6 +346,7 @@ Route::prefix('portal')->name('portal.')->group(function () {
             // 거래명세서 (매장·품목 선택 → PDF 미리보기/이메일 전송 + 발송 이력)
             Route::get('statements', [Portal\Hq\StatementController::class, 'index'])->name('statements.index');
             Route::get('statements/create', [Portal\Hq\StatementController::class, 'create'])->name('statements.create');
+            Route::get('statements/excel-bulk', [Portal\Hq\StatementController::class, 'excelBulk'])->name('statements.excel_bulk');
             Route::post('statements/preview', [Portal\Hq\StatementController::class, 'preview'])->name('statements.preview');
             Route::post('statements/send', [Portal\Hq\StatementController::class, 'send'])->name('statements.send');
             Route::get('statements/{statement}/pdf', [Portal\Hq\StatementController::class, 'pdf'])->name('statements.pdf');

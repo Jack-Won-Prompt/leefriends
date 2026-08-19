@@ -5,7 +5,8 @@
 <x-wms.page-head title="매장별 입금현황" subtitle="매장별 총 발주액 대비 입금완료·미입금 집계 (계좌 대사 기준)" icon="💳">
     <x-slot:actions>
         <a href="{{ route('portal.hq.store_payments.excel_all', ['period' => $period, 'from' => $from, 'to' => $to, 'year' => $year, 'month' => $month]) }}"
-           class="inline-flex items-center gap-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 text-sm">⬇️ 엑셀 (조회기간 전체 주문서)</a>
+           id="btnStorePayExcel"
+           class="inline-flex items-center gap-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-4 py-2 text-sm">⬇️ 엑셀 (선택 매장 / 전체)</a>
     </x-slot:actions>
 </x-wms.page-head>
 
@@ -65,6 +66,7 @@
     $gridRows = $byStore->map(function ($s) use ($qp) {
         $unpaidAmt = (int) $s->total - (int) $s->paid;
         return [
+            'id' => (int) $s->id,
             'name' => $s->name,
             'region' => $s->region,
             'cnt' => (int) $s->cnt,
@@ -129,6 +131,19 @@
     ], @json($gridRows));
 
     ww.bindRowDetail('hqStorePaymentsGrid', grid, 'show_url', 'name');
+
+    // 엑셀: 체크된 매장이 있으면 해당 매장만, 없으면 조회된 전체 매장 다운로드
+    const excelBtn = document.getElementById('btnStorePayExcel');
+    if (excelBtn) excelBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        let url = excelBtn.getAttribute('href');
+        const rows = grid.getCheckedRows();
+        if (rows.length) {
+            const qs = rows.map((r) => 'stores[]=' + encodeURIComponent(r.id)).join('&');
+            url += (url.indexOf('?') === -1 ? '?' : '&') + qs;
+        }
+        window.location = url;
+    });
 })();
 </script>
 @endpush

@@ -103,20 +103,29 @@ class StorePaymentController extends Controller
             $period = 'month_sel';
         }
 
+        // 체크된 매장이 있으면 해당 매장만, 없으면 전체
+        $storeIds = array_values(array_filter(array_map('intval', (array) $request->query('stores', []))));
+
         // 전 매장 발주 (기간 반영) — 매장 → 발주일 순
-        $orders = $this->apply(
-            Order::with('store')->withCount('items')
-                ->where('order_type', 'normal')->where('status', '!=', 'canceled'),
-            $period, $from, $to
-        )->orderBy('store_id')->orderByDesc('created_at')->get();
+        $ordersQuery = Order::with('store')->withCount('items')
+            ->where('order_type', 'normal')->where('status', '!=', 'canceled');
+        if ($storeIds) {
+            $ordersQuery->whereIn('store_id', $storeIds);
+        }
+        $orders = $this->apply($ordersQuery, $period, $from, $to)
+            ->orderBy('store_id')->orderByDesc('created_at')->get();
 
         // 매장별 집계 (index 와 동일 산식)
-        $byStore = $this->apply(
+        $byStoreQuery = $this->apply(
             Order::query()->where('orders.order_type', 'normal'),
             $period, $from, $to
         )
             ->join('stores', 'stores.id', '=', 'orders.store_id')
-            ->where('orders.status', '!=', 'canceled')
+            ->where('orders.status', '!=', 'canceled');
+        if ($storeIds) {
+            $byStoreQuery->whereIn('stores.id', $storeIds);
+        }
+        $byStore = $byStoreQuery
             ->selectRaw('stores.id, stores.name, stores.region,
                 count(*) as cnt,
                 sum(orders.store_amount + orders.store_vat + orders.shipping_fee) as total,

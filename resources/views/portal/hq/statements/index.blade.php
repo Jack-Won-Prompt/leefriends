@@ -11,7 +11,11 @@
 
 <x-date-filter :from="$from" :to="$to" label="발송일 기간" />
 
-<x-wms.toolbar :count="$statements->total()" label="발송 이력" />
+<x-wms.toolbar :count="$statements->total()" label="발송 이력">
+    <a href="{{ route('portal.hq.statements.excel_bulk', ['from' => $from, 'to' => $to]) }}"
+       id="btnStmtExcelBulk"
+       class="inline-flex items-center gap-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 text-xs font-bold transition">⬇️ 엑셀 (선택 / 전체)</a>
+</x-wms.toolbar>
 
 @include('portal.partials.wwgrid-assets')
 @php
@@ -82,7 +86,7 @@
     };
     const openModal = (id) => window.dispatchEvent(new CustomEvent('stmt-open', { detail: id }));
 
-    ww.grid('hqStatementsGrid', [
+    const grid = ww.grid('hqStatementsGrid', [
         { header: '거래명세서 매장 전송', name: 'transmit_label', width: 170,
           renderer: (v, row) => {
               const box = document.createElement('div');
@@ -182,6 +186,19 @@
               return wrap;
           } },
     ], @json($gridRows));
+
+    // 엑셀: 체크된 거래명세서가 있으면 해당 건만, 없으면 조회된 전체(기간필터) 다운로드
+    const stmtExcelBtn = document.getElementById('btnStmtExcelBulk');
+    if (stmtExcelBtn) stmtExcelBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        let url = stmtExcelBtn.getAttribute('href');
+        const rows = grid.getCheckedRows();
+        if (rows.length) {
+            const qs = rows.map((r) => 'ids[]=' + encodeURIComponent(r.id)).join('&');
+            url += (url.indexOf('?') === -1 ? '?' : '&') + qs;
+        }
+        window.location = url;
+    });
 })();
 </script>
 @endpush

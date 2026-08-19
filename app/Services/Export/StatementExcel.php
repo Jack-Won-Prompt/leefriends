@@ -37,6 +37,41 @@ class StatementExcel
 
         $s = $book->getActiveSheet();
         $s->setTitle('거래명세서');
+        $this->writeSheet($s, $statement);
+
+        return $book;
+    }
+
+    /** 여러 거래명세서를 시트별로 담은 하나의 워크북 */
+    public function buildMany(\Illuminate\Support\Collection $statements): Spreadsheet
+    {
+        $book = new Spreadsheet();
+        $book->getProperties()
+            ->setCreator('LEEFRIENDS 본사')
+            ->setTitle('거래명세서 모음')
+            ->setCompany('주식회사 오다네트웍스');
+
+        foreach ($statements->values() as $i => $statement) {
+            $s = $i === 0 ? $book->getActiveSheet() : $book->createSheet();
+            $s->setTitle($this->sheetTitle($statement, $i + 1));
+            $this->writeSheet($s, $statement);
+        }
+        $book->setActiveSheetIndex(0);
+
+        return $book;
+    }
+
+    /** 시트 탭 이름(엑셀 제약: 31자, 일부 특수문자 불가, 중복 불가) */
+    private function sheetTitle(Statement $statement, int $n): string
+    {
+        $date = optional($statement->issueDate())->format('md') ?: '';
+        $base = trim(mb_substr(preg_replace('/[\\\\\/:*?\[\]]/u', ' ', (string) $statement->store_name), 0, 18));
+
+        return mb_substr(trim("{$n}. {$base} {$date}"), 0, 31);
+    }
+
+    private function writeSheet(Worksheet $s, Statement $statement): void
+    {
         $s->setShowGridlines(false);
 
         $items = $statement->items ?? [];
@@ -92,8 +127,6 @@ class StatementExcel
             $s->getColumnDimension($this->col($i + 1))->setWidth($w);
         }
         $s->freezePane('A' . ($head + 1));
-
-        return $book;
     }
 
     private function titleBlock(Worksheet $s, Statement $statement): void
