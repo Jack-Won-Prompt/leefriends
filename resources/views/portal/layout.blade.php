@@ -98,6 +98,30 @@
         return request()->routeIs($r) || collect($also)->contains(fn ($x) => request()->routeIs($x));
     };
     $badge = ['hq' => 'bg-mango-500', 'store' => 'bg-emerald-500', 'supplier' => 'bg-sky-500'][$role] ?? 'bg-neutral-500';
+
+    // 사이드바 메뉴 아이콘 — ndn 스타일 인라인 라인 SVG (이모지 → SVG 매핑, 외부 의존 없음)
+    $menuIcons = [
+        '📊' => '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>',
+        '💬' => '<path d="M21 15a2 2 0 0 1-2 2H8l-4 4V6a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 12.5h5"/>',
+        '📦' => '<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/>',
+        '🚚' => '<path d="M3 6.5A1.5 1.5 0 0 1 4.5 5H13a1 1 0 0 1 1 1v9H3z"/><path d="M14 9h3.6a1 1 0 0 1 .8.4L21 13v2h-7z"/><circle cx="7" cy="18" r="1.7"/><circle cx="17.5" cy="18" r="1.7"/>',
+        '📈' => '<path d="M4 4v15a1 1 0 0 0 1 1h15"/><path d="M7 14l3.5-4 3 3L20 7"/>',
+        '🗂️' => '<path d="M3 7a2 2 0 0 1 2-2h3.5l2 2H19a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+        '🏠' => '<path d="M3.5 11L12 4l8.5 7"/><path d="M5.5 9.5V19a1 1 0 0 0 1 1H10v-5h4v5h3.5a1 1 0 0 0 1-1V9.5"/>',
+        '📅' => '<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 9.5h17M8 3.5v3.5M16 3.5v3.5"/>',
+        '👥' => '<circle cx="9" cy="8" r="3.2"/><path d="M3.5 20a5.5 5.5 0 0 1 11 0"/><path d="M16 5.5a3 3 0 0 1 0 5.8M15.5 20a5.5 5.5 0 0 1 5-4"/>',
+        '📢' => '<path d="M4 10v4a1 1 0 0 0 1 1h2l7 4V5L7 9H5a1 1 0 0 0-1 1z"/><path d="M18 9.5a3.5 3.5 0 0 1 0 5"/>',
+        '📨' => '<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3.5 7l8.5 6 8.5-6"/>',
+        '⚙️' => '<circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.2 5.2l2.1 2.1M16.7 16.7l2.1 2.1M5.2 18.8l2.1-2.1M16.7 7.3l2.1-2.1"/>',
+        '🕐' => '<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3.5 2"/>',
+        '🛒' => '<circle cx="9.5" cy="20" r="1.6"/><circle cx="17" cy="20" r="1.6"/><path d="M3 4h2l2.3 11.4a1 1 0 0 0 1 .8h8.4a1 1 0 0 0 1-.8L20.5 8H6"/>',
+        '🧊' => '<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/>',
+    ];
+    $menuIcon = function ($emoji) use ($menuIcons) {
+        $inner = $menuIcons[$emoji] ?? null;
+        if (! $inner) return '<span class="w-5 text-center shrink-0">'.e($emoji).'</span>';
+        return '<svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'.$inner.'</svg>';
+    };
 @endphp
 <body class="font-sans text-neutral-800">
 @php $panelMode = request()->boolean('panel'); @endphp
@@ -143,13 +167,13 @@
                     @php [$r, $label, $also] = $children[0]; $active = $isChildActive($children[0]); @endphp
                     <a href="{{ route($r) }}"
                        class="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-semibold transition {{ $active ? 'bg-mango-50 text-mango-600 font-bold' : 'text-neutral-700 hover:bg-neutral-50 hover:text-mango-600' }}">
-                        <span>{{ $groupIcon }}</span> {{ $label }}
+                        {!! $menuIcon($groupIcon) !!} {{ $label }}
                     </a>
                 @else
                     <div x-data="{ open: {{ $groupActive ? 'true' : 'false' }} }">
                         <button type="button" @click="open = !open"
                                 class="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-bold transition {{ $groupActive ? 'text-mango-600' : 'text-neutral-600 hover:text-mango-600 hover:bg-neutral-50' }}">
-                            <span>{{ $groupIcon }}</span>
+                            {!! $menuIcon($groupIcon) !!}
                             <span class="flex-1 text-left">{{ $groupLabel }}</span>
                             <svg class="w-4 h-4 transition-transform text-neutral-400" :class="open ? 'rotate-180' : ''" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 9l6 6 6-6"/></svg>
                         </button>
