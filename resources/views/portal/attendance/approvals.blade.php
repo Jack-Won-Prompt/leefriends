@@ -2,7 +2,13 @@
 @section('title', '출근 승인')
 
 @section('content')
-<div x-data="{ regOpen: false, uid: '' }">
+<div x-data="{
+        regOpen: false, uid: '',
+        editOpen: false,
+        editForm: { action: '', name: '', work_date: '', clock_in: '', clock_out: '' },
+        openEdit(d) { this.editForm = Object.assign({ clock_out: '' }, d); this.editOpen = true; },
+     }"
+     @att-edit-open.window="openEdit($event.detail)">
 <x-wms.page-head title="출근 승인" subtitle="출근·퇴근 시간을 확인하고 승인합니다. 정직원·아르바이트 출퇴근을 직접 등록할 수도 있습니다." icon="✅" />
 
 {{-- 필터 --}}
@@ -51,6 +57,11 @@
         'status_label' => $a->statusLabel(),
         'approvable' => $a->status === 'pending' && (bool) $a->clock_out_at,
         'is_pending' => $a->status === 'pending',
+        // 라인별 시간 수정용 원본 값
+        'work_date_raw' => $a->work_date->format('Y-m-d'),
+        'clock_in_raw' => $a->clock_in_at->format('H:i'),
+        'clock_out_raw' => $a->clock_out_at ? $a->clock_out_at->format('H:i') : '',
+        'update_url' => route('portal.attendance.update_times', $a),
         'approve_url' => route('portal.attendance.approve', $a),
         'reject_url' => route('portal.attendance.reject', $a),
     ])->values();
@@ -160,6 +171,42 @@
         </form>
     </div>
 </div>
+
+{{-- 출퇴근 시간 수정 모달 (라인별) --}}
+<div x-show="editOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" @keydown.escape.window="editOpen = false">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6" @click.outside="editOpen = false">
+        <h3 class="text-lg font-extrabold text-neutral-900 mb-1">🕐 출퇴근 시간 수정</h3>
+        <p class="text-sm text-neutral-500 mb-4" x-text="editForm.name"></p>
+        <form :action="editForm.action" method="POST">
+            @csrf
+            <input type="hidden" name="_method" value="PATCH">
+            <div class="space-y-3">
+                <div>
+                    <label class="block text-sm font-bold text-neutral-700 mb-1.5">근무일 *</label>
+                    <input type="date" name="work_date" x-model="editForm.work_date" required class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-sm font-bold text-neutral-700 mb-1.5">출근 *</label>
+                        <input type="time" name="clock_in" x-model="editForm.clock_in" required class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-neutral-700 mb-1.5">퇴근</label>
+                        <input type="time" name="clock_out" x-model="editForm.clock_out" class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+                    </div>
+                </div>
+                <label class="flex items-center gap-2">
+                    <input type="checkbox" name="approve" value="1" class="rounded text-mango-500 focus:ring-mango-400">
+                    <span class="text-sm font-semibold text-neutral-700">저장 후 승인 처리 <span class="text-neutral-400 font-normal">(퇴근시간 입력 시)</span></span>
+                </label>
+                <div class="flex gap-2 pt-1">
+                    <button type="submit" class="flex-1 rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2.5 text-sm">저장</button>
+                    <button type="button" @click="editOpen = false" class="rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-600 font-bold px-4 py-2.5 text-sm">취소</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
 </div>{{-- /x-data --}}
 
 @push('scripts')
@@ -186,6 +233,18 @@
     const APPROVE_CLS = 'rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-3 py-1.5 text-xs';
     const REJECT_CLS = 'rounded-lg border border-neutral-200 hover:bg-neutral-50 text-neutral-500 font-bold px-3 py-1.5 text-xs';
 
+    // 라인별 출퇴근 시간 수정 버튼 — 수정 모달 오픈
+    const editTimeBtn = (row) => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.textContent = '✏ 수정';
+        b.className = 'rounded-lg border border-neutral-200 hover:bg-neutral-50 text-neutral-600 font-bold px-3 py-1.5 text-xs';
+        b.addEventListener('click', () => window.dispatchEvent(new CustomEvent('att-edit-open', { detail: {
+            action: row.update_url, name: row.user_name + ' · ' + row.work_date,
+            work_date: row.work_date_raw, clock_in: row.clock_in_raw, clock_out: row.clock_out_raw,
+        } })));
+        return b;
+    };
+
     // ── 직원 개요 그리드 ──
     ww.grid('staffOverviewGrid', [
         { header: '직원', name: 'name', width: 160, renderer: (v) => ww.el('span', 'font-bold text-neutral-900', v) },
@@ -211,17 +270,20 @@
           renderer: (v) => ww.el('span', 'tabular-nums', v) },
         { header: '상태', name: 'status_label', width: 100,
           renderer: (v, row) => statusBadge(v, row.status) },
-        { header: '처리', name: 'id', width: 160, align: 'right', sortable: false, exportable: false,
+        { header: '처리', name: 'id', width: 230, align: 'right', sortable: false, exportable: false,
           renderer: (v, row) => {
+              const wrap = document.createElement('div');
+              wrap.className = 'flex items-center justify-end gap-1.5';
+              wrap.appendChild(editTimeBtn(row));   // 라인별 시간 수정 — 항상 가능
               if (row.approvable) {
-                  const wrap = document.createElement('div');
-                  wrap.className = 'flex justify-end gap-1.5';
                   wrap.appendChild(patchForm(row.approve_url, '승인', APPROVE_CLS));
                   wrap.appendChild(patchForm(row.reject_url, '반려', REJECT_CLS));
-                  return wrap;
+              } else if (row.is_pending) {
+                  wrap.appendChild(ww.el('span', 'text-xs text-neutral-400', '퇴근 전'));
+              } else {
+                  wrap.appendChild(ww.el('span', 'text-xs text-neutral-400', '처리완료'));
               }
-              if (row.is_pending) return ww.el('span', 'text-xs text-neutral-400', '퇴근 전');
-              return ww.el('span', 'text-xs text-neutral-400', '처리완료');
+              return wrap;
           } },
     ], @json($attRows));
 
