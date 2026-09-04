@@ -144,22 +144,19 @@ class AttendanceController extends Controller
 
     private function validateTimes(Request $request): array
     {
+        // 야간 근무(자정 넘김) 허용 — 퇴근이 출근보다 이른 시각이면 다음 날로 처리하므로 after 검증은 두지 않는다.
         return $request->validate([
             'work_date' => ['required', 'date'],
             'clock_in' => ['required', 'date_format:H:i'],
-            'clock_out' => ['nullable', 'date_format:H:i', 'after:clock_in'],
+            'clock_out' => ['nullable', 'date_format:H:i'],
         ], [
             'clock_in.required' => '출근 시간을 입력해 주세요.',
-            'clock_out.after' => '퇴근 시간은 출근 시간 이후여야 합니다.',
         ]);
     }
 
     private function buildTimes(array $data): array
     {
-        $in = \Illuminate\Support\Carbon::parse($data['work_date'].' '.$data['clock_in']);
-        $out = ! empty($data['clock_out']) ? \Illuminate\Support\Carbon::parse($data['work_date'].' '.$data['clock_out']) : null;
-
-        return [$in, $out];
+        return Attendance::resolveTimes($data['work_date'], $data['clock_in'], $data['clock_out'] ?? null);
     }
 
     /** 정직원: 근태 승인 화면 (출퇴근 + 휴무 대기 목록) */
@@ -282,17 +279,8 @@ class AttendanceController extends Controller
         $me = Auth::user();
         $this->assertManageable($user);
 
-        $data = $request->validate([
-            'work_date' => ['required', 'date'],
-            'clock_in' => ['required', 'date_format:H:i'],
-            'clock_out' => ['nullable', 'date_format:H:i', 'after:clock_in'],
-        ], [
-            'clock_in.required' => '출근 시간을 입력해 주세요.',
-            'clock_out.after' => '퇴근 시간은 출근 시간 이후여야 합니다.',
-        ]);
-
-        $in = \Illuminate\Support\Carbon::parse($data['work_date'].' '.$data['clock_in']);
-        $out = ! empty($data['clock_out']) ? \Illuminate\Support\Carbon::parse($data['work_date'].' '.$data['clock_out']) : null;
+        $data = $this->validateTimes($request);
+        [$in, $out] = $this->buildTimes($data);
 
         Attendance::create([
             'user_id' => $user->id,
@@ -319,12 +307,12 @@ class AttendanceController extends Controller
         $data = $request->validate([
             'work_date' => ['required', 'date'],
             'clock_in' => ['required', 'date_format:H:i'],
-            'clock_out' => ['nullable', 'date_format:H:i', 'after:clock_in'],
+            'clock_out' => ['nullable', 'date_format:H:i'],
             'approve' => ['nullable', 'boolean'],
-        ], ['clock_out.after' => '퇴근 시간은 출근 시간 이후여야 합니다.']);
+        ]);
 
-        $in = \Illuminate\Support\Carbon::parse($data['work_date'].' '.$data['clock_in']);
-        $out = ! empty($data['clock_out']) ? \Illuminate\Support\Carbon::parse($data['work_date'].' '.$data['clock_out']) : null;
+        // 야간 근무(자정 넘김) 허용 — 퇴근이 출근보다 이르면 다음 날로 처리
+        [$in, $out] = Attendance::resolveTimes($data['work_date'], $data['clock_in'], $data['clock_out'] ?? null);
 
         $payload = [
             'work_date' => $data['work_date'],

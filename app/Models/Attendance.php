@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 
 /**
  * 출퇴근 기록.
@@ -36,6 +37,27 @@ class Attendance extends Model
     public function approver()
     {
         return $this->belongsTo(User::class, 'approved_by');
+    }
+
+    /**
+     * 근무일 + 출근/퇴근 시각(H:i)을 타임스탬프로 변환.
+     * 퇴근 시각이 출근 시각보다 이르면(예: 20:00 출근 → 01:00 퇴근) 자정을 넘긴 야간 근무로 보고
+     * 퇴근을 다음 날로 처리한다. work_date 는 출근일 기준으로 유지된다.
+     *
+     * @return array{0: Carbon, 1: Carbon|null} [출근, 퇴근|null]
+     */
+    public static function resolveTimes(string $workDate, string $clockIn, ?string $clockOut): array
+    {
+        $in = Carbon::parse($workDate.' '.$clockIn);
+        $out = null;
+        if (! empty($clockOut)) {
+            $out = Carbon::parse($workDate.' '.$clockOut);
+            if ($out->lessThan($in)) {
+                $out->addDay();
+            }
+        }
+
+        return [$in, $out];
     }
 
     /** 근무시간(시) — 퇴근 미기록이면 0 */

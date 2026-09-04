@@ -162,7 +162,7 @@
                         <input type="time" name="clock_out" class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
                     </div>
                 </div>
-                <p class="text-[11px] text-neutral-400">퇴근 시간까지 입력하면 자동으로 승인 처리됩니다.</p>
+                <p class="text-[11px] text-neutral-400">퇴근 시간까지 입력하면 자동으로 승인 처리됩니다. 퇴근이 출근보다 이르면 야간 근무로 보아 다음 날로 계산됩니다.</p>
                 <div class="flex gap-2 pt-1">
                     <button type="submit" class="flex-1 rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2.5 text-sm">등록</button>
                     <button type="button" @click="regOpen = false" class="rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-600 font-bold px-4 py-2.5 text-sm">취소</button>
@@ -199,6 +199,7 @@
                     <input type="checkbox" name="approve" value="1" class="rounded text-mango-500 focus:ring-mango-400">
                     <span class="text-sm font-semibold text-neutral-700">저장 후 승인 처리 <span class="text-neutral-400 font-normal">(퇴근시간 입력 시)</span></span>
                 </label>
+                <p class="text-[11px] text-neutral-400">퇴근이 출근보다 이르면 야간 근무로 보아 다음 날로 계산됩니다. (예: 20:00 → 01:00 = 5시간)</p>
                 <div class="flex gap-2 pt-1">
                     <button type="submit" class="flex-1 rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2.5 text-sm">저장</button>
                     <button type="button" @click="editOpen = false" class="rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-600 font-bold px-4 py-2.5 text-sm">취소</button>

@@ -9,7 +9,6 @@ use App\Models\User;
 use App\Services\Notification\NotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 
 /**
  * 모바일 앱 — 출퇴근 관리. 아르바이트(part_time)가 등록, 정직원(regular)이 승인.
@@ -258,11 +257,11 @@ class AttendanceController extends Controller
         $data = $request->validate([
             'work_date' => ['required', 'date'],
             'clock_in' => ['required', 'date_format:H:i'],
-            'clock_out' => ['nullable', 'date_format:H:i', 'after:clock_in'],
+            'clock_out' => ['nullable', 'date_format:H:i'],
             'approve' => ['nullable', 'boolean'],
-        ], ['clock_out.after' => '퇴근 시간은 출근 시간 이후여야 합니다.']);
-        $in = Carbon::parse($data['work_date'].' '.$data['clock_in']);
-        $out = ! empty($data['clock_out']) ? Carbon::parse($data['work_date'].' '.$data['clock_out']) : null;
+        ]);
+        // 야간 근무(자정 넘김) 허용 — 퇴근이 출근보다 이르면 다음 날로 처리
+        [$in, $out] = Attendance::resolveTimes($data['work_date'], $data['clock_in'], $data['clock_out'] ?? null);
 
         $payload = ['work_date' => $data['work_date'], 'clock_in_at' => $in, 'clock_out_at' => $out];
         if (! empty($data['approve']) && $out) {
@@ -279,22 +278,19 @@ class AttendanceController extends Controller
     // ---- helpers ----
     private function validateTimes(Request $request): array
     {
+        // 야간 근무(자정 넘김) 허용 — 퇴근이 출근보다 이르면 다음 날로 처리하므로 after 검증은 두지 않는다.
         return $request->validate([
             'work_date' => ['required', 'date'],
             'clock_in' => ['required', 'date_format:H:i'],
-            'clock_out' => ['nullable', 'date_format:H:i', 'after:clock_in'],
+            'clock_out' => ['nullable', 'date_format:H:i'],
         ], [
             'clock_in.required' => '출근 시간을 입력해 주세요.',
-            'clock_out.after' => '퇴근 시간은 출근 시간 이후여야 합니다.',
         ]);
     }
 
     private function buildTimes(array $data): array
     {
-        $in = Carbon::parse($data['work_date'].' '.$data['clock_in']);
-        $out = ! empty($data['clock_out']) ? Carbon::parse($data['work_date'].' '.$data['clock_out']) : null;
-
-        return [$in, $out];
+        return Attendance::resolveTimes($data['work_date'], $data['clock_in'], $data['clock_out'] ?? null);
     }
 
     private function assertManageable(Request $request, User $user): void
