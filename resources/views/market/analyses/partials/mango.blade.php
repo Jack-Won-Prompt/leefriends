@@ -23,7 +23,34 @@
             </form>
         @endif
     </div>
-    <p style="margin:10px 0 0;color:#48505b;font-size:13.5px;line-height:1.65;">{{ $mango['summary'] }}</p>
+
+    {{-- 운영 조건 입력 폼 (최상단) --}}
+    <form method="POST" action="{{ route('market.analyses.mango_plan', $analysis) }}"
+          style="margin-top:16px;padding-bottom:16px;border-bottom:1px dashed #e0e6ef;display:flex;gap:20px;align-items:flex-end;flex-wrap:wrap;">
+        @csrf
+        <div>
+            <label style="display:block;font-size:12px;font-weight:700;color:#6b7480;margin-bottom:5px;">홀 테이블 수</label>
+            <input type="number" name="hall_tables" min="0" max="500" value="{{ $plan['hall_tables'] ?? '' }}" placeholder="예: 8"
+                   style="width:110px;border:1px solid #cdd5e0;border-radius:8px;padding:8px 10px;font-size:13px;">
+        </div>
+        <div>
+            <label style="display:block;font-size:12px;font-weight:700;color:#6b7480;margin-bottom:5px;">매장 평수</label>
+            <input type="number" name="area_pyeong" min="0" max="1000" value="{{ $plan['area_pyeong'] ?? '' }}" placeholder="예: 15"
+                   style="width:110px;border:1px solid #cdd5e0;border-radius:8px;padding:8px 10px;font-size:13px;">
+        </div>
+        <label style="display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:#333;cursor:pointer;">
+            <input type="checkbox" name="coupang" value="1" @checked($plan['coupang'] ?? false) style="width:16px;height:16px;"> 쿠팡잇츠 연계
+        </label>
+        <label style="display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:#333;cursor:pointer;">
+            <input type="checkbox" name="baemin" value="1" @checked($plan['baemin'] ?? false) style="width:16px;height:16px;"> 배민 연계
+        </label>
+        <button type="submit" style="background:#f5a623;color:#fff;font-weight:800;font-size:13px;border:0;border-radius:8px;padding:9px 20px;cursor:pointer;">
+            운영 조건 반영
+        </button>
+        <span style="font-size:11.5px;color:#9aa2ad;">입력하면 장단점·PDF에 매장 운영 방식까지 반영됩니다.</span>
+    </form>
+
+    <p style="margin:14px 0 0;color:#48505b;font-size:13.5px;line-height:1.65;">{{ $mango['summary'] }}</p>
 
     {{-- 장점 / 단점 --}}
     <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:18px;">
@@ -63,30 +90,4 @@
             </div>
         @endforeach
     </div>
-
-    {{-- 운영 조건 입력 폼 --}}
-    <form method="POST" action="{{ route('market.analyses.mango_plan', $analysis) }}"
-          style="margin-top:16px;border-top:1px dashed #e0e6ef;padding-top:16px;display:flex;gap:20px;align-items:flex-end;flex-wrap:wrap;">
-        @csrf
-        <div>
-            <label style="display:block;font-size:12px;font-weight:700;color:#6b7480;margin-bottom:5px;">홀 테이블 수</label>
-            <input type="number" name="hall_tables" min="0" max="500" value="{{ $plan['hall_tables'] ?? '' }}" placeholder="예: 8"
-                   style="width:110px;border:1px solid #cdd5e0;border-radius:8px;padding:8px 10px;font-size:13px;">
-        </div>
-        <div>
-            <label style="display:block;font-size:12px;font-weight:700;color:#6b7480;margin-bottom:5px;">매장 평수</label>
-            <input type="number" name="area_pyeong" min="0" max="1000" value="{{ $plan['area_pyeong'] ?? '' }}" placeholder="예: 15"
-                   style="width:110px;border:1px solid #cdd5e0;border-radius:8px;padding:8px 10px;font-size:13px;">
-        </div>
-        <label style="display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:#333;cursor:pointer;">
-            <input type="checkbox" name="coupang" value="1" @checked($plan['coupang'] ?? false) style="width:16px;height:16px;"> 쿠팡잇츠 연계
-        </label>
-        <label style="display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:#333;cursor:pointer;">
-            <input type="checkbox" name="baemin" value="1" @checked($plan['baemin'] ?? false) style="width:16px;height:16px;"> 배민 연계
-        </label>
-        <button type="submit" style="background:#f5a623;color:#fff;font-weight:800;font-size:13px;border:0;border-radius:8px;padding:9px 20px;cursor:pointer;">
-            운영 조건 반영
-        </button>
-        <span style="font-size:11.5px;color:#9aa2ad;">입력하면 장단점·PDF에 매장 운영 방식까지 반영됩니다.</span>
-    </form>
 </section>
