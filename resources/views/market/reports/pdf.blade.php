@@ -154,7 +154,7 @@
 <body>
 
 <header>
-    MarketScope 상권분석
+    <b>{{ $analysis->title }}</b> · 상권분석
     <span class="right">보고서 생성일 : {{ $meta['generated_at'] }}</span>
 </header>
 
@@ -164,13 +164,13 @@
 <div class="page-break">
     <div style="border-top: 3mm solid #00599d; margin-bottom: 12mm;"></div>
 
-    <h1 class="cover-title">상권분석 보고서</h1>
+    <div style="font-size: 11pt; color: #5a6274; font-weight: bold; letter-spacing: 1pt; margin-bottom: 2mm;">상권분석 보고서</div>
+    <h1 class="cover-title" style="font-size: 24pt;">{{ $analysis->title }}</h1>
 
     <table style="margin-top: 4mm;">
         <tr>
             <td style="width: 60%; vertical-align: top;">
-                <div style="font-size: 12pt; font-weight: bold;">{{ $analysis->title }}</div>
-                <div class="muted" style="margin-top: 2mm; font-size: 9pt;">
+                <div class="muted" style="font-size: 9pt;">
                     {{ $meta['sido_name'] }} {{ $meta['sigungu_name'] }} · {{ $meta['base_label'] }} 기준
                 </div>
             </td>
