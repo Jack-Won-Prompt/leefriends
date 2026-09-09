@@ -198,6 +198,17 @@
                 @endif
             @endforeach
         </nav>
+        @if ($role === 'hq' && $user->is_admin)
+            {{-- 상권분석(MarketScope) 바로가기 — 본사 관리자 전용, 새 탭으로 열림 --}}
+            <div class="px-2.5 pb-2">
+                <a href="{{ route('market.dashboard') }}" target="_blank"
+                   class="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-bold text-white bg-mango-500 hover:bg-mango-600 shadow-sm transition">
+                    <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>
+                    <span class="flex-1">상권분석</span>
+                    <span class="text-xs opacity-80">↗</span>
+                </a>
+            </div>
+        @endif
         <div class="p-3 border-t border-neutral-100">
             <a href="{{ route('home') }}" target="_blank" class="block px-3 py-1.5 text-sm text-neutral-500 hover:text-neutral-900">홈페이지 ↗</a>
             <form method="POST" action="{{ route('portal.logout') }}">@csrf
