@@ -18,8 +18,14 @@ class AnalysisRunner
     {
         $analysis->update(['status' => 'processing', 'error_message' => null]);
 
+        // 재분석 시 사용자가 입력한 망고정 운영 조건(홀/배달)은 보존한다.
+        $mangoPlan = $analysis->payload['mango_plan'] ?? null;
+
         try {
             $payload = $this->analyzer->analyze($analysis);
+            if ($mangoPlan) {
+                $payload['mango_plan'] = $mangoPlan;
+            }
 
             $analysis->update([
                 'status' => 'completed',

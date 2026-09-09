@@ -22,11 +22,13 @@ class ReportController extends \App\Http\Controllers\Controller
         // 한글 글꼴 서브셋 처리에 메모리를 많이 쓴다.
         ini_set('memory_limit', '512M');
 
+        $report = $analysis->payload;
         $pdf = Pdf::loadView('market.reports.pdf', [
             'analysis' => $analysis,
-            'report' => $analysis->payload,
+            'report' => $report,
             // dompdf 는 JavaScript 를 못 돌리므로 지도는 서버에서 그려 그림으로 넣는다.
             'mapImage' => $this->mapDataUri($analysis),
+            'mango' => \App\Market\Support\MangoFranchiseAdvisor::analyze($report, $report['mango_plan'] ?? []),
         ])->setPaper('a4', 'portrait');
 
         $filename = sprintf(

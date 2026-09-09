@@ -782,6 +782,8 @@
             &nbsp;&nbsp;서면 제공 시에는 가맹사업법에서 정한 양식과 기준에 따라 작성해 주시기 바랍니다.
         </p>
     </section>
+
+    @include('market.analyses.partials.mango')
 </div>
 
 @endif

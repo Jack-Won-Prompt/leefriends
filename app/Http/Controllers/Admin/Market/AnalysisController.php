@@ -7,6 +7,7 @@ use App\Market\Models\Region;
 use App\Market\Services\Analysis\AnalysisRunner;
 use App\Market\Services\Analysis\StatisticsRepository;
 use App\Market\Support\Geometry;
+use App\Market\Support\MangoFranchiseAdvisor;
 use App\Market\Support\Period;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -99,10 +100,38 @@ class AnalysisController extends \App\Http\Controllers\Controller
     {
         $this->authorizeOwner($request, $analysis);
 
+        $report = $analysis->payload ?? [];
+        $plan = $report['mango_plan'] ?? [];
+
         return view('market.analyses.show', [
             'analysis' => $analysis,
-            'report' => $analysis->payload ?? [],
+            'report' => $report,
+            'mango' => MangoFranchiseAdvisor::analyze($report, $plan),
         ]);
+    }
+
+    /** 망고정 개점 운영 조건(홀 테이블 수·쿠팡잇츠·배민) 저장 → payload 에 병합 */
+    public function mangoPlan(Request $request, Analysis $analysis): RedirectResponse
+    {
+        $this->authorizeOwner($request, $analysis);
+
+        $data = $request->validate([
+            'hall_tables' => ['nullable', 'integer', 'min:0', 'max:500'],
+            'coupang' => ['nullable', 'boolean'],
+            'baemin' => ['nullable', 'boolean'],
+        ]);
+
+        $payload = $analysis->payload ?? [];
+        $payload['mango_plan'] = [
+            'hall_tables' => $data['hall_tables'] ?? null,
+            'coupang' => $request->boolean('coupang'),
+            'baemin' => $request->boolean('baemin'),
+            'configured' => true,
+        ];
+        $analysis->update(['payload' => $payload]);
+
+        return redirect()->route('market.analyses.show', $analysis)
+            ->with('status', '망고정 개점 운영 조건을 반영했습니다.');
     }
 
     public function rerun(Request $request, Analysis $analysis): RedirectResponse

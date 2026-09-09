@@ -919,6 +919,8 @@
         &nbsp;&nbsp;서면 제공 시에는 가맹사업법에서 정한 양식과 기준에 따라 작성해 주시기 바랍니다.
     </p>
 
+    @include('market.reports.partials.mango-pdf')
+
     <div style="margin-top: 20mm; border-top: 0.5pt solid #d8e1ef; padding-top: 3mm; color:#7b8394; font-size:7.5pt;">
         MarketScope · 생성 {{ $meta['generated_at_full'] }} · 분석 ID {{ $analysis->uuid }}
     </div>

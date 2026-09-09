@@ -90,6 +90,7 @@ Route::middleware('admin')->prefix('admin/market')->name('market.')
         Route::post('analyses', [$ns.'AnalysisController', 'store'])->name('analyses.store');
         Route::get('analyses/{analysis}', [$ns.'AnalysisController', 'show'])->name('analyses.show');
         Route::post('analyses/{analysis}/rerun', [$ns.'AnalysisController', 'rerun'])->name('analyses.rerun');
+        Route::post('analyses/{analysis}/mango-plan', [$ns.'AnalysisController', 'mangoPlan'])->name('analyses.mango_plan');
         Route::delete('analyses/{analysis}', [$ns.'AnalysisController', 'destroy'])->name('analyses.destroy');
         Route::get('analyses/{analysis}/report.pdf', [$ns.'ReportController', 'pdf'])->name('analyses.pdf');
         Route::get('analyses/{analysis}/franchises.csv', [$ns.'ReportController', 'franchises'])->name('analyses.franchises');
