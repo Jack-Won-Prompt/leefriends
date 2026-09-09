@@ -28,7 +28,7 @@ class ReportController extends \App\Http\Controllers\Controller
             'report' => $report,
             // dompdf 는 JavaScript 를 못 돌리므로 지도는 서버에서 그려 그림으로 넣는다.
             'mapImage' => $this->mapDataUri($analysis),
-            'mango' => \App\Market\Support\MangoFranchiseAdvisor::analyze($report, $report['mango_plan'] ?? []),
+            'mango' => AnalysisController::effectiveMango($analysis),
         ])->setPaper('a4', 'portrait');
 
         $filename = sprintf(

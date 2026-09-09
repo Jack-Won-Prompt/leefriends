@@ -5,10 +5,23 @@
 @endphp
 <section style="margin-top:28px;border:1px solid #e6ebf3;border-radius:14px;padding:22px 24px;background:#fff;">
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-        <h2 style="font-size:18px;font-weight:800;color:#100f14;margin:0;">🥭 망고정 개점 장단점 분석</h2>
+        <h2 style="font-size:18px;font-weight:800;color:#100f14;margin:0;">🍧 리프랜즈 개점 장단점 분석</h2>
         <span style="display:inline-flex;align-items:center;gap:6px;background:{{ $toneBg }};color:{{ $tone }};font-weight:800;font-size:13px;padding:4px 12px;border-radius:999px;">
             {{ $mango['grade']['label'] }} · 적합도 {{ $mango['grade']['score'] }}점
         </span>
+        @if (! empty($mango['ai']))
+            <span style="display:inline-flex;align-items:center;gap:5px;background:#eef2ff;color:#4f46e5;font-weight:800;font-size:11.5px;padding:4px 10px;border-radius:999px;">
+                🤖 AI 분석{{ ! empty($mango['ai_model']) ? ' · '.$mango['ai_model'] : '' }}
+            </span>
+        @endif
+        @if (! empty($aiAvailable))
+            <form method="POST" action="{{ route('market.analyses.mango_ai', $analysis) }}" style="margin-left:auto;">
+                @csrf
+                <button type="submit" style="background:#4f46e5;color:#fff;font-weight:700;font-size:12px;border:0;border-radius:8px;padding:7px 14px;cursor:pointer;">
+                    🤖 {{ ! empty($mango['ai']) ? 'AI 분석 재생성' : 'AI 종합 분석 생성' }}
+                </button>
+            </form>
+        @endif
     </div>
     <p style="margin:10px 0 0;color:#48505b;font-size:13.5px;line-height:1.65;">{{ $mango['summary'] }}</p>
 
@@ -58,7 +71,12 @@
         <div>
             <label style="display:block;font-size:12px;font-weight:700;color:#6b7480;margin-bottom:5px;">홀 테이블 수</label>
             <input type="number" name="hall_tables" min="0" max="500" value="{{ $plan['hall_tables'] ?? '' }}" placeholder="예: 8"
-                   style="width:120px;border:1px solid #cdd5e0;border-radius:8px;padding:8px 10px;font-size:13px;">
+                   style="width:110px;border:1px solid #cdd5e0;border-radius:8px;padding:8px 10px;font-size:13px;">
+        </div>
+        <div>
+            <label style="display:block;font-size:12px;font-weight:700;color:#6b7480;margin-bottom:5px;">매장 평수</label>
+            <input type="number" name="area_pyeong" min="0" max="1000" value="{{ $plan['area_pyeong'] ?? '' }}" placeholder="예: 15"
+                   style="width:110px;border:1px solid #cdd5e0;border-radius:8px;padding:8px 10px;font-size:13px;">
         </div>
         <label style="display:inline-flex;align-items:center;gap:7px;font-size:13px;font-weight:600;color:#333;cursor:pointer;">
             <input type="checkbox" name="coupang" value="1" @checked($plan['coupang'] ?? false) style="width:16px;height:16px;"> 쿠팡잇츠 연계

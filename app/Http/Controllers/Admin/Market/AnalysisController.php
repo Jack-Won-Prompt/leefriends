@@ -6,7 +6,9 @@ use App\Market\Models\Analysis;
 use App\Market\Models\Region;
 use App\Market\Services\Analysis\AnalysisRunner;
 use App\Market\Services\Analysis\StatisticsRepository;
+use App\Market\Support\BingsuCompetition;
 use App\Market\Support\Geometry;
+use App\Market\Support\MangoAiAdvisor;
 use App\Market\Support\MangoFranchiseAdvisor;
 use App\Market\Support\Period;
 use Illuminate\Http\RedirectResponse;
@@ -100,23 +102,44 @@ class AnalysisController extends \App\Http\Controllers\Controller
     {
         $this->authorizeOwner($request, $analysis);
 
-        $report = $analysis->payload ?? [];
-        $plan = $report['mango_plan'] ?? [];
-
         return view('market.analyses.show', [
             'analysis' => $analysis,
-            'report' => $report,
-            'mango' => MangoFranchiseAdvisor::analyze($report, $plan),
+            'report' => $analysis->payload ?? [],
+            'mango' => self::effectiveMango($analysis),
+            'aiAvailable' => MangoAiAdvisor::available(),
         ]);
     }
 
-    /** 망고정 개점 운영 조건(홀 테이블 수·쿠팡잇츠·배민) 저장 → payload 에 병합 */
+    /** payload 에 빙수 프랜차이즈 경쟁(지역 스코프 DB 집계)을 주입한 리포트 */
+    public static function reportWithBingsu(Analysis $analysis): array
+    {
+        $report = $analysis->payload ?? [];
+        if (! isset($report['bingsu_competition'])) {
+            $report['bingsu_competition'] = BingsuCompetition::forRegions($analysis->region_codes ?? []);
+        }
+
+        return $report;
+    }
+
+    /** 저장된 AI 분석이 있으면 우선 사용, 없으면 규칙 기반(빙수 경쟁 주입). */
+    public static function effectiveMango(Analysis $analysis): array
+    {
+        $report = $analysis->payload ?? [];
+        if (! empty($report['mango_ai'])) {
+            return $report['mango_ai'] + ['ai' => true];
+        }
+
+        return MangoFranchiseAdvisor::analyze(self::reportWithBingsu($analysis), $report['mango_plan'] ?? []);
+    }
+
+    /** 망고정 개점 운영 조건(홀 테이블 수·쿠팡잇츠·배민) 저장 → payload 병합 + AI 재생성 */
     public function mangoPlan(Request $request, Analysis $analysis): RedirectResponse
     {
         $this->authorizeOwner($request, $analysis);
 
         $data = $request->validate([
             'hall_tables' => ['nullable', 'integer', 'min:0', 'max:500'],
+            'area_pyeong' => ['nullable', 'integer', 'min:0', 'max:1000'],
             'coupang' => ['nullable', 'boolean'],
             'baemin' => ['nullable', 'boolean'],
         ]);
@@ -124,14 +147,48 @@ class AnalysisController extends \App\Http\Controllers\Controller
         $payload = $analysis->payload ?? [];
         $payload['mango_plan'] = [
             'hall_tables' => $data['hall_tables'] ?? null,
+            'area_pyeong' => $data['area_pyeong'] ?? null,
             'coupang' => $request->boolean('coupang'),
             'baemin' => $request->boolean('baemin'),
             'configured' => true,
         ];
+
+        // 이미 AI 분석을 쓰던 화면이면 새 운영조건으로 자동 재생성(실패 시 조용히 규칙 기반 유지)
+        $note = '';
+        if (! empty($payload['mango_ai']) && MangoAiAdvisor::available()) {
+            try {
+                $payload['mango_ai'] = MangoAiAdvisor::generate(self::reportWithBingsu($analysis) + ['mango_plan' => $payload['mango_plan']], $payload['mango_plan']);
+                $note = ' (AI 종합 분석 갱신)';
+            } catch (\Throwable $e) {
+                unset($payload['mango_ai']);   // 갱신 실패 → 규칙 기반으로
+                $note = ' (AI 갱신 실패 — 기본 분석 표시)';
+            }
+        }
         $analysis->update(['payload' => $payload]);
 
         return redirect()->route('market.analyses.show', $analysis)
-            ->with('status', '망고정 개점 운영 조건을 반영했습니다.');
+            ->with('status', '망고정 개점 운영 조건을 반영했습니다.'.$note);
+    }
+
+    /** 망고정 개점 장단점 — AI 종합 분석 생성/재생성 */
+    public function mangoAi(Request $request, Analysis $analysis): RedirectResponse
+    {
+        $this->authorizeOwner($request, $analysis);
+
+        if (! MangoAiAdvisor::available()) {
+            return back()->with('error', 'AI 연동이 설정되지 않았습니다(ANTHROPIC/OPENAI 키).');
+        }
+
+        $payload = $analysis->payload ?? [];
+        try {
+            $payload['mango_ai'] = MangoAiAdvisor::generate(self::reportWithBingsu($analysis), $payload['mango_plan'] ?? []);
+            $analysis->update(['payload' => $payload]);
+
+            return redirect()->route('market.analyses.show', $analysis)
+                ->with('status', 'AI 종합 분석을 생성했습니다.');
+        } catch (\Throwable $e) {
+            return back()->with('error', 'AI 분석 생성 실패: '.$e->getMessage());
+        }
     }
 
     public function rerun(Request $request, Analysis $analysis): RedirectResponse

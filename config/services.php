@@ -62,4 +62,19 @@ return [
         ],
     ],
 
+    // 상권분석 AI 종합 — supportworks 의 LLM 연결(OpenAI/Anthropic) 재사용. provider 로 선택.
+    'market_ai' => [
+        'provider' => env('MARKET_AI_PROVIDER', 'openai'),   // openai | anthropic
+        'model'    => env('MARKET_AI_MODEL', 'gpt-5.6-luna'),
+        'timeout'  => env('MARKET_AI_TIMEOUT', 60),
+        'openai' => [
+            'key'      => env('OPENAI_API_KEY'),
+            'base_url' => env('OPENAI_BASE_URL', 'https://api.openai.com/v1'),
+        ],
+        'anthropic' => [
+            'key'      => env('ANTHROPIC_API_KEY'),
+            'base_url' => 'https://api.anthropic.com/v1',
+        ],
+    ],
+
 ];

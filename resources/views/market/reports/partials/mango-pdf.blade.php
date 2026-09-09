@@ -5,9 +5,12 @@
 @endphp
 <div style="page-break-before: always;"></div>
 <section style="margin-top:4mm;">
-    <h2 style="font-size:13pt;font-weight:700;color:#100f14;margin:0 0 1mm;">망고정 개점 장단점 분석</h2>
+    <h2 style="font-size:13pt;font-weight:700;color:#100f14;margin:0 0 1mm;">리프랜즈 개점 장단점 분석</h2>
     <div style="background:{{ $toneBg }};border-radius:2mm;padding:2mm 3mm;margin-bottom:2mm;">
         <span style="color:{{ $tone }};font-weight:700;font-size:10.5pt;">{{ $mango['grade']['label'] }} · 적합도 {{ $mango['grade']['score'] }}점</span>
+        @if (! empty($mango['ai']))
+            <span style="color:#4f46e5;font-weight:700;font-size:8.5pt;"> · AI 분석{{ ! empty($mango['ai_model']) ? ' ('.$mango['ai_model'].')' : '' }}</span>
+        @endif
     </div>
     <p style="color:#3a4149;font-size:9pt;line-height:1.6;margin:0 0 3mm;">{{ $mango['summary'] }}</p>
 
@@ -42,9 +45,10 @@
         <p style="margin:0 0 1.5mm;font-weight:700;color:#100f14;font-size:9.5pt;">매장 운영 조건 종합</p>
         @php
             $t = $plan['hall_tables'] === null ? '미입력' : $plan['hall_tables'].'테이블';
+            $area = ($plan['area_pyeong'] ?? null) === null ? '' : ' · '.$plan['area_pyeong'].'평';
             $d = $plan['coupang'] && $plan['baemin'] ? '쿠팡잇츠·배민 연계' : ($plan['coupang'] ? '쿠팡잇츠 연계' : ($plan['baemin'] ? '배민 연계' : '배달 미연계'));
         @endphp
-        <p style="margin:0 0 2mm;font-size:8.5pt;color:#48505b;">입력 조건 — 홀 {{ $t }} · {{ $d }}</p>
+        <p style="margin:0 0 2mm;font-size:8.5pt;color:#48505b;">입력 조건 — 홀 {{ $t }}{{ $area }} · {{ $d }}</p>
         @foreach ($mango['planNotes'] as $note)
             @php $nc = ['pro'=>'#0a7d3f','con'=>'#c0392b','info'=>'#3a6ea5'][$note['tone']] ?? '#3a6ea5'; @endphp
             <p style="margin:0 0 1.2mm;font-size:8.3pt;line-height:1.5;">
