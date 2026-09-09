@@ -14,6 +14,16 @@ class MangoFranchiseAdvisor
     private const BRAND = '리프랜즈';
     private const BRAND_DESC = '리프랜즈(망고 빙수 프랜차이즈)';
 
+    /** 주요 빙수 프랜차이즈 포지셔닝 참고(경쟁력 비교용) */
+    private const BINGSU_REF = [
+        '설빙' => ['position' => '국내 1위 빙수 프랜차이즈 · 인절미/팥빙수 등 전통 디저트', 'edge' => '리프랜즈는 망고 특화·트렌디 메뉴와 배달 강화로 젊은층 차별화'],
+        '옥루몽' => ['position' => '프리미엄 과일빙수 · 카페형', 'edge' => '리프랜즈는 합리적 가격대의 망고 빙수로 접근성 우위'],
+        '밀탑' => ['position' => '백화점 기반 프리미엄 빙수', 'edge' => '리프랜즈는 로드샵·배달로 접점 확대'],
+        '흑화당' => ['position' => '흑당·디저트 전문', 'edge' => '리프랜즈는 빙수 카테고리 집중'],
+        '동빙고' => ['position' => '전통 빙수·디저트', 'edge' => '리프랜즈는 망고 시즌 메뉴로 차별화'],
+        '눈꽃' => ['position' => '눈꽃빙수 전문', 'edge' => '리프랜즈는 망고 프리미엄 라인으로 차별화'],
+    ];
+
     /**
      * @param  array<string,mixed>  $report
      * @param  array<string,mixed>  $plan
@@ -73,7 +83,43 @@ class MangoFranchiseAdvisor
         $grade = self::grade(count($pros), count($cons), $plan, $m);
         $summary = self::summary($grade, $m, $plan);
 
-        return compact('pros', 'cons', 'planNotes', 'summary', 'grade', 'plan') + ['metrics' => $m];
+        $competitors = self::competitors($m['bingsu_brands']);
+
+        return compact('pros', 'cons', 'planNotes', 'summary', 'grade', 'plan', 'competitors') + ['metrics' => $m];
+    }
+
+    /**
+     * 타 빙수 프랜차이즈 경쟁력 비교표.
+     * 자사(리프랜즈) + 인근 빙수 프랜차이즈(참고 포지셔닝 매핑) + 벤치마크(설빙).
+     *
+     * @param  list<array{name:string,count:int}>  $nearbyBrands
+     * @return list<array<string,mixed>>
+     */
+    private static function competitors(array $nearbyBrands): array
+    {
+        $rows = [[
+            'name' => self::BRAND,
+            'self' => true,
+            'nearby' => null,
+            'position' => '망고 특화 빙수 · 트렌디 메뉴 · 테이크아웃/배달 병행',
+            'edge' => '젊은층·여성 타깃, 시즌 망고 디저트로 차별화',
+        ]];
+
+        $seen = [];
+        foreach ($nearbyBrands as $b) {
+            $name = (string) $b['name'];
+            $seen[$name] = true;
+            $ref = self::BINGSU_REF[$name] ?? ['position' => '빙수·디저트 프랜차이즈', 'edge' => '리프랜즈는 망고 특화·배달 강화로 차별화'];
+            $rows[] = ['name' => $name, 'self' => false, 'nearby' => (int) $b['count'], 'position' => $ref['position'], 'edge' => $ref['edge']];
+        }
+
+        // 벤치마크: 인근에 설빙이 없으면 국내 1위 브랜드를 참고로 추가
+        if (! isset($seen['설빙'])) {
+            $ref = self::BINGSU_REF['설빙'];
+            $rows[] = ['name' => '설빙', 'self' => false, 'nearby' => 0, 'position' => $ref['position'], 'edge' => $ref['edge']];
+        }
+
+        return array_slice($rows, 0, 6);
     }
 
     /** @return array<string,mixed> */

@@ -126,7 +126,13 @@ class AnalysisController extends \App\Http\Controllers\Controller
     {
         $report = $analysis->payload ?? [];
         if (! empty($report['mango_ai'])) {
-            return $report['mango_ai'] + ['ai' => true];
+            $ai = $report['mango_ai'] + ['ai' => true];
+            // 구버전 AI 결과에 경쟁력 비교가 없으면 규칙 기반으로 보완
+            if (empty($ai['competitors'])) {
+                $ai['competitors'] = MangoFranchiseAdvisor::analyze(self::reportWithBingsu($analysis), $report['mango_plan'] ?? [])['competitors'];
+            }
+
+            return $ai;
         }
 
         return MangoFranchiseAdvisor::analyze(self::reportWithBingsu($analysis), $report['mango_plan'] ?? []);

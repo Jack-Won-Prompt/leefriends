@@ -27,27 +27,29 @@ class MangoAiAdvisor
     public static function generate(array $report, array $plan = []): array
     {
         $base = MangoFranchiseAdvisor::analyze($report, $plan);
-        $facts = self::facts($base['metrics'], $base['plan']);
+        $facts = self::facts($report, $base['metrics'], $base['plan']);
 
         $system = <<<'SYS'
 당신은 '리프랜즈'(망고 빙수 프랜차이즈) 개점 타당성을 평가하는 상권분석 컨설턴트입니다.
-아래 제공되는 '상권 지표'와 '매장 운영 조건'만을 근거로 분석하세요. 제공되지 않은 수치를 지어내지 마세요.
+아래 제공되는 '분석범위'(지역·주소·반경·행정동)와 '상권 지표', '매장 운영 조건'을 근거로 해석하세요. 제공되지 않은 수치는 지어내지 마세요.
 리프랜즈는 젊은층·여성 중심의 체류형/테이크아웃/배달 병행 '빙수' 전문 카페입니다.
-경쟁 비교는 반드시 인근 '빙수 전문 프랜차이즈' 점포(예: 설빙)만을 대상으로 하세요. 일반 카페·베이커리는 경쟁으로 세지 마세요.
-홀 테이블 수(체류 수용력), 매장 평수(면적·임대료), 쿠팡잇츠·배민 연계(배달 채널)를 반드시 상권 특성과 연결해 평가하세요.
+경쟁 비교는 반드시 인근 '빙수 전문 프랜차이즈'(예: 설빙)만 대상으로 하세요. 일반 카페·베이커리는 경쟁으로 세지 마세요.
+홀 테이블 수(체류 수용력), 매장 평수(면적·임대료), 쿠팡잇츠·배민 연계(배달 채널)를 상권 특성과 연결해 평가하세요.
+또한 '타 빙수 프랜차이즈 대비 경쟁력'을 competitors 로 작성하세요: 제공된 인근 빙수 브랜드와 대표 빙수 브랜드(설빙 등)를 대상으로, 각 브랜드의 포지셔닝(position)과 리프랜즈의 경쟁 포인트(edge)를 적고, 가능하면 인근 점포수(nearby)도 넣으세요.
 반드시 아래 JSON 스키마로만 응답하세요(설명 문장·마크다운 금지):
 {
   "grade": {"label": "개점 추천|조건부 검토|신중 검토", "tone": "good|ok|caution", "score": 0-100},
-  "summary": "2~4문장 한국어 종합 판단",
+  "summary": "2~4문장 한국어 종합 판단(분석범위 지역명 포함)",
   "pros": [{"title": "짧은 제목", "detail": "근거 문장(숫자 포함)"}],
   "cons": [{"title": "짧은 제목", "detail": "근거 문장(숫자 포함)"}],
-  "planNotes": [{"tone": "pro|con|info", "title": "짧은 제목", "detail": "홀/배달 운영 관련 코멘트"}]
+  "planNotes": [{"tone": "pro|con|info", "title": "짧은 제목", "detail": "홀/평수/배달 운영 관련 코멘트"}],
+  "competitors": [{"name": "브랜드명", "nearby": 인근점포수(숫자 또는 null), "position": "해당 브랜드 포지셔닝", "edge": "리프랜즈의 경쟁 포인트"}]
 }
 SYS;
 
-        $user = "다음은 분석 대상 상권의 실제 지표와 매장 운영 조건입니다.\n\n"
+        $user = "다음은 분석 대상 상권의 분석범위·실제 지표·매장 운영 조건입니다.\n\n"
             .json_encode($facts, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT)
-            ."\n\n이 지역에 망고정을 개점할 때의 장단점을 위 JSON 스키마로 분석해 주세요.";
+            ."\n\n이 지역에 리프랜즈(망고 빙수)를 개점할 때의 장단점과, 타 빙수 프랜차이즈 대비 경쟁력을 위 JSON 스키마로 해석해 주세요.";
 
         $cfg = config('services.market_ai');
         $provider = $cfg['provider'] ?? 'openai';
@@ -65,6 +67,7 @@ SYS;
             'pros'      => self::normList($parsed['pros'] ?? $base['pros']),
             'cons'      => self::normList($parsed['cons'] ?? $base['cons']),
             'planNotes' => self::normNotes($parsed['planNotes'] ?? $base['planNotes']),
+            'competitors' => self::normCompetitors($parsed['competitors'] ?? null, $base['competitors']),
             'grade'     => self::normGrade($parsed['grade'] ?? $base['grade']),
             'metrics'   => $base['metrics'],
             'plan'      => $base['plan'],
@@ -74,11 +77,23 @@ SYS;
         ];
     }
 
-    /** LLM 에 넘길 사실(코드 계산값) */
-    private static function facts(array $m, array $plan): array
+    /** LLM 에 넘길 사실(분석범위 + 코드 계산값) */
+    private static function facts(array $report, array $m, array $plan): array
     {
+        $meta = $report['meta'] ?? [];
+        $summary = $report['summary'] ?? [];
+        $regions = array_map(fn ($r) => $r['name'] ?? '', $meta['regions'] ?? []);
+
         return [
             'brand' => '리프랜즈 (망고 빙수 프랜차이즈)',
+            '분석범위' => [
+                '범위설명' => $meta['scope_label'] ?? null,
+                '주소' => $meta['address'] ?? null,
+                '시도' => $meta['sido_name'] ?? ($summary['sido_name'] ?? null),
+                '시군구' => $meta['sigungu_name'] ?? ($summary['sigungu_name'] ?? null),
+                '행정동' => array_values(array_filter($regions)),
+                '기준' => $meta['base_label'] ?? null,
+            ],
             '상권' => [
                 '거주인구' => $m['resident'],
                 '직장인구' => $m['workplace'],
@@ -193,6 +208,43 @@ SYS;
             $out[] = ['tone' => $tone, 'title' => (string) $it['title'], 'detail' => (string) ($it['detail'] ?? '')];
         }
         return $out;
+    }
+
+    private static function normCompetitors($v, array $fallback): array
+    {
+        if (! is_array($v) || empty($v)) {
+            return $fallback;
+        }
+        $out = [];
+        $hasSelf = false;
+        foreach ($v as $it) {
+            if (! is_array($it) || empty($it['name'])) {
+                continue;
+            }
+            $name = (string) $it['name'];
+            $self = mb_strpos($name, '리프랜즈') !== false;
+            $hasSelf = $hasSelf || $self;
+            $nearby = $it['nearby'] ?? null;
+            $out[] = [
+                'name' => $name,
+                'self' => $self,
+                'nearby' => ($nearby === null || $nearby === '') ? null : (int) $nearby,
+                'position' => (string) ($it['position'] ?? ''),
+                'edge' => (string) ($it['edge'] ?? ''),
+            ];
+        }
+        if (empty($out)) {
+            return $fallback;
+        }
+        if (! $hasSelf) {
+            $selfRow = collect($fallback)->firstWhere('self', true)
+                ?? ['name' => '리프랜즈', 'self' => true, 'nearby' => null, 'position' => '망고 특화 빙수', 'edge' => '-'];
+            array_unshift($out, $selfRow);
+        } else {
+            usort($out, fn ($a, $b) => (($b['self'] ?? false) ? 1 : 0) - (($a['self'] ?? false) ? 1 : 0));
+        }
+
+        return array_slice($out, 0, 6);
     }
 
     private static function normGrade($v): array

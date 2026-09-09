@@ -90,4 +90,38 @@
             </div>
         @endforeach
     </div>
+
+    {{-- 타 빙수 프랜차이즈 경쟁력 비교 --}}
+    @if (! empty($mango['competitors']))
+        <div style="margin-top:16px;border:1px solid #e6ebf3;border-radius:12px;padding:16px;">
+            <p style="margin:0 0 10px;font-weight:800;color:#100f14;font-size:14px;">🥊 타 빙수 프랜차이즈 경쟁력 비교</p>
+            <div style="overflow-x:auto;">
+                <table style="width:100%;border-collapse:collapse;font-size:12.5px;">
+                    <thead>
+                        <tr style="background:#f6f8fb;color:#6b7480;text-align:left;">
+                            <th style="padding:8px 10px;font-weight:700;">브랜드</th>
+                            <th style="padding:8px 10px;font-weight:700;white-space:nowrap;">인근 점포</th>
+                            <th style="padding:8px 10px;font-weight:700;">포지셔닝</th>
+                            <th style="padding:8px 10px;font-weight:700;">리프랜즈 경쟁 포인트</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($mango['competitors'] as $c)
+                            <tr style="border-top:1px solid #eef1f6;{{ ! empty($c['self']) ? 'background:#fff6e6;' : '' }}">
+                                <td style="padding:8px 10px;font-weight:700;color:{{ ! empty($c['self']) ? '#b8860b' : '#100f14' }};white-space:nowrap;">
+                                    {{ $c['name'] }}{{ ! empty($c['self']) ? ' (자사)' : '' }}
+                                </td>
+                                <td style="padding:8px 10px;color:#48505b;white-space:nowrap;">
+                                    {{ ! empty($c['self']) ? '—' : (($c['nearby'] ?? null) === null ? '-' : number_format($c['nearby']).'곳') }}
+                                </td>
+                                <td style="padding:8px 10px;color:#48505b;">{{ $c['position'] ?? '' }}</td>
+                                <td style="padding:8px 10px;color:#48505b;">{{ $c['edge'] ?? '' }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            <p style="margin:8px 0 0;font-size:11px;color:#9aa2ad;">* 인근 점포수는 분석 범위 내 빙수 전문 프랜차이즈 기준. 포지셔닝은 브랜드 일반 정보 참고.</p>
+        </div>
+    @endif
 </section>

@@ -57,4 +57,28 @@
             </p>
         @endforeach
     </div>
+
+    @if (! empty($mango['competitors']))
+        <p style="margin:3mm 0 1.5mm;font-weight:700;color:#100f14;font-size:9.5pt;">타 빙수 프랜차이즈 경쟁력 비교</p>
+        <table style="width:100%;border-collapse:collapse;font-size:8pt;">
+            <thead>
+                <tr style="background:#f0f3f8;color:#5b636d;text-align:left;">
+                    <td style="padding:1.5mm 2mm;font-weight:700;border:0.4pt solid #e0e6ef;">브랜드</td>
+                    <td style="padding:1.5mm 2mm;font-weight:700;border:0.4pt solid #e0e6ef;">인근</td>
+                    <td style="padding:1.5mm 2mm;font-weight:700;border:0.4pt solid #e0e6ef;">포지셔닝</td>
+                    <td style="padding:1.5mm 2mm;font-weight:700;border:0.4pt solid #e0e6ef;">리프랜즈 경쟁 포인트</td>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach ($mango['competitors'] as $c)
+                    <tr style="{{ ! empty($c['self']) ? 'background:#fff6e6;' : '' }}">
+                        <td style="padding:1.5mm 2mm;border:0.4pt solid #e0e6ef;font-weight:700;color:{{ ! empty($c['self']) ? '#b8860b' : '#2f3a33' }};">{{ $c['name'] }}{{ ! empty($c['self']) ? '(자사)' : '' }}</td>
+                        <td style="padding:1.5mm 2mm;border:0.4pt solid #e0e6ef;color:#4b5560;">{{ ! empty($c['self']) ? '—' : (($c['nearby'] ?? null) === null ? '-' : $c['nearby'].'곳') }}</td>
+                        <td style="padding:1.5mm 2mm;border:0.4pt solid #e0e6ef;color:#4b5560;">{{ $c['position'] ?? '' }}</td>
+                        <td style="padding:1.5mm 2mm;border:0.4pt solid #e0e6ef;color:#4b5560;">{{ $c['edge'] ?? '' }}</td>
+                    </tr>
+                @endforeach
+            </tbody>
+        </table>
+    @endif
 </section>
