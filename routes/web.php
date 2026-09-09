@@ -68,6 +68,50 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
 /*
 |--------------------------------------------------------------------------
+| MarketScope (상권분석) — 관리자 전용, 별도 market DB 사용
+|--------------------------------------------------------------------------
+*/
+Route::middleware('admin')->prefix('admin/market')->name('market.')
+    ->group(function () {
+        $ns = 'App\\Http\\Controllers\\Admin\\Market\\';
+
+        Route::get('/', [$ns.'DashboardController', 'index'])->name('dashboard');
+        Route::get('map', [$ns.'MarketMapController', 'index'])->name('map');
+
+        Route::get('districts', [$ns.'DistrictController', 'index'])->name('districts.index');
+        Route::prefix('api/districts')->name('api.districts.')->group(function () use ($ns) {
+            Route::post('overview', [$ns.'DistrictController', 'overview'])->name('overview');
+            Route::post('stores', [$ns.'DistrictController', 'stores'])->name('stores');
+            Route::post('residence', [$ns.'DistrictController', 'residence'])->name('residence');
+        });
+
+        Route::get('analyses', [$ns.'AnalysisController', 'index'])->name('analyses.index');
+        Route::get('analyses/new', [$ns.'AnalysisController', 'create'])->name('analyses.create');
+        Route::post('analyses', [$ns.'AnalysisController', 'store'])->name('analyses.store');
+        Route::get('analyses/{analysis}', [$ns.'AnalysisController', 'show'])->name('analyses.show');
+        Route::post('analyses/{analysis}/rerun', [$ns.'AnalysisController', 'rerun'])->name('analyses.rerun');
+        Route::delete('analyses/{analysis}', [$ns.'AnalysisController', 'destroy'])->name('analyses.destroy');
+        Route::get('analyses/{analysis}/report.pdf', [$ns.'ReportController', 'pdf'])->name('analyses.pdf');
+        Route::get('analyses/{analysis}/franchises.csv', [$ns.'ReportController', 'franchises'])->name('analyses.franchises');
+        Route::get('analyses/{analysis}/map.png', [$ns.'ReportController', 'map'])->name('analyses.map');
+
+        Route::post('favorites', [$ns.'FavoriteRegionController', 'store'])->name('favorites.store');
+        Route::delete('favorites/{regionCode}', [$ns.'FavoriteRegionController', 'destroy'])->name('favorites.destroy');
+
+        Route::prefix('api/regions')->name('api.regions.')->group(function () use ($ns) {
+            Route::get('search', [$ns.'Api\\RegionController', 'search'])->name('search');
+            Route::get('sigungu', [$ns.'Api\\RegionController', 'sigungu'])->name('sigungu');
+            Route::get('dongs', [$ns.'Api\\RegionController', 'dongs'])->name('dongs');
+            Route::get('preview', [$ns.'Api\\RegionController', 'preview'])->name('preview');
+            Route::get('market', [$ns.'Api\\MarketPreviewController', 'preview'])->name('market');
+        });
+
+        // 데이터 현황 (market.admin.data)
+        Route::get('data', [$ns.'DataController', 'index'])->name('admin.data');
+    });
+
+/*
+|--------------------------------------------------------------------------
 | B2B 발주포털 (본사 / 매장 / 공급처)
 |--------------------------------------------------------------------------
 */

@@ -31,6 +31,7 @@
         ['admin.blog.index', '블로그', '📝', []],
         ['admin.clips.index', '네이버클립', '🎬', []],
         ['admin.stores.index', '매장관리', '🏬', ['admin.stores.create','admin.stores.edit']],
+        ['market.dashboard', '상권분석', '📈', ['market.*']],
     ];
 @endphp
 

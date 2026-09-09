@@ -64,6 +64,27 @@ return [
             ]) : [],
         ],
 
+        // MarketScope(상권분석) 모듈 — 같은 서버의 별도 market DB. App\Market\* 모델이 사용.
+        'market' => [
+            'driver' => 'mysql',
+            'url' => '',
+            'host'     => env('MARKET_DB_HOST',     env('DB_HOST', '3.34.53.36')),
+            'port'     => env('MARKET_DB_PORT',     env('DB_PORT', '3306')),
+            'database' => env('MARKET_DB_DATABASE', 'market'),
+            'username' => env('MARKET_DB_USERNAME', 'market'),
+            'password' => env('MARKET_DB_PASSWORD', 'market!@^'),
+            'unix_socket' => '',
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => false,
+            'engine' => 'InnoDB',
+            'options' => extension_loaded('pdo_mysql') ? array_filter([
+                PDO::MYSQL_ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
+            ]) : [],
+        ],
+
         'mysql' => [
             'driver' => 'mysql',
             'url' => env('DB_URL'),
