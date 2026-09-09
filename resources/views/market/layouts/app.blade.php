@@ -68,9 +68,9 @@
             <div class="rounded-xl bg-surface-muted p-3">
                 <p class="truncate text-sm font-bold text-ink-900">{{ auth()->user()->name }}</p>
                 <p class="truncate text-[12px] text-ink-400">{{ auth()->user()->email }}</p>
-                <a href="{{ route('admin.dashboard') }}"
+                <a href="{{ route('portal.dashboard') }}"
                    class="mt-3 block w-full rounded-lg border border-line bg-white px-3 py-2 text-center text-[13px] font-semibold text-ink-500 hover:text-ink-900">
-                    ← 관리자 홈
+                    ← 본사 홈으로
                 </a>
                 <form method="POST" action="{{ route('admin.logout') }}" class="mt-2">
                     @csrf
