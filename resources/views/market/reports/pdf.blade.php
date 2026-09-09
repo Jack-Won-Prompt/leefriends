@@ -67,21 +67,21 @@
     <style>
         /* 한글 글꼴 등록 — dompdf 는 시스템 글꼴을 모르므로 파일 경로로 직접 지정한다. */
         @font-face {
-            font-family: 'pretendard';
+            font-family: 'nanum';
             font-style: normal;
             font-weight: 400;
-            src: url('{{ str_replace('\\', '/', storage_path('fonts/Pretendard-Regular.ttf')) }}') format('truetype');
+            src: url('{{ str_replace('\\', '/', storage_path('fonts/NanumGothic.ttf')) }}') format('truetype');
         }
         @font-face {
-            font-family: 'pretendard';
+            font-family: 'nanum';
             font-style: normal;
             font-weight: 700;
-            src: url('{{ str_replace('\\', '/', storage_path('fonts/Pretendard-Bold.ttf')) }}') format('truetype');
+            src: url('{{ str_replace('\\', '/', storage_path('fonts/NanumGothicBold.ttf')) }}') format('truetype');
         }
 
         @page { margin: 26mm 14mm 20mm 14mm; }
 
-        * { font-family: 'pretendard', sans-serif; }
+        * { font-family: 'nanum', sans-serif; }
 
         body { margin: 0; color: #100f14; font-size: 9.5pt; line-height: 1.55; }
 
