@@ -15,9 +15,9 @@
         'workplace' => '직장인구',
     ];
 
-    // 이 범위·기간에 실제로 수록된 통계. 예전에 만든 리포트에는 없으므로 없으면 모두 수록으로 본다.
+    // 구버전 리포트는 섹션 자체가 없을 수 있으므로, payload 에 실제 데이터가 있을 때만 '수록'으로 본다.
     $coverage = $meta['coverage'] ?? [];
-    $covered = fn (string $key) => ($coverage[$key] ?? true) === true;
+    $covered = fn (string $key) => ! empty($report[$key]) && (($coverage[$key] ?? true) === true);
 
     // 범위 중 실제로 수록된 면적 비중. 서울·경기가 함께 걸리면 1 보다 작아진다.
     $partial = function (string $key) use ($meta) {
