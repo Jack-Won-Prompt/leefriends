@@ -7,11 +7,18 @@ use Illuminate\Http\Request;
 /** 목록 컨트롤러 날짜 기간 필터 (from/to → whereDate) */
 trait FiltersByDate
 {
-    /** 요청에서 from/to 파싱 (역순이면 교환) */
-    protected function dateRange(Request $request): array
+    /**
+     * 요청에서 from/to 파싱 (역순이면 교환).
+     * $defaultDays 지정 시 미입력 기간을 '오늘 포함 최근 N일'로 채운다.
+     */
+    protected function dateRange(Request $request, ?int $defaultDays = null): array
     {
         $from = $request->query('from') ?: null;
         $to = $request->query('to') ?: null;
+        if ($defaultDays) {
+            $from ??= today()->subDays($defaultDays - 1)->toDateString();
+            $to ??= today()->toDateString();
+        }
         if ($from && $to && $from > $to) {
             [$from, $to] = [$to, $from];
         }

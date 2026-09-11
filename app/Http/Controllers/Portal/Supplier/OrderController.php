@@ -17,7 +17,7 @@ class OrderController extends Controller
     {
         $sid = Auth::user()->supplier_id;
         $store = $request->query('store', 'all');
-        [$from, $to] = $this->dateRange($request);
+        [$from, $to] = $this->dateRange($request, 7); // 기본: 최근 7일
 
         // 자사(공급처) 품목이 포함된 주문만
         $mine = fn ($q) => $q->where('supplier_id', $sid)->where('supply_type', 'supplier');

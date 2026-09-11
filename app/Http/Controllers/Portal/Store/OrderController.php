@@ -19,7 +19,7 @@ class OrderController extends Controller
 
     public function index(Request $request)
     {
-        [$from, $to] = $this->dateRange($request);
+        [$from, $to] = $this->dateRange($request, 7); // 기본: 최근 7일
         $query = Order::where('store_id', Auth::user()->store_id)
             ->where('order_type', 'normal')
             ->withCount('items')

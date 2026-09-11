@@ -22,7 +22,7 @@ class PurchaseOrderController extends Controller
     {
         $supplier = $request->query('supplier', 'all');
         $status = $request->query('status', 'all');
-        [$from, $to] = $this->dateRange($request);
+        [$from, $to] = $this->dateRange($request, 7); // 기본: 최근 7일
 
         $query = PurchaseOrder::with(['supplier', 'items', 'creator'])->latest();
         if ($supplier !== 'all' && is_numeric($supplier)) {

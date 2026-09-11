@@ -19,7 +19,7 @@ class PurchaseOrderController extends Controller
         abort_unless($sid, 403, '연결된 공급처가 없습니다.');
 
         $status = $request->query('status', 'all');
-        [$from, $to] = $this->dateRange($request);
+        [$from, $to] = $this->dateRange($request, 7); // 기본: 최근 7일
         $query = PurchaseOrder::forSupplier($sid)->with('items')->latest();
         if (array_key_exists($status, PurchaseOrder::STATUSES)) {
             $query->where('status', $status);

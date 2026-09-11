@@ -16,7 +16,7 @@ class SalesOrderController extends Controller
     {
         $status = $request->query('status', 'all');
         $store = $request->query('store', 'all');
-        [$from, $to] = $this->dateRange($request);
+        [$from, $to] = $this->dateRange($request, 7); // 기본: 최근 7일
 
         $query = SalesOrder::forSeller('hq')->with(['store', 'order', 'items'])->latest();
         if (array_key_exists($status, SalesOrder::STATUSES)) {

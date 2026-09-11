@@ -19,7 +19,7 @@ class SupplierOrderController extends Controller
     {
         $supplierId = $request->query('supplier', 'all');
         $status = $request->query('status', 'all');
-        [$from, $to] = $this->dateRange($request);
+        [$from, $to] = $this->dateRange($request, 7); // 기본: 최근 7일
 
         // 공급사 전체 판매주문 (forSeller 스코프는 특정 공급사용이라 직접 조건 사용)
         $query = SalesOrder::where('seller_type', 'supplier')
