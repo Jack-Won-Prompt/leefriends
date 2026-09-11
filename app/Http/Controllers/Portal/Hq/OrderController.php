@@ -31,7 +31,8 @@ class OrderController extends Controller
         $status = $request->query('status', 'all');
         $store = $request->query('store', 'all');
         $tax = $request->query('tax', 'all');
-        $from = $request->query('from') ?: today()->toDateString();
+        // 기본 조회 기간: 오늘 포함 최근 7일
+        $from = $request->query('from') ?: today()->subDays(6)->toDateString();
         $to = $request->query('to') ?: today()->toDateString();
         if ($from && $to && $from > $to) {
             [$from, $to] = [$to, $from];
