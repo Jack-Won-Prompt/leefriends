@@ -1,0 +1,49 @@
+server {
+    listen 80;
+    listen [::]:80;
+
+    server_name leefriends.co.kr www.leefriends.co.kr;
+
+    return 301 https://www.leefriends.co.kr$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+
+    server_name leefriends.co.kr;
+
+    ssl_certificate /etc/nginx/ssl/leefriends/www.leefriends.co.kr.crt;
+    ssl_certificate_key /etc/nginx/ssl/leefriends/www.leefriends.co.kr.key;
+    ssl_trusted_certificate /etc/nginx/ssl/leefriends/ca-bundle.crt;
+
+    return 301 https://www.leefriends.co.kr$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    listen [::]:443 ssl;
+
+    server_name www.leefriends.co.kr;
+
+    root /home/ubuntu/www/leefriends/public;
+    index index.php index.html;
+
+    ssl_certificate /etc/nginx/ssl/leefriends/www.leefriends.co.kr.crt;
+    ssl_certificate_key /etc/nginx/ssl/leefriends/www.leefriends.co.kr.key;
+    ssl_trusted_certificate /etc/nginx/ssl/leefriends/ca-bundle.crt;
+
+    access_log /var/log/nginx/leefriends_access.log;
+    error_log /var/log/nginx/leefriends_error.log;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/run/php/php8.3-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+        include fastcgi_params;
+    }
+}

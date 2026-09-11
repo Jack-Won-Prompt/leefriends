@@ -35,3 +35,9 @@ yarn-error.log
 
 # 로컬 점검용 임시 스크립트
 /_check_market.php
+
+# 참고 자료(카탈로그·브로셔 PDF) — 저장소에 넣지 않는다
+/*.pdf
+
+# 디자인 시안(대용량)
+/storefront_mockup.png
