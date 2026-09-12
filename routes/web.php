@@ -410,6 +410,9 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::post('notices', [Portal\Hq\NoticeController::class, 'store'])->name('notices.store');
             Route::delete('notices/{notice}', [Portal\Hq\NoticeController::class, 'destroy'])->name('notices.destroy');
 
+            // FCM 알림 이력 — 본사/매장별 조회
+            Route::get('notification-logs', [Portal\Hq\NotificationLogController::class, 'index'])->name('notification_logs.index');
+
             // 환경 설정 — 사이드바 메뉴 표시/숨김
             Route::get('settings', [Portal\Hq\SettingsController::class, 'index'])->name('settings.index');
             Route::post('settings/toggle', [Portal\Hq\SettingsController::class, 'toggle'])->name('settings.toggle');

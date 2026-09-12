@@ -59,6 +59,7 @@ class PortalMenu
                 ['창업 문의', '📨', [
                     ['portal.hq.inquiries.index', '창업 문의', ['portal.hq.inquiries.show']],
                 ]],
+                ['알림 이력', '🔔', [['portal.hq.notification_logs.index', 'FCM 알림 이력', []]]],
                 ['환경 설정', '⚙️', [['portal.hq.settings.index', '환경 설정', []]]],
             ],
             'store' => [
