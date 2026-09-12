@@ -89,7 +89,7 @@ class ProductController extends Controller
         return redirect()->route('portal.hq.products.index')->with('success', '품목이 등록되었습니다.');
     }
 
-    public function update(Request $request, SupplyProduct $product)
+    public function update(Request $request, SupplyProduct $product, \App\Services\Notification\NotificationService $notifications)
     {
         $data = $this->validateData($request);
         $data['category_code'] = ProductCategory::codeFor($data['category']) ?? SupplyProduct::CATEGORY_CODES[$data['category']] ?? $product->category_code;
@@ -114,6 +114,11 @@ class ProductController extends Controller
                 $product->update(['image' => null]);
             }
         });
+
+        // 매장 노출(활성+승인) 상품이면 매장·본사에 수정 알림
+        if ($product->is_active && $product->approval_status === 'approved') {
+            $notifications->notifyUpdatedProduct($product);
+        }
 
         return redirect()->route('portal.hq.products.index')->with('success', '완제품이 수정되었습니다.');
     }

@@ -115,7 +115,7 @@ class ProductController extends Controller
         ], 201);
     }
 
-    public function update(Request $request, SupplyProduct $product): JsonResponse
+    public function update(Request $request, SupplyProduct $product, \App\Services\Notification\NotificationService $notifications): JsonResponse
     {
         [$type, $sid] = $this->seller($request);
 
@@ -162,6 +162,11 @@ class ProductController extends Controller
                     'store_price' => $product->store_price, 'supply_price' => $product->supply_price]);
             }
         });
+
+        // 매장 노출(활성+승인) 상품이면 매장·본사에 수정 알림
+        if ($product->is_active && $product->approval_status === 'approved') {
+            $notifications->notifyUpdatedProduct($product);
+        }
 
         return response()->json(['message' => '품목이 수정되었습니다.', 'data' => $this->transform($product->fresh(['units', 'supplier']))]);
     }
