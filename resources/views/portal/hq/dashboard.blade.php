@@ -8,6 +8,8 @@
     </x-slot:actions>
 </x-wms.page-head>
 
+@include('portal.partials.new-products-banner', ['newProducts' => $newProducts, 'href' => route('portal.hq.products.index')])
+
 {{-- KPI --}}
 <div class="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
     <x-wms.stat label="접수 대기 발주" :value="number_format($stats['orders_pending'])" icon="🔔" variant="danger" :href="route('portal.hq.orders.index', ['status' => 'pending'])" />

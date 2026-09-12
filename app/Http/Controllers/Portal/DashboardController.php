@@ -38,8 +38,25 @@ class DashboardController extends Controller
             'stores' => Store::count(),
         ];
         $recentOrders = Order::with('store')->latest()->take(8)->get();
+        $newProducts = $this->newProductsToday();
 
-        return view('portal.hq.dashboard', compact('stats', 'recentOrders'));
+        return view('portal.hq.dashboard', compact('stats', 'recentOrders', 'newProducts'));
+    }
+
+    /** 금일 등록된 신규 품목(매장 노출 가능: 활성+승인) — 대시보드 상단 배너용 */
+    private function newProductsToday(): array
+    {
+        $q = SupplyProduct::active()->approved()->whereDate('created_at', today());
+
+        $count = (clone $q)->count();
+        $featured = $count > 0
+            ? (clone $q)->with('defaultUnit')
+                ->orderByRaw("COALESCE(image, '') = ''")   // 이미지 있는 품목 우선
+                ->orderByDesc('created_at')->orderByDesc('id')
+                ->first()
+            : null;
+
+        return ['count' => $count, 'featured' => $featured];
     }
 
     private function store($user)
@@ -51,8 +68,9 @@ class DashboardController extends Controller
             'orders_completed' => Order::where('store_id', $storeId)->where('status', 'completed')->count(),
         ];
         $recentOrders = Order::where('store_id', $storeId)->latest()->take(8)->get();
+        $newProducts = $this->newProductsToday();
 
-        return view('portal.store.dashboard', compact('stats', 'recentOrders', 'user'));
+        return view('portal.store.dashboard', compact('stats', 'recentOrders', 'user', 'newProducts'));
     }
 
     private function supplier($user)

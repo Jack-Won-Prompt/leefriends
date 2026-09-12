@@ -8,6 +8,8 @@
     </x-slot:actions>
 </x-wms.page-head>
 
+@include('portal.partials.new-products-banner', ['newProducts' => $newProducts, 'href' => route('portal.store.orders.create')])
+
 <div class="grid grid-cols-3 gap-4 mb-6">
     <x-wms.stat label="전체 발주" :value="number_format($stats['orders_total'])" icon="📦" variant="accent" :href="route('portal.store.orders.index')" />
     <x-wms.stat label="배송중" :value="number_format($stats['orders_shipping'])" icon="🚚" variant="info" :href="route('portal.store.inbound')" />
