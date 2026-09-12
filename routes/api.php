@@ -187,6 +187,9 @@ Route::prefix('v1')->group(function () {
             Route::patch('inquiries/{inquiry}', [Seller\InquiryController::class, 'update'])->name('inquiries.update');
             Route::delete('inquiries/{inquiry}', [Seller\InquiryController::class, 'destroy'])->name('inquiries.destroy');
 
+            // FCM/인앱 알림 이력 (본사) — 웹 포털 «FCM 알림 이력» 과 같은 조건
+            Route::get('notification-logs', [Seller\NotificationLogController::class, 'index'])->name('notification_logs.index');
+
             Route::get('orders', [Seller\OrderController::class, 'index'])->name('orders.index');
             Route::get('orders/delivery-lookup', [Seller\OrderController::class, 'deliveryLookup'])->name('orders.delivery_lookup');
             Route::get('orders/delivered', [Seller\OrderController::class, 'deliveredList'])->name('orders.delivered');

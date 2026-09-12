@@ -5,27 +5,7 @@
 <x-wms.page-head title="FCM 알림 이력" subtitle="본사·매장에 발송된 앱/FCM 알림 내역을 수신자별로 확인합니다." icon="🔔" />
 
 @php
-    $typeLabels = [
-        'product_new' => '신규 상품',
-        'product_updated' => '상품 수정',
-        'order_created' => '발주 접수',
-        'order_updated' => '발주 변경',
-        'order_canceled' => '발주 취소',
-        'order_delivered' => '배송 완료',
-        'order_item_added' => '발주품목 추가',
-        'order_item_removed' => '발주품목 삭제',
-        'order_item_updated' => '발주품목 변경',
-        'shipment_confirmed' => '출고 확정',
-        'restock' => '재입고',
-        'statement' => '거래명세서',
-        'tax_invoice_issued' => '세금계산서',
-        'portal_notice' => '공지사항',
-        'franchise_inquiry' => '창업 문의',
-        'attendance' => '근태',
-        'leave' => '휴무',
-        'general' => '일반',
-    ];
-    $typeLabel = fn ($t) => $typeLabels[$t] ?? $t;
+    $typeLabel = fn ($t) => \App\Models\AppNotification::typeLabel($t);   // 앱과 공용 라벨
 @endphp
 
 {{-- 검색 필터 --}}
