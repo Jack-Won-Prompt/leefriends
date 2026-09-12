@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ProductCategory;
 use App\Models\Supplier;
 use App\Models\SupplyProduct;
+use App\Services\Inventory\HqStockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -60,9 +61,12 @@ class ProductController extends Controller
     /** 발주 카탈로그 대분류 */
     public const CATEGORIES = ['마카롱', '쿠키', '재료'];
 
-    public function store(Request $request, \App\Services\Notification\NotificationService $notifications)
+    public function store(Request $request, \App\Services\Notification\NotificationService $notifications, HqStockService $stock)
     {
         $data = $this->validateData($request);
+        // 초기 재고(본사) — 미입력 시 기본 100
+        $request->validate(['stock' => ['nullable', 'integer', 'min:0', 'max:1000000']]);
+        $initialStock = $request->filled('stock') ? (int) $request->input('stock') : 100;
         // 대분류코드 자동 설정 (기준정보 우선, 상수 폴백; 코드 채번은 모델 creating 이벤트가 처리)
         $data['category_code'] = ProductCategory::codeFor($data['category']) ?? SupplyProduct::CATEGORY_CODES[$data['category']] ?? null;
 
@@ -80,6 +84,9 @@ class ProductController extends Controller
 
             return $product;
         });
+
+        // 초기 본사 재고 설정(기본 100) + 이력
+        $stock->adjust($product->id, $product->name, $initialStock, auth()->id(), "품목 등록 초기재고({$initialStock})");
 
         // 매장 노출(활성+승인) 상태로 등록되면 전 매장에 신규 상품 알림
         if ($product->is_active && $product->approval_status === 'approved') {

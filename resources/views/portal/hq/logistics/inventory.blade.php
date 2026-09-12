@@ -34,11 +34,22 @@
 </form>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-    <div class="lg:col-span-2">
+    <div class="lg:col-span-2"
+         x-data="{ n:0, sync(){ this.n = [...$el.querySelectorAll('.chk')].filter(c=>c.checked).length; }, all(e){ $el.querySelectorAll('.chk').forEach(c=>c.checked=e.target.checked); this.sync(); } }">
+        <form method="POST" action="{{ route('portal.hq.logistics.inventory_bulk_zero') }}"
+              @submit="if(n===0){ $event.preventDefault(); return; } if(!confirm(n+'개 품목을 재고 없음(0)으로 변경합니다. 진행할까요?')){ $event.preventDefault(); }">
+        @csrf
         <x-wms.panel>
+            <div class="flex items-center gap-3 px-5 py-3 border-b border-neutral-100">
+                <label class="flex items-center gap-1.5 text-sm text-neutral-600 cursor-pointer"><input type="checkbox" @change="all($event)" class="rounded text-rose-500 focus:ring-rose-400"> 전체선택</label>
+                <span class="text-sm font-semibold text-rose-600" x-show="n>0" x-cloak x-text="'선택 '+n+'건'"></span>
+                <button type="submit" :disabled="n===0"
+                        class="ml-auto inline-flex items-center gap-1 rounded-xl bg-rose-500 hover:bg-rose-600 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold px-4 py-2 text-sm transition">🚫 선택 재고 없음</button>
+            </div>
             <table class="w-full text-sm">
                 <thead class="bg-neutral-50 text-neutral-500">
                     <tr>
+                        <th class="px-4 py-3 w-10"></th>
                         <th class="text-left font-semibold px-5 py-3">품목</th>
                         <th class="text-right font-semibold px-5 py-3">실물</th>
                         <th class="text-right font-semibold px-5 py-3">예약</th>
@@ -50,6 +61,9 @@
                     @forelse ($rows as $p)
                         @php $managed = ! is_null($p->inv_id); $avail = $managed ? ((int)$p->qty - (int)$p->reserved_qty) : null; @endphp
                         <tr class="hover:bg-neutral-50">
+                            <td class="px-4 py-3 text-center">
+                                <input type="checkbox" class="chk rounded text-rose-500 focus:ring-rose-400" name="product_ids[]" value="{{ $p->id }}" @change="sync()">
+                            </td>
                             <td class="px-5 py-3">
                                 <span class="font-bold text-neutral-900">{{ $p->name }}</span>
                                 <span class="block text-xs text-neutral-400">{{ $p->code }} · {{ $p->unit }}</span>
@@ -79,7 +93,7 @@
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="5" class="px-5 py-12 text-center text-neutral-400">품목이 없습니다.</td></tr>
+                        <tr><td colspan="6" class="px-5 py-12 text-center text-neutral-400">품목이 없습니다.</td></tr>
                     @endforelse
                 </tbody>
             </table>
@@ -87,6 +101,7 @@
                 <div class="px-5 py-3 border-t border-neutral-100">{{ $rows->links() }}</div>
             @endif
         </x-wms.panel>
+        </form>
     </div>
 
     {{-- 최근 이동 이력 --}}

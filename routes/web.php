@@ -277,6 +277,7 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::post('logistics/inbound/{statement}/receive', [Portal\Hq\LogisticsInboundController::class, 'receive'])->name('logistics.inbound_receive');
             Route::get('logistics/inventory', [Portal\Hq\HqInventoryController::class, 'index'])->name('logistics.inventory');
             Route::post('logistics/inventory/adjust', [Portal\Hq\HqInventoryController::class, 'adjust'])->name('logistics.inventory_adjust');
+            Route::post('logistics/inventory/bulk-zero', [Portal\Hq\HqInventoryController::class, 'bulkZero'])->name('logistics.inventory_bulk_zero');
             Route::post('logistics/inventory/seed', [Portal\Hq\HqInventoryController::class, 'seedDefaults'])->name('logistics.inventory_seed');
             Route::post('logistics/inventory/{product}/seed', [Portal\Hq\HqInventoryController::class, 'seedOne'])->name('logistics.inventory_seed_one');
             Route::post('logistics/inventory/{product}/notify-restock', [Portal\Hq\HqInventoryController::class, 'notifyRestock'])->name('logistics.inventory_notify');

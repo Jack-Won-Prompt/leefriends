@@ -110,6 +110,22 @@ class HqInventoryController extends Controller
         return back()->with('success', "{$product->name} 기본재고 {$base}개를 설정했습니다.");
     }
 
+    /** 선택 품목 일괄 '재고 없음'(실물 0) 처리 */
+    public function bulkZero(Request $request)
+    {
+        $data = $request->validate([
+            'product_ids' => ['required', 'array', 'min:1'],
+            'product_ids.*' => ['integer', 'exists:supply_products,id'],
+        ]);
+
+        $products = SupplyProduct::whereIn('id', $data['product_ids'])->get(['id', 'name']);
+        foreach ($products as $p) {
+            $this->stock->adjust($p->id, $p->name, 0, Auth::id(), '일괄 재고 없음 처리');
+        }
+
+        return back()->with('success', $products->count().'개 품목을 재고 없음(0)으로 변경했습니다.');
+    }
+
     /** 실사 수량 입력·수정 (실물 qty를 목표값으로 조정) */
     public function adjust(Request $request)
     {

@@ -26,7 +26,7 @@
 
 <x-wms.page-head title="품목 관리" subtitle="매장이 발주하는 품목(마카롱·쿠키·재료)과 단가를 관리합니다" icon="🍧">
     <x-slot:actions>
-        <button type="button" @click="openCreate('{{ route('portal.hq.products.store') }}', { is_active: true, category: '{{ $finishedCategories[0] }}', unit: '개', spec: '', store_price: 0, tax_type: 'inc', supply_type: 'hq', supplier_id: '', supply_price: 0, is_market_price: false, sort_order: 0, image: null })"
+        <button type="button" @click="openCreate('{{ route('portal.hq.products.store') }}', { is_active: true, category: '{{ $finishedCategories[0] }}', unit: '개', spec: '', store_price: 0, tax_type: 'inc', supply_type: 'hq', supplier_id: '', supply_price: 0, is_market_price: false, sort_order: 0, image: null, stock: 100 })"
                 class="inline-flex items-center gap-1 rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm transition">+ 새 품목 추가</button>
     </x-slot:actions>
 </x-wms.page-head>
@@ -138,6 +138,10 @@
                 <div>
                     <label class="block text-sm font-bold text-neutral-700 mb-1.5">판매가 (원) <span class="text-neutral-400 font-normal">매장 판매가</span></label>
                     <input type="number" name="store_price" x-model="form.store_price" required min="0" class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400">
+                </div>
+                <div x-show="mode === 'create'" x-cloak>
+                    <label class="block text-sm font-bold text-neutral-700 mb-1.5">초기 재고 <span class="text-neutral-400 font-normal">본사 재고 · 기본 100</span></label>
+                    <input type="number" name="stock" x-model.number="form.stock" min="0" max="1000000" class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400" placeholder="100">
                 </div>
                 <div>
                     <label class="block text-sm font-bold text-neutral-700 mb-1.5">부가세 구분 <span class="text-neutral-400 font-normal">세금계산서</span></label>
