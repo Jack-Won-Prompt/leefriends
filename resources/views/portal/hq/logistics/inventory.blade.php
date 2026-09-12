@@ -59,7 +59,7 @@
                 </thead>
                 <tbody class="divide-y divide-neutral-100">
                     @forelse ($rows as $p)
-                        @php $managed = ! is_null($p->inv_id); $avail = $managed ? ((int)$p->qty - (int)$p->reserved_qty) : null; @endphp
+                        @php $managed = ! is_null($p->inv_id); $avail = $managed ? max(0, (int)$p->qty - (int)$p->reserved_qty) : null; /* 가용은 0 미만 없음 */ @endphp
                         <tr class="hover:bg-neutral-50">
                             <td class="px-4 py-3 text-center">
                                 <input type="checkbox" class="chk rounded text-rose-500 focus:ring-rose-400" name="product_ids[]" value="{{ $p->id }}" @change="sync()">

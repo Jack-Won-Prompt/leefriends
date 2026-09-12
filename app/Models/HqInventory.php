@@ -21,8 +21,9 @@ class HqInventory extends Model
         return $this->belongsTo(SupplyProduct::class);
     }
 
+    /** 가용 = 실물 − 예약. 0 미만으로 내려가지 않음(예약이 실물보다 많아도 0 — 예: 재고 없음 처리 후 기존 발주 예약분) */
     public function getAvailableAttribute(): int
     {
-        return (int) $this->qty - (int) $this->reserved_qty;
+        return max(0, (int) $this->qty - (int) $this->reserved_qty);
     }
 }

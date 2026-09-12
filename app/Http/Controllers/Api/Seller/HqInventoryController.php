@@ -69,7 +69,7 @@ class HqInventoryController extends Controller
                     'managed' => (bool) $r->inv_id,
                     'qty' => $qty,
                     'reserved' => $reserved,
-                    'available' => $qty === null ? null : $qty - $reserved,
+                    'available' => $qty === null ? null : max(0, $qty - $reserved), // 가용은 0 미만 없음
                 ];
             })->values(),
             'meta' => [
