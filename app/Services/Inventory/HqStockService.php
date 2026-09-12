@@ -65,6 +65,23 @@ class HqStockService
         $this->apply($productId, $name, 'adjust', $delta, 0, 'manual', null, null, $userId, $note);
     }
 
+    /**
+     * 품목 '재고 없음' 처리 — 실물을 0으로 조정(+이력). 웹 포털·앱 공용.
+     * 매장 발주 화면은 가용재고 ≤ 0 을 '재고 없음'으로 막고, 발주 접수 시 reserveOrder 가 서버에서 차단한다.
+     *
+     * @param  int[]  $productIds
+     * @return int 처리한 품목 수
+     */
+    public function markOutOfStock(array $productIds, ?int $userId = null, string $note = '재고 없음 처리'): int
+    {
+        $products = \App\Models\SupplyProduct::whereIn('id', $productIds)->get(['id', 'name']);
+        foreach ($products as $p) {
+            $this->adjust($p->id, $p->name, 0, $userId, $note);
+        }
+
+        return $products->count();
+    }
+
     /** 발주 품목의 가용재고를 확인 후 예약. 부족 시 StockShortageException */
     public function reserveOrder(Order $order): void
     {

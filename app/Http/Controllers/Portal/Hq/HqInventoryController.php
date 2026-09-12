@@ -118,12 +118,9 @@ class HqInventoryController extends Controller
             'product_ids.*' => ['integer', 'exists:supply_products,id'],
         ]);
 
-        $products = SupplyProduct::whereIn('id', $data['product_ids'])->get(['id', 'name']);
-        foreach ($products as $p) {
-            $this->stock->adjust($p->id, $p->name, 0, Auth::id(), '일괄 재고 없음 처리');
-        }
+        $count = $this->stock->markOutOfStock($data['product_ids'], Auth::id(), '일괄 재고 없음 처리'); // 앱 API 와 공용
 
-        return back()->with('success', $products->count().'개 품목을 재고 없음(0)으로 변경했습니다.');
+        return back()->with('success', $count.'개 품목을 재고 없음(0)으로 변경했습니다.');
     }
 
     /** 실사 수량 입력·수정 (실물 qty를 목표값으로 조정) */

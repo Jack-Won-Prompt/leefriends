@@ -176,4 +176,17 @@ class HqInventoryController extends Controller
 
         return response()->json(['message' => "«{$product->name}» 재고 입고 알림을 전 매장에 전송했습니다."]);
     }
+
+    /** POST — 선택 품목 '재고 없음'(실물 0) 처리. 웹 포털 재고관리 «선택 재고 없음» 과 동일 */
+    public function bulkZero(Request $request): JsonResponse
+    {
+        $this->guardHq($request);
+        $data = $request->validate([
+            'product_ids' => ['required', 'array', 'min:1'],
+            'product_ids.*' => ['integer', 'exists:supply_products,id'],
+        ]);
+        $count = $this->stock->markOutOfStock($data['product_ids'], $request->user()->id, '재고 없음 처리(앱)');
+
+        return response()->json(['message' => "{$count}개 품목을 재고 없음(0)으로 변경했습니다. 매장에서 발주할 수 없습니다."]);
+    }
 }

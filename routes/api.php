@@ -241,6 +241,8 @@ Route::prefix('v1')->group(function () {
             Route::post('hq-inventory/seed', [Seller\HqInventoryController::class, 'seed'])->name('hq_inventory.seed');
             Route::post('hq-inventory/{product}/seed', [Seller\HqInventoryController::class, 'seedOne'])->name('hq_inventory.seed_one');
             Route::post('hq-inventory/{product}/notify-restock', [Seller\HqInventoryController::class, 'notifyRestock'])->name('hq_inventory.notify');
+            // 선택 품목 '재고 없음'(실물 0) — 웹 포털 재고관리 «선택 재고 없음» 과 같은 처리
+            Route::post('hq-inventory/bulk-zero', [Seller\HqInventoryController::class, 'bulkZero'])->name('hq_inventory.bulk_zero');
 
             // 구매발주 (본사→공급사 발주 · 공급사 확인)
             Route::get('purchase-orders', [Seller\PurchaseOrderController::class, 'index'])->name('purchase_orders.index');
