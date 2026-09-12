@@ -41,3 +41,9 @@ yarn-error.log
 
 # 디자인 시안(대용량)
 /storefront_mockup.png
+
+# SSL 인증서 도메인 검증 파일. 서버마다 다르고 발급 때 생긴다 — 지우면 갱신이 막힌다.
+/public/.well-known/
+
+# 서버에 둔 npm 설정(ignore-scripts 등). 저장소 정책과 별개다.
+/.npmrc
