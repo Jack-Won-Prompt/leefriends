@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\SalesOrder;
 use App\Models\Shipment;
+use App\Models\SupplyProduct;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -64,6 +65,8 @@ class DashboardController extends Controller
                 'pending_changes' => $pendingChanges,             // 미반영 주문변경
                 'today_orders' => $todayOrders,
                 'recent_orders' => $recent,
+                // 당일 신규 품목(홈 상단 배너) — 본사만. 웹 포털 본사 대시보드와 같은 기준.
+                'new_products' => $type === 'hq' ? SupplyProduct::newTodayForApi() : null,
             ],
         ]);
     }

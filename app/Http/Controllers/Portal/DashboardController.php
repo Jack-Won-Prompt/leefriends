@@ -43,20 +43,10 @@ class DashboardController extends Controller
         return view('portal.hq.dashboard', compact('stats', 'recentOrders', 'newProducts'));
     }
 
-    /** 금일 등록된 신규 품목(매장 노출 가능: 활성+승인) — 대시보드 상단 배너용 */
+    /** 금일 등록된 신규 품목(매장 노출 가능: 활성+승인) — 대시보드 상단 배너용 (앱 API 와 공용) */
     private function newProductsToday(): array
     {
-        $q = SupplyProduct::active()->approved()->whereDate('created_at', today());
-
-        $count = (clone $q)->count();
-        $featured = $count > 0
-            ? (clone $q)->with('defaultUnit')
-                ->orderByRaw("COALESCE(image, '') = ''")   // 이미지 있는 품목 우선
-                ->orderByDesc('created_at')->orderByDesc('id')
-                ->first()
-            : null;
-
-        return ['count' => $count, 'featured' => $featured];
+        return SupplyProduct::newToday();
     }
 
     private function store($user)

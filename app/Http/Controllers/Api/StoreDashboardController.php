@@ -47,38 +47,8 @@ class StoreDashboardController extends Controller
                 'inventory_items' => $inventoryItems,
                 'low_stock' => $lowStock,           // 재고 부족(<=5)
                 'month_amount' => $monthAmount,     // 이번 달 매입액
-                'new_products' => $this->newProductsToday(), // 당일 신규 품목(홈 상단 배너)
+                'new_products' => SupplyProduct::newTodayForApi(), // 당일 신규 품목(홈 상단 배너)
             ],
         ]);
-    }
-
-    /**
-     * 오늘 등록된 신규 품목 — 매장 노출 가능(활성+승인)한 것만.
-     * 대표 품목은 이미지가 있는 것을 우선하고, 그중 가장 최근 등록된 것.
-     */
-    private function newProductsToday(): array
-    {
-        $query = SupplyProduct::active()->approved()->whereDate('created_at', today());
-
-        $count = (clone $query)->count();
-        $featured = $count > 0
-            ? (clone $query)->with('defaultUnit')
-                ->orderByRaw("COALESCE(image, '') = ''")
-                ->orderByDesc('created_at')
-                ->orderByDesc('id')
-                ->first()
-            : null;
-
-        return [
-            'count' => $count,
-            'featured' => $featured ? [
-                'id' => $featured->id,
-                'name' => $featured->name,
-                'image' => $featured->image ? asset($featured->image) : null,
-                'store_price' => (int) ($featured->defaultUnit?->store_price ?: $featured->store_price),
-                'unit' => $featured->defaultUnit?->name ?: $featured->unit,
-                'is_market_price' => (bool) $featured->is_market_price,
-            ] : null,
-        ];
     }
 }

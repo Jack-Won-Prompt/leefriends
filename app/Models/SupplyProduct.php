@@ -142,6 +142,45 @@ class SupplyProduct extends Model
         return $q->where('approval_status', 'approved');
     }
 
+    /**
+     * 금일 등록된 신규 품목(매장 노출 가능: 활성+승인) — 대시보드 상단 배너용 (웹 포털·앱 공용).
+     * 대표 품목은 이미지가 있는 품목을 우선하고, 그중 가장 최근 등록된 것.
+     *
+     * @return array{count: int, featured: ?self}
+     */
+    public static function newToday(): array
+    {
+        $q = self::active()->approved()->whereDate('created_at', today());
+
+        $count = (clone $q)->count();
+        $featured = $count > 0
+            ? (clone $q)->with('defaultUnit')
+                ->orderByRaw("COALESCE(image, '') = ''")   // 이미지 있는 품목 우선
+                ->orderByDesc('created_at')->orderByDesc('id')
+                ->first()
+            : null;
+
+        return ['count' => $count, 'featured' => $featured];
+    }
+
+    /** newToday() 의 앱(API) 응답 형태 — 대표 품목 이미지 URL·기본 단위 가격 포함 */
+    public static function newTodayForApi(): array
+    {
+        ['count' => $count, 'featured' => $f] = self::newToday();
+
+        return [
+            'count' => $count,
+            'featured' => $f ? [
+                'id' => $f->id,
+                'name' => $f->name,
+                'image' => $f->image ? asset($f->image) : null,
+                'store_price' => (int) ($f->defaultUnit?->store_price ?: $f->store_price),
+                'unit' => $f->defaultUnit?->name ?: $f->unit,
+                'is_market_price' => (bool) $f->is_market_price,
+            ] : null,
+        ];
+    }
+
     public function getApprovalLabelAttribute(): string
     {
         return self::APPROVAL_LABELS[$this->approval_status] ?? $this->approval_status;
