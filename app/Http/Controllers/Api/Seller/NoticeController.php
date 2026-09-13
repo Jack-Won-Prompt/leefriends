@@ -65,7 +65,8 @@ class NoticeController extends Controller
         ]);
 
         $targets = User::whereIn('role', $notice->targetRoles())->get();
-        $notifications->notifyUsers($targets, 'portal_notice', '📢 새 공지사항', $notice->title,
+        // 앱은 알림 본문을 그대로 보여주므로 본문에 공지 내용을 담는다.
+        $notifications->notifyUsers($targets, 'portal_notice', '📢 '.$notice->title, $notice->content,
             ['portal_notice_id' => $notice->id]);
 
         return response()->json([

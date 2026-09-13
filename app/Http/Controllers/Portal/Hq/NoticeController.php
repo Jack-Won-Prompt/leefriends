@@ -40,12 +40,13 @@ class NoticeController extends Controller
         ]);
 
         // 대상(매장/공급처) 사용자 전원에게 실시간 알림(인앱+토스트)
+        // 앱은 알림 본문을 그대로 보여주므로 본문에 공지 내용을 담는다.
         $targets = User::whereIn('role', $notice->targetRoles())->get();
         $notifications->notifyUsers(
             $targets,
             'portal_notice',
-            '📢 새 공지사항',
-            $notice->title,
+            '📢 '.$notice->title,
+            $notice->content,
             ['portal_notice_id' => $notice->id],
         );
 

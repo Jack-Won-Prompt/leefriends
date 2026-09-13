@@ -135,6 +135,10 @@ Route::prefix('v1')->group(function () {
         Route::post('notifications/read-all', [NotificationController::class, 'readAll'])->name('api.notifications.read_all');
         Route::post('notifications/{notification}/read', [NotificationController::class, 'read'])->name('api.notifications.read');
 
+        // 본사 포털 공지 열람 (매장/공급처)
+        Route::get('portal-notices', [\App\Http\Controllers\Api\PortalNoticeController::class, 'index'])->name('api.portal_notices.index');
+        Route::get('portal-notices/{notice}', [\App\Http\Controllers\Api\PortalNoticeController::class, 'show'])->name('api.portal_notices.show');
+
         // 채팅 (본사 ↔ 매장/공급처)
         Route::prefix('chat')->name('api.chat.')->group(function () {
             Route::get('conversations', [ChatController::class, 'conversations'])->name('conversations');
