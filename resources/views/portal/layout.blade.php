@@ -583,7 +583,7 @@
             '<span class="text-xl shrink-0">🔔</span>' +
             '<div class="min-w-0 flex-1">' +
               '<p class="js-t text-sm font-bold text-neutral-900"></p>' +
-              '<p class="js-b text-xs text-neutral-500 mt-0.5 break-words"></p>' +
+              '<p class="js-b text-xs text-neutral-500 mt-0.5 break-words line-clamp-3"></p>' +
             '</div>' +
             '<button class="js-x text-neutral-300 hover:text-neutral-500 shrink-0 leading-none" aria-label="닫기">✕</button>';
         el.querySelector('.js-t').textContent = title;

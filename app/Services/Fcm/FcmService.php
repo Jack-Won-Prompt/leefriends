@@ -49,6 +49,9 @@ class FcmService
             return 0;
         }
 
+        // 푸시 페이로드 한도(4KB) 보호 — 긴 본문(예: 공지 내용)은 잘라서 보냄 (전체는 인앱 알림에 저장됨)
+        $body = \Illuminate\Support\Str::limit($body, 300);
+
         // data 값은 문자열만 허용
         $data = array_map(fn ($v) => (string) $v, $data);
 
