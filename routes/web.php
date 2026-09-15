@@ -50,6 +50,10 @@ Route::prefix('admin')->name('admin.')->group(function () {
 
         Route::resource('notices', Admin\NoticeController::class)->except(['show', 'create', 'edit']);
         Route::resource('menus', Admin\MenuController::class)->except(['show', 'create', 'edit']);
+
+        // 메인 페이지 팝업 설정
+        Route::get('popup', [Admin\PopupController::class, 'edit'])->name('popup.edit');
+        Route::patch('popup', [Admin\PopupController::class, 'update'])->name('popup.update');
         Route::resource('stores', Admin\StoreController::class)->except(['show', 'create', 'edit']);
 
         // 블로그 (공식 네이버 블로그 RSS 자동수집)

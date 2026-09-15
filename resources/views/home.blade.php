@@ -283,4 +283,45 @@
     </div>
 </section>
 
+{{-- ===================== 메인 팝업 (관리자 설정) ===================== --}}
+@if (! empty($popup))
+    @php $pv = $popup->updated_at?->timestamp ?? 1; @endphp
+    <div id="homePopup" role="dialog" aria-modal="true" aria-labelledby="homePopupTitle"
+         class="fixed inset-0 z-[120] hidden items-center justify-center bg-black/60 p-4">
+        <div class="relative w-full max-w-sm bg-white rounded-3xl shadow-2xl overflow-hidden">
+            <button type="button" onclick="leePopupClose()" aria-label="닫기"
+                    class="absolute top-3 right-3 z-10 w-9 h-9 grid place-items-center rounded-full bg-black/30 hover:bg-black/50 text-white text-lg leading-none">✕</button>
+            <a href="{{ $popup->link_url ?: route('franchise') }}" class="block group">
+                @if ($popup->image)
+                    <img src="{{ asset($popup->image) }}" alt="{{ $popup->title }}" class="w-full max-h-72 object-cover">
+                @endif
+                <div class="p-7 text-center">
+                    <h3 id="homePopupTitle" class="text-2xl font-black text-neutral-900">{{ $popup->title }}</h3>
+                    @if ($popup->body)
+                        <p class="mt-3 text-neutral-500 whitespace-pre-line leading-relaxed">{{ $popup->body }}</p>
+                    @endif
+                    @if ($popup->contact)
+                        <p class="mt-4 text-mango-600 font-extrabold text-xl">{{ $popup->contact }}</p>
+                    @endif
+                    <span class="mt-6 inline-flex items-center gap-1 rounded-full bg-mango-500 group-hover:bg-mango-600 text-white font-bold px-8 py-3.5 shadow-lg transition">{{ $popup->link_label ?: '문의하기' }} <span>→</span></span>
+                </div>
+            </a>
+        </div>
+        <button type="button" onclick="leePopupHideToday()"
+                class="absolute bottom-7 left-1/2 -translate-x-1/2 text-white/90 hover:text-white text-sm font-semibold underline underline-offset-2">오늘 하루 보지 않기</button>
+    </div>
+    <script>
+    (function () {
+        var KEY = 'leefriends_popup_{{ $pv }}';
+        var el = document.getElementById('homePopup');
+        function today() { var d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+        try { if (localStorage.getItem(KEY) === today()) return; } catch (e) {}
+        el.classList.remove('hidden'); el.classList.add('flex');
+        window.leePopupClose = function () { el.classList.add('hidden'); el.classList.remove('flex'); };
+        window.leePopupHideToday = function () { try { localStorage.setItem(KEY, today()); } catch (e) {} window.leePopupClose(); };
+        el.addEventListener('click', function (e) { if (e.target === el) window.leePopupClose(); });
+    })();
+    </script>
+@endif
+
 @endsection

@@ -30,8 +30,9 @@ class PageController extends Controller
         $storeCount = Store::active()->count();
         $blogPosts = BlogPost::active()->orderBy('sort_order')->orderByDesc('posted_at')->take(6)->get();
         $clips = NaverClip::active()->orderBy('sort_order')->orderByDesc('id')->take(6)->get();
+        $popup = \App\Models\Popup::forHome();
 
-        return view('home', compact('signatures', 'bests', 'populars', 'notices', 'storeCount', 'blogPosts', 'clips'));
+        return view('home', compact('signatures', 'bests', 'populars', 'notices', 'storeCount', 'blogPosts', 'clips', 'popup'));
     }
 
     public function brand()

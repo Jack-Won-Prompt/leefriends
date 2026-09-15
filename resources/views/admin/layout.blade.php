@@ -28,6 +28,7 @@
         ['admin.inquiries.index', '창업문의', '📩', ['admin.inquiries.show']],
         ['admin.notices.index', '공지사항', '📢', ['admin.notices.create','admin.notices.edit']],
         ['admin.menus.index', '메뉴관리', '🍧', ['admin.menus.create','admin.menus.edit']],
+        ['admin.popup.edit', '팝업 관리', '🪧', []],
         ['admin.blog.index', '블로그', '📝', []],
         ['admin.clips.index', '네이버클립', '🎬', []],
         ['admin.stores.index', '매장관리', '🏬', ['admin.stores.create','admin.stores.edit']],
