@@ -18,6 +18,13 @@
     </div>
 @endif
 
+<x-wms.summary :items="[
+    ['label' => '전체 발주', 'value' => $counts['total'], 'variant' => 'accent', 'href' => route('portal.store.orders.index')],
+    ['label' => '진행 중', 'value' => $counts['active'], 'variant' => 'info'],
+    ['label' => '배송 중', 'value' => $counts['shipping'], 'variant' => 'warn', 'href' => route('portal.store.inbound')],
+    ['label' => '완료', 'value' => $counts['completed'], 'variant' => 'success'],
+]" />
+
 <x-date-filter :from="$from" :to="$to" label="발주일 기간" />
 
 @include('portal.partials.wwgrid-assets')

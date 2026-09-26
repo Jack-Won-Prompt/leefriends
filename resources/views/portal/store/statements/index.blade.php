@@ -4,6 +4,11 @@
 @section('content')
 <x-wms.page-head title="거래명세서(수취)" subtitle="본사가 발송한 거래명세서를 확인하고 PDF로 볼 수 있습니다." icon="🧾" />
 
+<x-wms.summary :items="[
+    ['label' => '전체 명세서', 'value' => $totals['count'], 'variant' => 'accent'],
+    ['label' => '미확인', 'value' => $totals['unconfirmed'], 'variant' => $totals['unconfirmed'] > 0 ? 'danger' : 'success'],
+]" />
+
 <x-date-filter :from="$from" :to="$to" label="발송일 기간" />
 
 @include('portal.partials.wwgrid-assets')

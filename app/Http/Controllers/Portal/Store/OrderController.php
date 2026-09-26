@@ -20,7 +20,8 @@ class OrderController extends Controller
     public function index(Request $request)
     {
         [$from, $to] = $this->dateRange($request, 7); // 기본: 최근 7일
-        $query = Order::where('store_id', Auth::user()->store_id)
+        $storeId = Auth::user()->store_id;
+        $query = Order::where('store_id', $storeId)
             ->where('order_type', 'normal')
             ->withCount('items')
             ->latest();
@@ -28,7 +29,16 @@ class OrderController extends Controller
         $orders = $query->paginate(15)->withQueryString();
         $store = Auth::user()->store;
 
-        return view('portal.store.orders.index', compact('orders', 'from', 'to', 'store'));
+        // 배민식 상단 요약 (전체 기준)
+        $base = Order::where('store_id', $storeId)->where('order_type', 'normal');
+        $counts = [
+            'total' => (clone $base)->count(),
+            'active' => (clone $base)->whereNotIn('status', ['completed', 'canceled'])->count(),
+            'shipping' => (clone $base)->where('status', 'shipping')->count(),
+            'completed' => (clone $base)->where('status', 'completed')->count(),
+        ];
+
+        return view('portal.store.orders.index', compact('orders', 'from', 'to', 'store', 'counts'));
     }
 
     /** 샘플 주문 목록 */

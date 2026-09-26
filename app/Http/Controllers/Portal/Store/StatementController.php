@@ -26,7 +26,13 @@ class StatementController extends Controller
         $this->applyDateRange($query, $from, $to, 'sent_at');
         $statements = $query->paginate(20)->withQueryString();
 
-        return view('portal.store.statements.index', compact('statements', 'from', 'to'));
+        $base = Statement::where('store_id', $storeId);
+        $totals = [
+            'count' => (clone $base)->count(),
+            'unconfirmed' => (clone $base)->whereNull('confirmed_at')->count(),
+        ];
+
+        return view('portal.store.statements.index', compact('statements', 'from', 'to', 'totals'));
     }
 
     public function pdf(Statement $statement)

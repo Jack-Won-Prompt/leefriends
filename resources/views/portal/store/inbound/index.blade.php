@@ -4,6 +4,11 @@
 @section('content')
 <x-wms.page-head title="입고예정 · 배송" subtitle="배송중 출고를 인수·입고하고, 입고예정을 확인합니다" icon="🚚" />
 
+<x-wms.summary :items="[
+    ['label' => '배송 중 (입고 대기)', 'value' => $inTransit->count(), 'variant' => 'warn'],
+    ['label' => '입고 예정', 'value' => $expected->count(), 'variant' => 'info'],
+]" />
+
 @include('portal.partials.wwgrid-assets')
 @php
     $inTransitRows = $inTransit->map(fn ($s) => [

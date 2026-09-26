@@ -4,6 +4,12 @@
 @section('content')
 <x-wms.page-head title="세금계산서" subtitle="본사가 우리 매장 앞으로 발행한 세금계산서" icon="🧾" />
 
+<x-wms.summary :items="[
+    ['label' => '발행 건수', 'value' => $totals['count'], 'variant' => 'accent'],
+    ['label' => '이번 달 발행', 'value' => $totals['month'], 'variant' => 'info'],
+    ['label' => '합계 금액', 'value' => $totals['amount'], 'variant' => 'success', 'unit' => '원'],
+]" />
+
 @include('portal.partials.wwgrid-assets')
 @php
     $gridRows = $invoices->map(function ($inv) {

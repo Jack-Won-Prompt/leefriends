@@ -20,7 +20,15 @@ class TaxInvoiceController extends Controller
             ->latest('issue_date')->latest()
             ->paginate(20);
 
-        return view('portal.store.tax_invoices.index', compact('invoices'));
+        $base = TaxInvoice::where('direction', 'hq_to_store')->where('store_id', $storeId);
+        $totals = [
+            'count' => (clone $base)->count(),
+            'amount' => (int) (clone $base)->where('status', '!=', 'canceled')->sum('total_amount'),
+            'month' => (clone $base)->where('status', '!=', 'canceled')
+                ->whereYear('issue_date', now()->year)->whereMonth('issue_date', now()->month)->count(),
+        ];
+
+        return view('portal.store.tax_invoices.index', compact('invoices', 'totals'));
     }
 
     public function show(TaxInvoice $invoice)

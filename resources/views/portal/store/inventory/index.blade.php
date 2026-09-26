@@ -11,6 +11,12 @@
     </x-slot:actions>
 </x-wms.page-head>
 
+<x-wms.summary :items="[
+    ['label' => '재고 품목', 'value' => $inventories->count(), 'variant' => 'accent', 'unit' => '종'],
+    ['label' => '총 재고 수량', 'value' => $inventories->sum('qty'), 'variant' => 'info', 'unit' => '개'],
+    ['label' => '재고 없음', 'value' => $inventories->where('qty', '<=', 0)->count(), 'variant' => 'danger', 'unit' => '종'],
+]" />
+
 {{-- 바코드 출고 (스캔/수기) --}}
 <div class="rounded-2xl bg-neutral-900 text-white p-6 mb-6">
     <h3 class="font-extrabold mb-1">📷 바코드 재고 출고</h3>
