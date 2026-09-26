@@ -17,6 +17,12 @@
     </x-slot:actions>
 </x-wms.page-head>
 
+<x-wms.summary :items="[
+    ['label' => '전체 매장', 'value' => $counts['total'], 'variant' => 'accent', 'unit' => '곳'],
+    ['label' => '활성', 'value' => $counts['active'], 'variant' => 'success', 'unit' => '곳'],
+    ['label' => '선불(예치금)', 'value' => $counts['prepaid'], 'variant' => 'info', 'unit' => '곳'],
+]" />
+
 @include('portal.partials.wwgrid-assets')
 @php
     $gridRows = $stores->map(function ($st) {

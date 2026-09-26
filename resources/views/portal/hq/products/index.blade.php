@@ -31,6 +31,12 @@
     </x-slot:actions>
 </x-wms.page-head>
 
+<x-wms.summary :items="[
+    ['label' => '전체 품목', 'value' => $counts['total'], 'variant' => 'accent', 'unit' => '개'],
+    ['label' => '판매중', 'value' => $counts['active'], 'variant' => 'success', 'unit' => '개'],
+    ['label' => '승인 대기', 'value' => $counts['pending'], 'variant' => $counts['pending'] > 0 ? 'danger' : 'default', 'unit' => '개'],
+]" />
+
 <x-wms.filter :action="route('portal.hq.products.index')">
     <x-wms.field label="검색어 (품목명/코드)">
         <input type="text" name="q" value="{{ $filters['q'] }}" placeholder="품목명 또는 코드" class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">

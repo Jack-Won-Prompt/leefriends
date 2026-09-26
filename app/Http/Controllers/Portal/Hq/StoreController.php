@@ -21,8 +21,13 @@ class StoreController extends Controller
     public function index()
     {
         $stores = Store::with('account')->orderBy('name')->paginate(20);
+        $counts = [
+            'total' => Store::count(),
+            'active' => Store::active()->count(),
+            'prepaid' => Store::where('settlement_type', 'prepaid')->count(),
+        ];
 
-        return view('portal.hq.stores.index', compact('stores'));
+        return view('portal.hq.stores.index', compact('stores', 'counts'));
     }
 
     /**

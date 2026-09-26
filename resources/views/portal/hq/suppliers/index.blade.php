@@ -22,6 +22,11 @@
             class="rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-5 py-2.5 transition">+ 새 공급처 추가</button>
 </div>
 
+<x-wms.summary :items="[
+    ['label' => '전체 공급처', 'value' => $counts['total'], 'variant' => 'accent', 'unit' => '곳'],
+    ['label' => '등록 품목', 'value' => $counts['products'], 'variant' => 'info', 'unit' => '개'],
+]" />
+
 @include('portal.partials.wwgrid-assets')
 @php
     $gridRows = $suppliers->map(function ($s) {

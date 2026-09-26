@@ -17,8 +17,12 @@ class SupplierController extends Controller
     public function index()
     {
         $suppliers = Supplier::withCount('products')->with('account')->orderBy('name')->paginate(20);
+        $counts = [
+            'total' => Supplier::count(),
+            'products' => \App\Models\SupplyProduct::count(),
+        ];
 
-        return view('portal.hq.suppliers.index', compact('suppliers'));
+        return view('portal.hq.suppliers.index', compact('suppliers', 'counts'));
     }
 
     /** 신규 공급처를 이메일로 초대 (공급처 생성 + 초대 메일) */

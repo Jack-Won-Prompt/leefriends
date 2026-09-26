@@ -55,7 +55,13 @@ class ProductController extends Controller
             $formCategories = collect(self::CATEGORIES);
         }
 
-        return view('portal.hq.products.index', compact('products', 'categories', 'filters', 'suppliers', 'formCategories'));
+        $counts = [
+            'total' => SupplyProduct::count(),
+            'active' => SupplyProduct::where('is_active', true)->count(),
+            'pending' => SupplyProduct::where('approval_status', 'pending')->count(),
+        ];
+
+        return view('portal.hq.products.index', compact('products', 'categories', 'filters', 'suppliers', 'formCategories', 'counts'));
     }
 
     /** 발주 카탈로그 대분류 */

@@ -58,6 +58,13 @@ class OrderController extends Controller
         }
         $orders = $query->paginate(15)->withQueryString();
 
+        $counts = [
+            'total' => Order::count(),
+            'pending' => Order::where('status', 'pending')->count(),
+            'shipping' => Order::where('status', 'shipping')->count(),
+            'completed' => Order::where('status', 'completed')->count(),
+        ];
+
         return view('portal.hq.orders.index', [
             'orders' => $orders,
             'status' => $status,
@@ -67,6 +74,7 @@ class OrderController extends Controller
             'tax' => $tax,
             'from' => $from,
             'to' => $to,
+            'counts' => $counts,
         ]);
     }
 

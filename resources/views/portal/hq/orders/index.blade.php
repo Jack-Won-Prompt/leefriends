@@ -4,6 +4,13 @@
 @section('content')
 <x-wms.page-head title="매장 발주 주문" subtitle="매장이 접수한 구매주문을 조회합니다" icon="📦" />
 
+<x-wms.summary :items="[
+    ['label' => '전체 발주', 'value' => $counts['total'], 'variant' => 'accent', 'href' => route('portal.hq.orders.index')],
+    ['label' => '접수 대기', 'value' => $counts['pending'], 'variant' => 'danger', 'href' => route('portal.hq.orders.index', ['status' => 'pending'])],
+    ['label' => '배송 중', 'value' => $counts['shipping'], 'variant' => 'info', 'href' => route('portal.hq.orders.index', ['status' => 'shipping'])],
+    ['label' => '완료', 'value' => $counts['completed'], 'variant' => 'success', 'href' => route('portal.hq.orders.index', ['status' => 'completed'])],
+]" />
+
 <x-wms.filter :action="route('portal.hq.orders.index')" cols="grid-cols-2 md:grid-cols-4">
     <x-slot:actions>
         <a href="{{ route('portal.hq.orders.index') }}" class="inline-flex items-center gap-1 rounded-lg bg-white border border-neutral-200 px-3 py-1.5 text-xs font-bold text-neutral-500 hover:bg-neutral-100">새로고침</a>
