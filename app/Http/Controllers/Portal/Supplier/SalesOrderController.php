@@ -26,6 +26,13 @@ class SalesOrderController extends Controller
         }
         $salesOrders = $query->paginate(15)->withQueryString();
 
+        $base = SalesOrder::forSeller('supplier', $sid);
+        $summaryItems = [
+            ['label' => '전체 판매주문', 'value' => (clone $base)->count(), 'variant' => 'accent'],
+            ['label' => '확인 대기', 'value' => (clone $base)->where('status', 'created')->count(), 'variant' => 'danger'],
+            ['label' => '확인됨', 'value' => (clone $base)->where('status', 'confirmed')->count(), 'variant' => 'success'],
+        ];
+
         return view('portal.shared.sales_orders.index', [
             'salesOrders' => $salesOrders,
             'status' => $status,
@@ -34,6 +41,7 @@ class SalesOrderController extends Controller
             'stores' => Store::whereIn('id', SalesOrder::forSeller('supplier', $sid)->distinct()->pluck('store_id'))->orderBy('name')->get(),
             'store' => $store,
             'asModal' => true, // 상세는 팝업으로
+            'summaryItems' => $summaryItems,
         ]);
     }
 

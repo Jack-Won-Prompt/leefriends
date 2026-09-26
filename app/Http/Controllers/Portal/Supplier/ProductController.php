@@ -43,7 +43,14 @@ class ProductController extends Controller
         $products = $query->paginate(30)->withQueryString();
         $formCategories = $this->categories();
 
-        return view('portal.supplier.products.index', compact('products', 'filters', 'formCategories'));
+        $base = SupplyProduct::where('supplier_id', $supplierId);
+        $counts = [
+            'total' => (clone $base)->count(),
+            'approved' => (clone $base)->where('approval_status', 'approved')->count(),
+            'pending' => (clone $base)->where('approval_status', 'pending')->count(),
+        ];
+
+        return view('portal.supplier.products.index', compact('products', 'filters', 'formCategories', 'counts'));
     }
 
     /** 물품 등록 폼 대분류 선택지 = 기준정보(카테고리 관리). 비어 있으면 상수 폴백. */

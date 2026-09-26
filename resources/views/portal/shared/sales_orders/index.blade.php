@@ -5,6 +5,8 @@
 <div x-data="{ open: null }" @so-open.window="open = $event.detail">
 <x-wms.page-head title="판매주문" subtitle="구매주문에서 분할된 판매주문을 확인·처리합니다" icon="🧾" />
 
+@isset($summaryItems)<x-wms.summary :items="$summaryItems" />@endisset
+
 <x-wms.filter :action="route($routePrefix . '.sales_orders.index')">
     <x-wms.field label="진행상태">
         <select name="status" class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
