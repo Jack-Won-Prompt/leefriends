@@ -37,12 +37,21 @@ class TaxInvoiceController extends Controller
             $query->whereDate('created_at', '<=', $to);
         }
 
+        $tbase = TaxInvoice::where('direction', 'hq_to_store');
+        $totals = [
+            'count' => (clone $tbase)->count(),
+            'amount' => (int) (clone $tbase)->where('status', '!=', 'canceled')->sum('total_amount'),
+            'month' => (clone $tbase)->where('status', '!=', 'canceled')
+                ->whereYear('issue_date', now()->year)->whereMonth('issue_date', now()->month)->count(),
+        ];
+
         return view('portal.hq.tax_invoices.index', [
             'invoices' => $query->paginate(20)->withQueryString(),
             'statuses' => TaxInvoice::STATUSES,
             'status' => $status,
             'from' => $from,
             'to' => $to,
+            'totals' => $totals,
         ]);
     }
 

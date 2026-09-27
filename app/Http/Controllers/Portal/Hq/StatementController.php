@@ -38,10 +38,17 @@ class StatementController extends Controller
         $query = Statement::with(['store', 'sender', 'taxInvoice', 'order'])->latest('sent_at');
         $this->applyDateRange($query, $from, $to, 'sent_at');
 
+        $totals = [
+            'count' => Statement::count(),
+            'month' => Statement::whereYear('sent_at', now()->year)->whereMonth('sent_at', now()->month)->count(),
+            'unconfirmed' => Statement::whereNull('confirmed_at')->count(),
+        ];
+
         return view('portal.hq.statements.index', [
             'statements' => $query->paginate(20)->withQueryString(),
             'from' => $from,
             'to' => $to,
+            'totals' => $totals,
         ]);
     }
 

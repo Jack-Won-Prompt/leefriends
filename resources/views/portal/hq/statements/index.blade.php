@@ -5,6 +5,12 @@
 <div x-data="{ open: null }" @stmt-open.window="open = $event.detail">
 <x-wms.page-head title="거래명세서" subtitle="작성·발송한 거래명세서 이력입니다. PDF 재보기·재전송할 수 있습니다." icon="🧾" />
 
+<x-wms.summary :items="[
+    ['label' => '전체 발송', 'value' => $totals['count'], 'variant' => 'accent'],
+    ['label' => '이번 달 발송', 'value' => $totals['month'], 'variant' => 'info'],
+    ['label' => '매장 미확인', 'value' => $totals['unconfirmed'], 'variant' => $totals['unconfirmed'] > 0 ? 'warn' : 'success'],
+]" />
+
 <x-date-filter :from="$from" :to="$to" label="발송일 기간">
     <x-slot:actions>
         <a href="{{ route('portal.hq.statements.create') }}" class="inline-flex items-center gap-1 rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm transition">＋ 거래명세서 작성</a>

@@ -38,6 +38,13 @@ abstract class BaseShipmentController extends Controller
         }
         $shipments = $query->paginate(15)->withQueryString();
 
+        $sbase = Shipment::forSeller($type, $sid);
+        $summaryItems = [
+            ['label' => '전체 출고', 'value' => (clone $sbase)->count(), 'variant' => 'accent'],
+            ['label' => '배송 중', 'value' => (clone $sbase)->where('status', 'confirmed')->count(), 'variant' => 'info'],
+            ['label' => '배송 완료', 'value' => (clone $sbase)->where('status', 'delivered')->count(), 'variant' => 'success'],
+        ];
+
         return view('portal.shared.shipments.index', [
             'shipments' => $shipments,
             'status' => $status,
@@ -45,6 +52,7 @@ abstract class BaseShipmentController extends Controller
             'routePrefix' => $this->routePrefix(),
             'stores' => Store::whereIn('id', Shipment::forSeller($type, $sid)->distinct()->pluck('store_id'))->orderBy('name')->get(),
             'store' => $store,
+            'summaryItems' => $summaryItems,
         ]);
     }
 

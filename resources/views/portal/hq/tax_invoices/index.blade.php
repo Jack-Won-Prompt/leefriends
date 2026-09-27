@@ -5,6 +5,12 @@
 <div x-data="{ open: null }" @open-hq-taxinvoice.window="open = $event.detail.id">
 <x-wms.page-head title="세금계산서 (발행)" subtitle="본사 → 매장 발행 내역" icon="🧾" />
 
+<x-wms.summary :items="[
+    ['label' => '발행 건수', 'value' => $totals['count'], 'variant' => 'accent'],
+    ['label' => '이번 달 발행', 'value' => $totals['month'], 'variant' => 'info'],
+    ['label' => '발행 합계', 'value' => $totals['amount'], 'variant' => 'success', 'unit' => '원'],
+]" />
+
 <x-wms.filter :action="route('portal.hq.tax_invoices.index')" cols="grid-cols-2 md:grid-cols-3">
     <x-wms.field label="상태">
         <select name="status" class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">

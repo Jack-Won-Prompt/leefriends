@@ -4,6 +4,8 @@
 @section('content')
 <x-wms.page-head title="출고 관리" icon="🚚" />
 
+@isset($summaryItems)<x-wms.summary :items="$summaryItems" />@endisset
+
 <x-wms.filter :action="route('portal.hq.shipments.index')" cols="grid-cols-2 md:grid-cols-3">
     <x-slot:actions>
         <button type="button" id="btnPickingSlip"

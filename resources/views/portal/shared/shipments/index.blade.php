@@ -8,6 +8,8 @@
     </x-slot:actions>
 </x-wms.page-head>
 
+@isset($summaryItems)<x-wms.summary :items="$summaryItems" />@endisset
+
 <x-wms.filter :action="route($routePrefix . '.shipments.index')">
     <x-wms.field label="진행상태">
         <select name="status" class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">

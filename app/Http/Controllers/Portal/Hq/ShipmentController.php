@@ -58,12 +58,19 @@ class ShipmentController extends BaseShipmentController
         }
         $orders = $query->paginate(30)->withQueryString();
 
+        $summaryItems = [
+            ['label' => '전체 발주', 'value' => Order::where('status', '!=', 'canceled')->count(), 'variant' => 'accent'],
+            ['label' => '배송 중', 'value' => Order::where('status', 'shipping')->count(), 'variant' => 'info'],
+            ['label' => '완료', 'value' => Order::where('status', 'completed')->count(), 'variant' => 'success'],
+        ];
+
         return view('portal.hq.shipments.index', [
             'orders' => $orders,
             'stores' => Store::orderBy('name')->get(),
             'store' => $store,
             'from' => $from,
             'to' => $to,
+            'summaryItems' => $summaryItems,
         ]);
     }
 
