@@ -33,6 +33,11 @@ class PurchaseOrderController extends Controller
         }
         $this->applyDateRange($query, $from, $to);
 
+        $totals = [
+            'count' => PurchaseOrder::count(),
+            'month' => PurchaseOrder::whereYear('created_at', now()->year)->whereMonth('created_at', now()->month)->count(),
+        ];
+
         return view('portal.hq.purchase_orders.index', [
             'orders' => $query->paginate(20)->withQueryString(),
             'suppliers' => Supplier::orderBy('name')->get(),
@@ -40,6 +45,7 @@ class PurchaseOrderController extends Controller
             'status' => $status,
             'from' => $from,
             'to' => $to,
+            'totals' => $totals,
         ]);
     }
 

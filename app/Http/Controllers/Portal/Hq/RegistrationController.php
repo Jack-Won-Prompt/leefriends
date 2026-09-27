@@ -22,7 +22,9 @@ class RegistrationController extends Controller
             ->orderBy('created_at')
             ->paginate(20);
 
-        return view('portal.hq.registrations.index', compact('pending'));
+        $totals = ['pending' => $pending->total()];
+
+        return view('portal.hq.registrations.index', compact('pending', 'totals'));
     }
 
     public function approve(Request $request, User $user, NotificationService $notifier)

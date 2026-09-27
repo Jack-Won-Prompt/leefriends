@@ -12,6 +12,10 @@
 
 <x-wms.page-head title="회원가입 승인" subtitle="자가 가입한 제품 구매자 · 공급자 신청을 검토하고 승인/반려합니다" icon="📝" />
 
+<x-wms.summary :items="[
+    ['label' => '승인 대기 신청', 'value' => $totals['pending'], 'variant' => $totals['pending'] > 0 ? 'danger' : 'success'],
+]" />
+
 @include('portal.partials.wwgrid-assets')
 @php
     $gridRows = $pending->map(function ($u) {

@@ -8,6 +8,11 @@
     </x-slot:actions>
 </x-wms.page-head>
 
+<x-wms.summary :items="[
+    ['label' => '전체 구매발주', 'value' => $totals['count'], 'variant' => 'accent'],
+    ['label' => '이번 달', 'value' => $totals['month'], 'variant' => 'info'],
+]" />
+
 <form method="GET" class="flex flex-wrap items-center gap-2 mb-3 rounded-2xl bg-white shadow-sm border border-neutral-100 p-4">
     <select name="supplier" class="rounded-xl border-neutral-200 text-sm py-2">
         <option value="all">전체 공급처</option>

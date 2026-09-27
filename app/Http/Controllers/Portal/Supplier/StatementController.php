@@ -30,10 +30,17 @@ class StatementController extends Controller
         $query = SupplierStatement::where('supplier_id', $sid)->with('taxInvoice')->latest();
         $this->applyDateRange($query, $from, $to);
 
+        $totals = [
+            'count' => SupplierStatement::where('supplier_id', $sid)->count(),
+            'month' => SupplierStatement::where('supplier_id', $sid)
+                ->whereYear('created_at', now()->year)->whereMonth('created_at', now()->month)->count(),
+        ];
+
         return view('portal.supplier.statements.index', [
             'statements' => $query->paginate(20)->withQueryString(),
             'from' => $from,
             'to' => $to,
+            'totals' => $totals,
         ]);
     }
 

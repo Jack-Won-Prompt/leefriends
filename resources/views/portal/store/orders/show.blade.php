@@ -23,7 +23,7 @@
         <div class="flex flex-wrap items-center gap-1.5">
             @unless ($isSample)
                 <button type="button" @click="open = {{ $order->id }}"
-                        class="rounded-lg bg-neutral-900 hover:bg-mango-600 text-white font-bold px-3 py-1.5 text-xs transition">🧾 거래명세서</button>
+                        class="rounded-lg bg-mango-500 hover:bg-mango-600 text-white font-bold px-3 py-1.5 text-xs transition">🧾 거래명세서</button>
             @endunless
             @if (! empty($editable))
                 <a href="{{ route('portal.store.orders.edit', $order) }}" class="rounded-lg bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-bold px-3 py-1.5 text-xs transition">✏️ 수정</a>
@@ -99,7 +99,7 @@
         <x-detail-modal :id="$order->id">
             <x-slot:actions>
                 <button type="button" onclick="printStatement('{{ route('portal.store.orders.statement', ['order' => $order, 'print' => 1]) }}')"
-                        class="rounded-xl bg-neutral-900 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm shadow">🖨️ 인쇄</button>
+                        class="rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm shadow">🖨️ 인쇄</button>
             </x-slot:actions>
             @include('portal.partials.store-order-statement-document', ['order' => $order])
         </x-detail-modal>

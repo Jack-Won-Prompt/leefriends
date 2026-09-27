@@ -8,6 +8,11 @@
     </x-slot:actions>
 </x-wms.page-head>
 
+<x-wms.summary :items="[
+    ['label' => '전체 명세서', 'value' => $totals['count'], 'variant' => 'accent'],
+    ['label' => '이번 달 작성', 'value' => $totals['month'], 'variant' => 'info'],
+]" />
+
 <x-date-filter :from="$from" :to="$to" label="작성일 기간" />
 
 @include('portal.partials.wwgrid-assets')
