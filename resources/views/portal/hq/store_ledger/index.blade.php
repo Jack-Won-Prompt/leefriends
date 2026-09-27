@@ -4,6 +4,11 @@
 @section('content')
 <x-wms.page-head title="매장 원장(정산)" subtitle="매장별 예치금 잔액·미수금을 관리합니다. 발주는 차감, 입금은 충전됩니다." icon="📒" />
 
+<x-wms.summary :items="[
+    ['label' => '예치금 잔액 합계', 'value' => $totals['prepaid'], 'variant' => 'success', 'unit' => '원'],
+    ['label' => '미수금 합계', 'value' => $totals['unpaid'], 'variant' => $totals['unpaid'] > 0 ? 'danger' : 'default', 'unit' => '원'],
+]" />
+
 <x-wms.filter :action="url()->current()" cols="grid-cols-1 md:grid-cols-3">
     <x-wms.field label="매장명">
         <input type="text" name="q" value="{{ $q }}" placeholder="매장명 검색"

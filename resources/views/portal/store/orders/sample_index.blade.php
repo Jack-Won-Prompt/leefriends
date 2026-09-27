@@ -8,6 +8,10 @@
     </x-slot:actions>
 </x-wms.page-head>
 
+<x-wms.summary :items="[
+    ['label' => '전체 샘플 주문', 'value' => $orders->total(), 'variant' => 'accent'],
+]" />
+
 @include('portal.partials.wwgrid-assets')
 @php
     $gridRows = $orders->map(fn ($o) => [
