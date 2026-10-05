@@ -4,7 +4,7 @@
 @section('content')
 <div x-data="{ open: {{ $errors->any() ? 'true' : 'false' }}, audience: '{{ old('audience', 'all') }}' }">
 
-<x-wms.page-head title="공지사항" subtitle="매장·공급처에 공지를 작성해 발송합니다. 발송 즉시 실시간 알림이 전달됩니다." icon="📢">
+<x-wms.page-head title="공지사항" subtitle="매장·공급처에 공지를 작성해 발송합니다. 행을 더블클릭하면 상세 내용을 봅니다." icon="📢">
     <x-slot:actions>
         <button type="button" @click="open = true"
                 class="inline-flex items-center gap-1 rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm transition">✏️ 공지 작성</button>
@@ -17,6 +17,7 @@
         'title' => $n->title,
         'is_pinned' => (bool) $n->is_pinned,
         'preview' => \Illuminate\Support\Str::limit(strip_tags($n->content), 80),
+        'content' => (string) $n->content,
         'audience' => $n->audience,
         'audience_label' => $n->audience_label,
         'target_label' => $n->target_label,
@@ -90,12 +91,42 @@
 </div>
 </div>
 
+{{-- 상세 보기 팝업 — 행 더블클릭 시 열림 --}}
+<div x-data="{ open: false, n: {} }" x-cloak
+     @notice-detail-open.window="n = $event.detail; open = true">
+    <div x-show="open" class="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4"
+         @click.self="open = false" @keydown.escape.window="open = false">
+        <div class="w-full max-w-lg bg-white rounded-2xl shadow-xl overflow-hidden">
+            <div class="flex items-center justify-between px-5 py-4 border-b border-neutral-100">
+                <div class="flex items-center gap-2 min-w-0">
+                    <span x-show="n.is_pinned" class="text-mango-500" title="상단고정">📌</span>
+                    <h2 class="font-extrabold text-neutral-900 truncate" x-text="n.title"></h2>
+                </div>
+                <button @click="open = false" class="text-neutral-400 hover:text-neutral-600 shrink-0">✕</button>
+            </div>
+            <div class="px-5 py-4">
+                <div class="flex flex-wrap items-center gap-2 text-xs text-neutral-400 mb-3">
+                    <span class="rounded-full bg-neutral-100 px-2 py-0.5 font-bold text-neutral-600" x-text="n.target_label"></span>
+                    <span x-text="n.author"></span>
+                    <span>·</span>
+                    <span x-text="n.created_at"></span>
+                </div>
+                <p class="text-sm text-neutral-800 whitespace-pre-line leading-relaxed max-h-[60vh] overflow-y-auto"
+                   x-text="(n.content && n.content.length) ? n.content : '내용이 없습니다.'"></p>
+            </div>
+            <div class="px-5 py-3 border-t border-neutral-100 text-right">
+                <button @click="open = false" class="rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-600 font-bold px-5 py-2 text-sm">닫기</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @push('scripts')
 <script>
 (function () {
     const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || '';
     const AUD_CLS = { all: 'bg-mango-100 text-mango-700', store: 'bg-emerald-100 text-emerald-700', supplier: 'bg-sky-100 text-sky-700' };
-    ww.grid('hqNoticesGrid', [
+    const grid = ww.grid('hqNoticesGrid', [
         { header: '제목', name: 'title', width: 360,
           renderer: (v, row) => {
               const d = document.createElement('div');
@@ -121,6 +152,17 @@
               return form;
           } },
     ], @json($gridRows));
+
+    // 행 더블클릭 → 상세 보기 팝업
+    document.getElementById('hqNoticesGrid').addEventListener('dblclick', function (e) {
+        if (e.target.closest('a, button, input, select, form')) return;
+        const cell = e.target.closest('[data-row-index]');
+        if (!cell) return;
+        const row = grid.getData()[parseInt(cell.dataset.rowIndex, 10)];
+        if (!row) return;
+        window.getSelection()?.removeAllRanges();
+        window.dispatchEvent(new CustomEvent('notice-detail-open', { detail: row }));
+    });
 })();
 </script>
 @endpush
