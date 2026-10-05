@@ -13,17 +13,14 @@ class NoticeController extends Controller
 {
     public function index()
     {
-        $role = Auth::user()->role;
-
         return view('portal.notices.index', [
-            'notices' => PortalNotice::forRole($role)->sorted()->paginate(15),
+            'notices' => PortalNotice::visibleTo(Auth::user())->sorted()->paginate(15),
         ]);
     }
 
     public function show(PortalNotice $notice)
     {
-        $role = Auth::user()->role;
-        abort_unless(in_array($notice->audience, ['all', $role], true), 403);
+        abort_unless($notice->isVisibleTo(Auth::user()), 403);
 
         return view('portal.notices.show', ['notice' => $notice]);
     }

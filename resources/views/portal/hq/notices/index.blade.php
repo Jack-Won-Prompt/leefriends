@@ -2,7 +2,7 @@
 @section('title', '공지사항')
 
 @section('content')
-<div x-data="{ open: {{ $errors->any() ? 'true' : 'false' }} }">
+<div x-data="{ open: {{ $errors->any() ? 'true' : 'false' }}, audience: '{{ old('audience', 'all') }}' }">
 
 <x-wms.page-head title="공지사항" subtitle="매장·공급처에 공지를 작성해 발송합니다. 발송 즉시 실시간 알림이 전달됩니다." icon="📢">
     <x-slot:actions>
@@ -19,6 +19,7 @@
         'preview' => \Illuminate\Support\Str::limit(strip_tags($n->content), 80),
         'audience' => $n->audience,
         'audience_label' => $n->audience_label,
+        'target_label' => $n->target_label,
         'author' => optional($n->author)->name ?? '본사',
         'created_at' => $n->created_at->format('Y.m.d H:i'),
         'destroy_url' => route('portal.hq.notices.destroy', $n),
@@ -47,10 +48,21 @@
                 <div class="flex gap-2">
                     @foreach (['all' => '전체', 'store' => '매장', 'supplier' => '공급처'] as $key => $label)
                         <label class="flex-1">
-                            <input type="radio" name="audience" value="{{ $key }}" @checked(old('audience', 'all') === $key) class="peer sr-only">
+                            <input type="radio" name="audience" value="{{ $key }}" x-model="audience" class="peer sr-only">
                             <span class="block text-center rounded-xl border border-neutral-200 px-3 py-2 text-sm font-bold text-neutral-600 cursor-pointer peer-checked:border-mango-400 peer-checked:bg-mango-50 peer-checked:text-mango-700">{{ $label }}</span>
                         </label>
                     @endforeach
+                </div>
+                {{-- 매장 선택: audience=매장일 때만. 비우면 전체 매장 --}}
+                <div x-show="audience === 'store'" x-cloak class="mt-2">
+                    <select name="store_id"
+                            class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
+                        <option value="">전체 매장</option>
+                        @foreach ($stores as $s)
+                            <option value="{{ $s->id }}" @selected((string) old('store_id') === (string) $s->id)>{{ $s->name }}</option>
+                        @endforeach
+                    </select>
+                    <p class="text-[11px] text-neutral-400 mt-1">특정 매장을 고르면 그 매장에만 발송됩니다. (비우면 전체 매장)</p>
                 </div>
             </div>
             <div>
@@ -94,8 +106,8 @@
               const pv = document.createElement('p'); pv.className = 'text-xs text-neutral-400 mt-0.5'; pv.textContent = row.preview; d.appendChild(pv);
               return d;
           } },
-        { header: '대상', name: 'audience', width: 100, align: 'center',
-          renderer: (v, row) => ww.badge(row.audience_label, AUD_CLS[v] || '') },
+        { header: '대상', name: 'audience', width: 160, align: 'center',
+          renderer: (v, row) => ww.badge(row.target_label, AUD_CLS[v] || '') },
         { header: '작성자', name: 'author', width: 120 },
         { header: '발송일', name: 'created_at', width: 150 },
         { header: '관리', name: 'destroy_url', width: 90, align: 'center', sortable: false, exportable: false,

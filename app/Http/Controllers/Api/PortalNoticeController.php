@@ -24,7 +24,8 @@ class PortalNoticeController extends Controller
     /** GET /api/v1/portal-notices */
     public function index(Request $request): JsonResponse
     {
-        $notices = PortalNotice::forRole($this->role($request))->sorted()->paginate(20);
+        $this->role($request); // 역할 검증
+        $notices = PortalNotice::visibleTo($request->user())->sorted()->paginate(20);
 
         return response()->json([
             'data' => $notices->getCollection()->map(fn (PortalNotice $n) => $this->present($n))->values(),
@@ -39,7 +40,8 @@ class PortalNoticeController extends Controller
     /** GET /api/v1/portal-notices/{notice} */
     public function show(Request $request, PortalNotice $notice): JsonResponse
     {
-        abort_unless(in_array($notice->audience, ['all', $this->role($request)], true), 403);
+        $this->role($request); // 역할 검증
+        abort_unless($notice->isVisibleTo($request->user()), 403);
 
         return response()->json(['data' => $this->present($notice)]);
     }
