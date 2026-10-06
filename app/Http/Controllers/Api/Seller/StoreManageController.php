@@ -40,6 +40,7 @@ class StoreManageController extends Controller
                 'phone' => $s->phone,
                 'address' => $s->address,
                 'is_active' => (bool) $s->is_active,
+                'order_blocked' => (bool) $s->order_blocked,
                 'invited' => $s->account && $s->account->invite_token !== null,
                 'joined' => $s->account && $s->account->invite_token === null,
             ])->values(),
@@ -80,10 +81,12 @@ class StoreManageController extends Controller
             'address' => ['nullable', 'string', 'max:255'],
             'email' => ['nullable', 'email', 'max:100'],
             'is_active' => ['nullable', 'boolean'],
+            'order_blocked' => ['nullable', 'boolean'],
         ]);
         $store->update([
             ...$data,
             'is_active' => $request->boolean('is_active', $store->is_active),
+            'order_blocked' => $request->boolean('order_blocked', $store->order_blocked),
         ]);
 
         return response()->json(['message' => '매장이 수정되었습니다.']);
