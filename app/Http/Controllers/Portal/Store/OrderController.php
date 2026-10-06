@@ -61,6 +61,8 @@ class OrderController extends Controller
             'prefill' => [],
             'pastOrders' => $this->recentOrders(null, 'normal'),
             'orderType' => 'normal',
+            'orderBlocked' => (bool) optional(Auth::user()->store)->order_blocked,
+            'orderBlockMessage' => \App\Models\AppSetting::orderBlockMessage(),
         ]);
     }
 
@@ -73,6 +75,8 @@ class OrderController extends Controller
             'prefill' => [],
             'pastOrders' => $this->recentOrders(null, 'sample'),
             'orderType' => 'sample',
+            'orderBlocked' => (bool) optional(Auth::user()->store)->order_blocked,
+            'orderBlockMessage' => \App\Models\AppSetting::orderBlockMessage(),
         ]);
     }
 
@@ -80,6 +84,12 @@ class OrderController extends Controller
     {
         $user = Auth::user();
         abort_unless($user->store_id, 403, '연결된 매장이 없습니다.');
+
+        // 주문 불가(미정산) 매장은 발주 등록 차단 — 안내 메시지는 관리자 설정값
+        $store = $user->store;
+        if ($store && $store->order_blocked) {
+            return back()->withErrors(['order_blocked' => \App\Models\AppSetting::orderBlockMessage()])->withInput();
+        }
 
         $data = $this->validateOrder($request);
         $type = in_array($request->input('order_type'), ['normal', 'sample'], true) ? $request->input('order_type') : 'normal';

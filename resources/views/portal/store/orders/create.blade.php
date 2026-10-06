@@ -3,6 +3,25 @@
 @section('title', $editOrder ? ($isSample ? '샘플 주문 수정' : '발주 수정') : ($isSample ? '샘플 주문하기' : '재료 발주하기'))
 
 @section('content')
+@if (!empty($orderBlocked))
+    {{-- 주문 불가(미정산) 매장 — 발주 등록 차단 안내 팝업 --}}
+    <div x-data="{ open: true }">
+        <div x-show="open" x-cloak class="fixed inset-0 z-[60] grid place-items-center bg-black/50 p-4" @keydown.escape.window="open=false">
+            <div class="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden">
+                <div class="px-6 pt-6 pb-2 flex items-start gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 grid place-items-center text-lg shrink-0">🚫</div>
+                    <div>
+                        <h3 class="font-extrabold text-neutral-900 mb-1">발주 등록 불가</h3>
+                        <p class="text-sm text-neutral-600 whitespace-pre-line leading-relaxed">{{ $orderBlockMessage }}</p>
+                    </div>
+                </div>
+                <div class="px-6 py-4 flex justify-end gap-2">
+                    <a href="{{ route('portal.dashboard') }}" class="rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-5 py-2.5 text-sm transition">확인</a>
+                </div>
+            </div>
+        </div>
+    </div>
+@endif
 @php
     // JS 카탈로그 (대분류별 탭 + 적용 리스트 구성용)
     $catalog = [];

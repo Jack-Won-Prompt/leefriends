@@ -5,8 +5,9 @@
 <div x-data="{
         inviteOpen: {{ $errors->has('email') && old('_invite') ? 'true' : 'false' }},
         editOpen: false,
-        editForm: { id: null, name: '', region: '', phone: '', email: '', postcode: '', address: '', address_detail: '', biz_no: '', ceo: '', biz_type: '', biz_class: '', is_active: true },
-        openEdit(s) { this.editForm = Object.assign({ postcode:'', address:'', address_detail:'', biz_no:'', ceo:'', biz_type:'', biz_class:'' }, s); this.editOpen = true; },
+        editForm: { id: null, name: '', region: '', phone: '', email: '', postcode: '', address: '', address_detail: '', biz_no: '', ceo: '', biz_type: '', biz_class: '', is_active: true, order_blocked: false },
+        msgOpen: false,
+        openEdit(s) { this.editForm = Object.assign({ postcode:'', address:'', address_detail:'', biz_no:'', ceo:'', biz_type:'', biz_class:'', order_blocked:false }, s); this.editOpen = true; },
      }"
      @store-edit-open.window="openEdit($event.detail)">
 
@@ -21,7 +22,22 @@
     ['label' => '전체 매장', 'value' => $counts['total'], 'variant' => 'accent', 'unit' => '곳'],
     ['label' => '활성', 'value' => $counts['active'], 'variant' => 'success', 'unit' => '곳'],
     ['label' => '선불(예치금)', 'value' => $counts['prepaid'], 'variant' => 'info', 'unit' => '곳'],
+    ['label' => '주문 불가', 'value' => $counts['blocked'], 'variant' => $counts['blocked'] > 0 ? 'danger' : 'default', 'unit' => '곳'],
 ]" />
+
+{{-- 주문 불가 안내 메시지(전역) 편집 --}}
+<div class="rounded-2xl bg-white shadow-sm border border-neutral-100 p-4 mb-3">
+    <button type="button" @click="msgOpen = !msgOpen" class="w-full flex items-center justify-between">
+        <span class="text-sm font-extrabold text-neutral-800">🚫 주문 불가 안내 메시지 <span class="font-normal text-neutral-400">(주문 불가 매장이 발주 시 표시)</span></span>
+        <svg class="w-4 h-4 text-neutral-400 transition-transform" :class="msgOpen ? 'rotate-180' : ''" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 9l6 6 6-6"/></svg>
+    </button>
+    <form x-show="msgOpen" x-cloak method="POST" action="{{ route('portal.hq.stores.order_block_message') }}" class="mt-3 flex flex-col sm:flex-row gap-2">
+        @csrf
+        <textarea name="message" rows="2" maxlength="1000" required
+                  class="flex-1 rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">{{ $orderBlockMessage }}</textarea>
+        <button type="submit" class="shrink-0 rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-5 py-2 text-sm transition self-end">메시지 저장</button>
+    </form>
+</div>
 
 @include('portal.partials.wwgrid-assets')
 @php
@@ -45,7 +61,9 @@
                 'postcode' => $st->postcode, 'address' => $st->address, 'address_detail' => $st->address_detail,
                 'biz_no' => $st->biz_no, 'ceo' => $st->ceo, 'biz_type' => $st->biz_type, 'biz_class' => $st->biz_class,
                 'is_active' => (bool) $st->is_active,
+                'order_blocked' => (bool) $st->order_blocked,
             ],
+            'order_blocked' => (bool) $st->order_blocked,
         ];
     })->values();
 @endphp
@@ -132,6 +150,10 @@
             <label class="flex items-center gap-2">
                 <input type="checkbox" name="is_active" value="1" x-model="editForm.is_active" class="rounded text-mango-500 focus:ring-mango-400">
                 <span class="text-sm font-semibold text-neutral-700">활성 매장</span>
+            </label>
+            <label class="flex items-center gap-2 rounded-xl bg-rose-50 border border-rose-100 px-3 py-2.5">
+                <input type="checkbox" name="order_blocked" value="1" x-model="editForm.order_blocked" class="rounded text-rose-500 focus:ring-rose-400">
+                <span class="text-sm font-bold text-rose-700">🚫 주문 불가 (미정산 등으로 발주 등록 차단)</span>
             </label>
             <div class="flex gap-2 pt-1">
                 <button type="submit" class="flex-1 rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2.5 text-sm transition">저장</button>
@@ -220,6 +242,8 @@
               if (row.has_email) wrap.appendChild(reinviteForm(row.reinvite_url, '초대 메일 발송'));
               return wrap;
           } },
+        { header: '발주', name: 'order_blocked', width: 90, align: 'center',
+          renderer: (v) => v ? ww.badge('🚫 불가', 'bg-rose-100 text-rose-700') : ww.badge('가능', 'bg-emerald-50 text-emerald-600') },
         { header: '매장 화면', name: 'impersonate_url', width: 150, align: 'center', sortable: false, exportable: false,
           renderer: (v, row) => row.can_impersonate
               ? impersonateForm(v)

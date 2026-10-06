@@ -108,6 +108,15 @@ class OrderController extends Controller
     {
         $storeId = $this->storeId($request);
 
+        // 주문 불가(미정산) 매장은 발주 등록 차단 — 안내 메시지는 관리자 설정값
+        $store = \App\Models\Store::find($storeId);
+        if ($store && $store->order_blocked) {
+            return response()->json([
+                'message' => \App\Models\AppSetting::orderBlockMessage(),
+                'order_blocked' => true,
+            ], 422);
+        }
+
         $data = $request->validate([
             'note' => ['nullable', 'string', 'max:1000'],
             'order_type' => ['nullable', 'in:normal,sample'],

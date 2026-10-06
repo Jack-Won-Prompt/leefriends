@@ -25,9 +25,11 @@ class StoreController extends Controller
             'total' => Store::count(),
             'active' => Store::active()->count(),
             'prepaid' => Store::where('settlement_type', 'prepaid')->count(),
+            'blocked' => Store::where('order_blocked', true)->count(),
         ];
+        $orderBlockMessage = \App\Models\AppSetting::orderBlockMessage();
 
-        return view('portal.hq.stores.index', compact('stores', 'counts'));
+        return view('portal.hq.stores.index', compact('stores', 'counts', 'orderBlockMessage'));
     }
 
     /**
@@ -137,12 +139,25 @@ class StoreController extends Controller
             'biz_type' => ['nullable', 'string', 'max:100'],
             'biz_class' => ['nullable', 'string', 'max:100'],
             'is_active' => ['nullable', 'boolean'],
+            'order_blocked' => ['nullable', 'boolean'],
         ]);
         $data['is_active'] = $request->boolean('is_active');
+        $data['order_blocked'] = $request->boolean('order_blocked');
 
         $store->update($data);
 
         return back()->with('success', "«{$store->name}» 정보를 수정했습니다.");
+    }
+
+    /** 주문 불가 안내 메시지(전역) 수정 */
+    public function orderBlockMessage(Request $request)
+    {
+        $data = $request->validate([
+            'message' => ['required', 'string', 'max:1000'],
+        ]);
+        \App\Models\AppSetting::set(\App\Models\AppSetting::ORDER_BLOCK_MESSAGE, $data['message']);
+
+        return back()->with('success', '주문 불가 안내 메시지를 저장했습니다.');
     }
 
     /** 초대 토큰 발급(계정 생성/갱신) + 메일 발송 */

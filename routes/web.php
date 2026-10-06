@@ -315,6 +315,7 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::resource('suppliers', Portal\Hq\SupplierController::class)->except(['show', 'create', 'edit']);
             // 매장 관리 + 초대
             Route::get('stores', [Portal\Hq\StoreController::class, 'index'])->name('stores.index');
+            Route::post('stores/order-block-message', [Portal\Hq\StoreController::class, 'orderBlockMessage'])->name('stores.order_block_message');
             Route::post('stores/{store}/impersonate', [Portal\Hq\StoreController::class, 'impersonate'])->name('stores.impersonate');
             Route::post('stores/invite', [Portal\Hq\StoreController::class, 'invite'])->name('stores.invite');
             Route::post('stores/{store}/reinvite', [Portal\Hq\StoreController::class, 'reinvite'])->name('stores.reinvite');
