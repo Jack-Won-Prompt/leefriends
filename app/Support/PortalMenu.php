@@ -56,6 +56,7 @@ class PortalMenu
                 ['일정 관리', '📅', [['portal.schedules.index', '일정 관리', []]]],
                 ['직원 관리', '👥', [['portal.staff.index', '직원 관리', []]]],
                 ['공지사항', '📢', [['portal.hq.notices.index', '공지사항', []]]],
+                ['레시피', '📖', [['portal.hq.recipes.index', '레시피', []]]],
                 ['창업 문의', '📨', [
                     ['portal.hq.inquiries.index', '창업 문의', ['portal.hq.inquiries.show']],
                 ]],
@@ -66,6 +67,7 @@ class PortalMenu
                 ['대시보드', '📊', [['portal.dashboard', '대시보드', []]]],
                 ['채팅', '💬', [['portal.chat.index', '본사 채팅', []]]],
                 ['공지사항', '📢', [['portal.notices.index', '공지사항', []]]],
+                ['레시피', '📖', [['portal.recipes.index', '레시피', []]]],
                 ['발주', '🛒', [
                     ['portal.store.orders.create', '재료 발주하기', []],
                     ['portal.store.orders.index', '발주 내역', ['portal.store.orders.show', 'portal.store.orders.edit']],

@@ -197,6 +197,7 @@ Route::prefix('portal')->name('portal.')->group(function () {
         Route::middleware('role:store,supplier')->group(function () {
             Route::get('notices', [Portal\NoticeController::class, 'index'])->name('notices.index');
             Route::get('notices/{notice}', [Portal\NoticeController::class, 'show'])->name('notices.show');
+            Route::get('recipes', [Portal\RecipeController::class, 'index'])->name('recipes.index');
         });
 
         // 매장 주문 변경 확인(반영) - 본사/공급처
@@ -415,6 +416,11 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::get('notices', [Portal\Hq\NoticeController::class, 'index'])->name('notices.index');
             Route::post('notices', [Portal\Hq\NoticeController::class, 'store'])->name('notices.store');
             Route::delete('notices/{notice}', [Portal\Hq\NoticeController::class, 'destroy'])->name('notices.destroy');
+
+            // 레시피 — 물품별 등록·관리 (이미지+글)
+            Route::get('recipes', [Portal\Hq\RecipeController::class, 'index'])->name('recipes.index');
+            Route::post('recipes', [Portal\Hq\RecipeController::class, 'store'])->name('recipes.store');
+            Route::delete('recipes/{recipe}', [Portal\Hq\RecipeController::class, 'destroy'])->name('recipes.destroy');
 
             // FCM 알림 이력 — 본사/매장별 조회
             Route::get('notification-logs', [Portal\Hq\NotificationLogController::class, 'index'])->name('notification_logs.index');

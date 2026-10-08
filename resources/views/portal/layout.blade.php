@@ -120,6 +120,7 @@
         '🕐' => '<circle cx="12" cy="12" r="8.5"/><path d="M12 7v5l3.5 2"/>',
         '🛒' => '<circle cx="9.5" cy="20" r="1.6"/><circle cx="17" cy="20" r="1.6"/><path d="M3 4h2l2.3 11.4a1 1 0 0 0 1 .8h8.4a1 1 0 0 0 1-.8L20.5 8H6"/>',
         '🧊' => '<path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/>',
+        '📖' => '<path d="M12 6.5C10.5 5 8 4.5 4 4.5V18c4 0 6.5.5 8 2 1.5-1.5 4-2 8-2V4.5c-4 0-6.5.5-8 2z"/><path d="M12 6.5V20"/>',
     ];
     $menuIcon = function ($emoji) use ($menuIcons) {
         $inner = $menuIcons[$emoji] ?? null;
