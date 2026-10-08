@@ -139,6 +139,10 @@ Route::prefix('v1')->group(function () {
         Route::get('portal-notices', [\App\Http\Controllers\Api\PortalNoticeController::class, 'index'])->name('api.portal_notices.index');
         Route::get('portal-notices/{notice}', [\App\Http\Controllers\Api\PortalNoticeController::class, 'show'])->name('api.portal_notices.show');
 
+        // 본사 레시피 열람 (매장/공급처)
+        Route::get('recipes', [\App\Http\Controllers\Api\RecipeController::class, 'index'])->name('api.recipes.index');
+        Route::get('recipes/{recipe}', [\App\Http\Controllers\Api\RecipeController::class, 'show'])->name('api.recipes.show');
+
         // 채팅 (본사 ↔ 매장/공급처)
         Route::prefix('chat')->name('api.chat.')->group(function () {
             Route::get('conversations', [ChatController::class, 'conversations'])->name('conversations');
@@ -184,6 +188,11 @@ Route::prefix('v1')->group(function () {
             Route::get('notices', [Seller\NoticeController::class, 'index'])->name('notices.index');
             Route::post('notices', [Seller\NoticeController::class, 'store'])->name('notices.store');
             Route::delete('notices/{notice}', [Seller\NoticeController::class, 'destroy'])->name('notices.destroy');
+
+            // 레시피 관리 (본사)
+            Route::get('recipes', [Seller\RecipeController::class, 'index'])->name('recipes.index');
+            Route::post('recipes', [Seller\RecipeController::class, 'store'])->name('recipes.store');
+            Route::delete('recipes/{recipe}', [Seller\RecipeController::class, 'destroy'])->name('recipes.destroy');
 
             // 가맹문의 (본사)
             Route::get('inquiries', [Seller\InquiryController::class, 'index'])->name('inquiries.index');
