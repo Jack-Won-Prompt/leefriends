@@ -30,6 +30,12 @@ yarn-error.log
 # 런타임 업로드(제품 이미지 등)
 /public/uploads
 
+# 레시피 영상(대용량) — 서버에 업로드된 그대로 두고 저장소에는 넣지 않는다
+/public/videos
+
+# 작업 산출물 전달함(스크린샷 등) — 저장소에 넣지 않는다
+/docs/aiw/outbox
+
 # 모바일 앱 빌드(APK) — FTP로 직접 업로드, git 미추적
 /public/*.apk
 

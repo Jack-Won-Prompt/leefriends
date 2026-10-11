@@ -51,6 +51,12 @@ class RecipeController extends Controller
             'product_name' => $r->product_name ?: (optional($r->product)->name),
             'content' => $r->content,
             'image_url' => $r->image_url,
+            // 영상: 업로드 파일(video_url)과 외부 링크(video_embed_url)를 따로 준다.
+            // 앱은 video_url 이 있으면 내장 플레이어, 없고 embed 가 있으면 웹뷰로 띄우면 된다.
+            'video_url' => $r->video_url,
+            'video_link' => $r->video_link ?: null,
+            'video_embed_url' => $r->video_embed_url,
+            'has_video' => $r->has_video,
             'created_at' => $r->created_at?->format('Y-m-d H:i'),
         ];
     }
