@@ -141,13 +141,38 @@
                 </div>
             </template>
             <div>
-                <label class="block text-sm font-bold text-neutral-700 mb-1.5">물품 선택 <span class="text-neutral-400 font-normal">(선택)</span></label>
-                <select name="supply_product_id" x-model="form.product" class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm">
-                    <option value="">물품 없음 (일반 레시피)</option>
-                    @foreach ($products as $p)
-                        <option value="{{ $p->id }}">{{ $p->name }}</option>
-                    @endforeach
-                </select>
+                <label class="block text-sm font-bold text-neutral-700 mb-1.5">물품 선택 <span class="text-neutral-400 font-normal">(선택 · 이름으로 검색)</span></label>
+                <div class="relative"
+                     x-data="{
+                        products: @js($products->map(fn ($p) => ['id' => $p->id, 'name' => $p->name])->values()),
+                        pquery: '',
+                        popen: false,
+                        get pfiltered() { const q = this.pquery.trim().toLowerCase(); return q === '' ? this.products : this.products.filter(p => p.name.toLowerCase().includes(q)); },
+                        psync() { const sel = this.products.find(p => String(p.id) === String(this.form.product)); this.pquery = sel ? sel.name : ''; },
+                        ppick(p) { this.form.product = p.id; this.pquery = p.name; this.popen = false; },
+                        pclear() { this.form.product = ''; this.pquery = ''; this.popen = false; },
+                     }"
+                     x-init="psync(); $watch('form.product', () => psync())"
+                     @click.outside="popen = false">
+                    <input type="hidden" name="supply_product_id" :value="form.product">
+                    <div class="relative">
+                        <input type="text" x-model="pquery" @focus="popen = true" @input="popen = true"
+                               placeholder="물품 없음 (일반 레시피)" autocomplete="off"
+                               class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400 text-sm pr-8">
+                        <button type="button" x-show="form.product" @click="pclear()" x-cloak
+                                class="absolute right-2 top-1/2 -translate-y-1/2 text-neutral-400 hover:text-neutral-600">✕</button>
+                    </div>
+                    <ul x-show="popen" x-cloak
+                        class="absolute z-20 mt-1 w-full max-h-56 overflow-y-auto bg-white border border-neutral-200 rounded-xl shadow-lg text-sm">
+                        <li @click="pclear()" class="px-3 py-2 hover:bg-mango-50 cursor-pointer text-neutral-500">물품 없음 (일반 레시피)</li>
+                        <template x-for="p in pfiltered" :key="p.id">
+                            <li @click="ppick(p)" x-text="p.name"
+                                class="px-3 py-2 hover:bg-mango-50 cursor-pointer"
+                                :class="String(p.id) === String(form.product) ? 'bg-mango-50 font-bold text-mango-700' : 'text-neutral-800'"></li>
+                        </template>
+                        <li x-show="pfiltered.length === 0" class="px-3 py-2 text-neutral-400">검색 결과 없음</li>
+                    </ul>
+                </div>
             </div>
             <div>
                 <label class="block text-sm font-bold text-neutral-700 mb-1.5">제목 <span class="text-rose-500">*</span></label>
