@@ -192,6 +192,8 @@ Route::prefix('v1')->group(function () {
             // 레시피 관리 (본사)
             Route::get('recipes', [Seller\RecipeController::class, 'index'])->name('recipes.index');
             Route::post('recipes', [Seller\RecipeController::class, 'store'])->name('recipes.store');
+            // 수정: multipart 업로드 때문에 POST(_method=PUT)도 받도록 match 로 둔다
+            Route::match(['put', 'post'], 'recipes/{recipe}', [Seller\RecipeController::class, 'update'])->name('recipes.update');
             Route::delete('recipes/{recipe}', [Seller\RecipeController::class, 'destroy'])->name('recipes.destroy');
 
             // 가맹문의 (본사)

@@ -417,9 +417,10 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::post('notices', [Portal\Hq\NoticeController::class, 'store'])->name('notices.store');
             Route::delete('notices/{notice}', [Portal\Hq\NoticeController::class, 'destroy'])->name('notices.destroy');
 
-            // 레시피 — 물품별 등록·관리 (이미지+글)
+            // 레시피 — 물품별 등록·수정·관리 (이미지+영상+글)
             Route::get('recipes', [Portal\Hq\RecipeController::class, 'index'])->name('recipes.index');
             Route::post('recipes', [Portal\Hq\RecipeController::class, 'store'])->name('recipes.store');
+            Route::put('recipes/{recipe}', [Portal\Hq\RecipeController::class, 'update'])->name('recipes.update');
             Route::delete('recipes/{recipe}', [Portal\Hq\RecipeController::class, 'destroy'])->name('recipes.destroy');
 
             // FCM 알림 이력 — 본사/매장별 조회
