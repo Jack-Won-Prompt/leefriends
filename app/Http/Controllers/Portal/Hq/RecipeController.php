@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\Recipe;
 use App\Models\SupplyProduct;
 use App\Support\RecipeMedia;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 
 /**
  * 본사 — 물품별 레시피 등록·수정·관리 (이미지 + 영상 + 글).
@@ -32,16 +34,20 @@ class RecipeController extends Controller
             $productName = optional(SupplyProduct::find($data['supply_product_id']))->name;
         }
 
-        $recipe = Recipe::create([
-            'supply_product_id' => $data['supply_product_id'] ?? null,
-            'product_name' => $productName,
-            'title' => $data['title'],
-            'content' => $this->normalizeQuillHtml($data['content'] ?? null),
-            'image' => $request->hasFile('image_file') ? RecipeMedia::storeImage($request->file('image_file')) : null,
-            'video' => $request->hasFile('video_file') ? RecipeMedia::storeVideo($request->file('video_file')) : null,
-            'video_link' => $data['video_link'] ?? null,
-            'created_by' => Auth::id(),
-        ]);
+        try {
+            $recipe = Recipe::create([
+                'supply_product_id' => $data['supply_product_id'] ?? null,
+                'product_name' => $productName,
+                'title' => $data['title'],
+                'content' => $this->normalizeQuillHtml($data['content'] ?? null),
+                'image' => $request->hasFile('image_file') ? RecipeMedia::storeImage($request->file('image_file')) : null,
+                'video' => $request->hasFile('video_file') ? RecipeMedia::storeVideo($request->file('video_file')) : null,
+                'video_link' => $data['video_link'] ?? null,
+                'created_by' => Auth::id(),
+            ]);
+        } catch (\Throwable $e) {
+            return $this->saveFailed($e);
+        }
 
         return redirect()->route('portal.hq.recipes.index')
             ->with('success', '레시피를 등록했습니다.'.($recipe->has_video ? ' 영상도 함께 저장했습니다.' : ''));
@@ -59,25 +65,31 @@ class RecipeController extends Controller
             : null;
         $recipe->video_link = $data['video_link'] ?? null;
 
-        // 이미지: 새로 올리면 교체, «삭제» 체크하면 지움, 아니면 그대로
-        if ($request->hasFile('image_file')) {
-            RecipeMedia::delete($recipe->image);
-            $recipe->image = RecipeMedia::storeImage($request->file('image_file'));
-        } elseif ($request->boolean('remove_image')) {
-            RecipeMedia::delete($recipe->image);
-            $recipe->image = null;
-        }
+        try {
+            // 이미지: 새로 올리면 교체, «삭제» 체크하면 지움, 아니면 그대로
+            if ($request->hasFile('image_file')) {
+                $new = RecipeMedia::storeImage($request->file('image_file'));
+                RecipeMedia::delete($recipe->image);
+                $recipe->image = $new;
+            } elseif ($request->boolean('remove_image')) {
+                RecipeMedia::delete($recipe->image);
+                $recipe->image = null;
+            }
 
-        // 영상: 이미지와 같은 규칙 — 새 업로드 > 삭제 체크 > 유지
-        if ($request->hasFile('video_file')) {
-            RecipeMedia::delete($recipe->video);
-            $recipe->video = RecipeMedia::storeVideo($request->file('video_file'));
-        } elseif ($request->boolean('remove_video')) {
-            RecipeMedia::delete($recipe->video);
-            $recipe->video = null;
-        }
+            // 영상: 이미지와 같은 규칙 — 새 업로드 > 삭제 체크 > 유지
+            if ($request->hasFile('video_file')) {
+                $new = RecipeMedia::storeVideo($request->file('video_file'));
+                RecipeMedia::delete($recipe->video);
+                $recipe->video = $new;
+            } elseif ($request->boolean('remove_video')) {
+                RecipeMedia::delete($recipe->video);
+                $recipe->video = null;
+            }
 
-        $recipe->save();
+            $recipe->save();
+        } catch (\Throwable $e) {
+            return $this->saveFailed($e);
+        }
 
         return redirect()->route('portal.hq.recipes.index')->with('success', '레시피를 수정했습니다.');
     }
