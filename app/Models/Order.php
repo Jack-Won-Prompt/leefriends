@@ -8,6 +8,7 @@ class Order extends Model
 {
     protected $fillable = [
         'order_no', 'store_id', 'user_id', 'status', 'order_type',
+        'payment_status', 'paid_amount', 'paid_at',
         'store_amount', 'store_vat', 'supply_amount', 'note', 'tax_invoice_id',
         'shipping_box_count', 'shipping_unit_price', 'shipping_fee',
         'statement_emailed_at', 'statement_email_count', 'paid_at',
@@ -84,6 +85,11 @@ class Order extends Model
     public function items()
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    public function payments()
+    {
+        return $this->hasMany(OrderPayment::class)->latest('id');
     }
 
     public function salesOrders()

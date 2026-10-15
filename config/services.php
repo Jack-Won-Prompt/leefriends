@@ -77,4 +77,20 @@ return [
         ],
     ],
 
+    // 토스페이먼츠 — 매장 발주 결제(결제위젯 v2). 테스트모드면 test_* 키 사용.
+    'toss' => [
+        'test_mode'   => env('TOSS_TEST_MODE', true),
+        'mid'         => env('TOSS_MID'),
+        'api_base'    => 'https://api.tosspayments.com',
+        // 테스트키(test_gck_/test_gsk_) ↔ 운영키. 운영 전환 시 TOSS_CLIENT_KEY/TOSS_SECRET_KEY 사용.
+        'client_key'  => env('TOSS_TEST_MODE', true) ? env('TOSS_TEST_CLIENT_KEY') : env('TOSS_CLIENT_KEY'),
+        'secret_key'  => env('TOSS_TEST_MODE', true) ? env('TOSS_TEST_SECRET_KEY') : env('TOSS_SECRET_KEY'),
+        'webhook_secret' => env('TOSS_WEBHOOK_SECRET'),
+        'va' => [
+            'enabled'     => env('TOSS_VA_ENABLED', false),
+            'bank'        => env('TOSS_VA_BANK', 'IBK'),
+            'valid_hours' => (int) env('TOSS_VA_VALID_HOURS', 72),
+        ],
+    ],
+
 ];

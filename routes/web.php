@@ -224,6 +224,12 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::put('orders/{order}', [Portal\Store\OrderController::class, 'update'])->name('orders.update');
             Route::delete('orders/{order}/items/{item}', [Portal\Store\OrderController::class, 'destroyItem'])->name('orders.items.destroy');
             Route::delete('orders/{order}', [Portal\Store\OrderController::class, 'destroy'])->name('orders.destroy');
+
+            // 토스페이먼츠 결제 (토스 사용 매장)
+            Route::get('orders/{order}/pay', [Portal\Store\PaymentController::class, 'pay'])->name('orders.pay');
+            Route::get('pay/success', [Portal\Store\PaymentController::class, 'success'])->name('pay.success');
+            Route::get('pay/fail', [Portal\Store\PaymentController::class, 'fail'])->name('pay.fail');
+
             Route::get('purchases', [Portal\Store\PurchaseController::class, 'index'])->name('purchases');
 
             // 입고예정 / 배송중

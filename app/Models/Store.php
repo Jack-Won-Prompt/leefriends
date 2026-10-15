@@ -11,7 +11,7 @@ class Store extends Model
         'corp_postcode', 'corp_address', 'corp_address_detail',
         'biz_no', 'ceo', 'biz_type', 'biz_class',
         'phone', 'email', 'hours', 'lat', 'lng', 'image', 'is_active',
-        'settlement_type', 'virtual_account', 'ledger_balance', 'order_blocked',
+        'settlement_type', 'virtual_account', 'ledger_balance', 'order_blocked', 'toss_enabled',
     ];
 
     public const SETTLEMENT_TYPES = [
@@ -50,6 +50,7 @@ class Store extends Model
     protected $casts = [
         'is_active' => 'boolean',
         'order_blocked' => 'boolean',
+        'toss_enabled' => 'boolean',
         'lat' => 'float',
         'lng' => 'float',
         'ledger_balance' => 'integer',

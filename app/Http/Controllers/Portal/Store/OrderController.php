@@ -127,10 +127,21 @@ class OrderController extends Controller
         // 본사 + 해당 공급처에 새 발주 알림(FCM)
         $notifications->notifyNewOrder($order);
 
-        // 정식 발주는 공급처(직배송 품목)로 발주서 PDF 이메일 자동 발송 + 매장에 입금요청 SMS
+        // 토스 결제 매장(정식 발주) — 입금요청 SMS 대신 결제 페이지로 이동
+        $tossPay = $type === 'normal' && $store && $store->toss_enabled;
+
+        // 정식 발주는 공급처(직배송 품목)로 발주서 PDF 이메일 자동 발송
         if ($type === 'normal') {
             $orderMailer->sendForOrder($order);
-            app(\App\Services\Order\PaymentRequestSms::class)->send($order);
+            if ($tossPay) {
+                $order->update(['payment_status' => 'awaiting']);
+            } else {
+                app(\App\Services\Order\PaymentRequestSms::class)->send($order);
+            }
+        }
+
+        if ($tossPay) {
+            return redirect()->route('portal.store.orders.pay', $order);
         }
 
         if ($type === 'sample') {
