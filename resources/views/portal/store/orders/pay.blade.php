@@ -9,45 +9,36 @@
     <script src="https://js.tosspayments.com/v2/standard"></script>
     <style>body{font-family:'Pretendard Variable',Pretendard,system-ui,sans-serif}</style>
 </head>
-<body class="bg-neutral-100 min-h-screen">
-    {{-- MDI iframe 안이면 상단 프레임으로 빠져나와 토스 결제창이 정상 동작하도록 --}}
-    <script>if (window.top !== window.self) { window.top.location.href = window.location.href; }</script>
-
-    <div class="max-w-xl mx-auto px-4 py-8">
-        <div class="bg-white rounded-2xl shadow-sm border border-neutral-200 overflow-hidden">
-            <div class="px-6 py-5 border-b border-neutral-100 flex items-center justify-between">
-                <h1 class="text-lg font-black text-neutral-900">🧾 발주 결제</h1>
-                <a href="{{ route('portal.store.orders.show', $order) }}" class="text-sm text-neutral-400 hover:text-neutral-600">나중에 결제</a>
-            </div>
-
-            <div class="px-6 py-5 bg-neutral-50 border-b border-neutral-100">
-                <div class="flex items-center justify-between text-sm">
-                    <span class="text-neutral-500">발주번호</span>
-                    <span class="font-bold text-neutral-800">{{ $order->order_no }}</span>
-                </div>
-                <div class="flex items-center justify-between mt-2">
-                    <span class="text-neutral-500 text-sm">결제 금액</span>
-                    <span class="text-2xl font-black text-neutral-900">{{ number_format($amount) }}<span class="text-base font-bold">원</span></span>
-                </div>
-                @if ($vaEnabled)
-                    <p class="mt-2 text-[12px] text-neutral-400">카드 결제 또는 가상계좌 입금을 선택할 수 있습니다. 가상계좌는 입금 확인 후 발주가 확정됩니다.</p>
-                @endif
-            </div>
-
-            <div class="p-5">
-                <div id="payment-method"></div>
-                <div id="agreement" class="mt-2"></div>
-                <p id="pay-error" class="hidden mt-3 text-sm text-rose-600 font-semibold"></p>
-                <button id="payment-button"
-                        class="mt-5 w-full rounded-xl bg-mango-500 text-white font-bold px-4 py-3.5 text-base transition hover:brightness-95 disabled:opacity-50"
-                        style="background:#F2784B">
-                    {{ number_format($amount) }}원 결제하기
-                </button>
-            </div>
+{{-- 토스 결제는 보안상 포털 iframe 안에서 동작하지 않으므로 상단 창으로 올려 팝업처럼 띄운다 --}}
+<script>if (window.top !== window.self) { window.top.location.href = window.location.href; }</script>
+<body class="min-h-screen bg-neutral-900/60 backdrop-blur-sm grid place-items-center p-4">
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
+        <div class="px-6 py-4 border-b border-neutral-100 flex items-center justify-between">
+            <h1 class="text-lg font-black text-neutral-900">🧾 발주 결제</h1>
+            <a href="{{ $createUrl }}" class="text-sm text-neutral-400 hover:text-neutral-600">← 발주로 돌아가기</a>
         </div>
-        <p class="text-center text-[11px] text-neutral-400 mt-4">
-            토스페이먼츠 안전결제 @if (config('services.toss.test_mode'))· <b>테스트 모드</b>@endif
-        </p>
+
+        <div class="px-6 py-4 bg-neutral-50 border-b border-neutral-100">
+            <div class="flex items-center justify-between">
+                <span class="text-neutral-500 text-sm">결제 금액</span>
+                <span class="text-2xl font-black text-neutral-900">{{ number_format($amount) }}<span class="text-base font-bold">원</span></span>
+            </div>
+            <p class="mt-1 text-[12px] text-neutral-400">결제가 완료되어야 발주가 본사에 접수됩니다.</p>
+        </div>
+
+        <div class="p-5">
+            <div id="payment-method"></div>
+            <div id="agreement" class="mt-2"></div>
+            <p id="pay-error" class="hidden mt-3 text-sm text-rose-600 font-semibold"></p>
+            <button id="payment-button"
+                    class="mt-5 w-full rounded-xl text-white font-bold px-4 py-3.5 text-base transition hover:brightness-95 disabled:opacity-50"
+                    style="background:#F2784B">
+                {{ number_format($amount) }}원 결제하기
+            </button>
+            <p class="text-center text-[11px] text-neutral-400 mt-3">
+                토스페이먼츠 안전결제@if ($testMode) · <b>테스트 모드</b>@endif
+            </p>
+        </div>
     </div>
 
     <script>

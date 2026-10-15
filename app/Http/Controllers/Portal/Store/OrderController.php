@@ -12,6 +12,7 @@ use App\Services\Fulfillment\SalesOrderGenerator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class OrderController extends Controller
 {
@@ -63,6 +64,7 @@ class OrderController extends Controller
             'orderType' => 'normal',
             'orderBlocked' => (bool) optional(Auth::user()->store)->order_blocked,
             'orderBlockMessage' => \App\Models\AppSetting::orderBlockMessage(),
+            'tossEnabled' => (bool) optional(Auth::user()->store)->toss_enabled && app(\App\Services\Payment\TossService::class)->isConfigured(),
         ]);
     }
 
@@ -77,10 +79,11 @@ class OrderController extends Controller
             'orderType' => 'sample',
             'orderBlocked' => (bool) optional(Auth::user()->store)->order_blocked,
             'orderBlockMessage' => \App\Models\AppSetting::orderBlockMessage(),
+            'tossEnabled' => false, // 샘플 주문은 결제 없음
         ]);
     }
 
-    public function store(Request $request, \App\Services\Notification\NotificationService $notifications, \App\Services\Order\SupplierOrderMailer $orderMailer)
+    public function store(Request $request, \App\Services\Payment\TossService $toss)
     {
         $user = Auth::user();
         abort_unless($user->store_id, 403, '연결된 매장이 없습니다.');
@@ -98,51 +101,48 @@ class OrderController extends Controller
             return back()->withErrors(['qty' => '발주할 품목의 수량을 입력해 주세요.'])->withInput();
         }
 
+        // 토스 결제 매장(정식 발주): 결제 완료 전에는 발주를 생성하지 않는다.
+        // 금액만 산정(실제 생성 후 롤백)해 세션에 담고 결제 파라미터를 반환한다.
+        $tossPay = $type === 'normal' && $store && $store->toss_enabled && $toss->isConfigured();
+        if ($tossPay) {
+            // 싯가(가격 미확정) 품목은 선결제 불가
+            if (SupplyProduct::whereIn('id', $selected->keys())->where('is_market_price', true)->exists()) {
+                return back()->withErrors(['qty' => '싯가(가격 미확정) 품목은 결제 발주에 포함할 수 없습니다. 별도 발주해 주세요.'])->withInput();
+            }
+
+            try {
+                $amount = $this->previewAmount($user, $selected, $data, $type);
+            } catch (\App\Exceptions\StockShortageException $e) {
+                return back()->withErrors(['qty' => $e->summary()])->withInput();
+            }
+            if ($amount <= 0) {
+                return back()->withErrors(['qty' => '결제 금액이 올바르지 않습니다.'])->withInput();
+            }
+
+            $tossOrderId = 'LF-'.now()->format('ymdHis').'-'.Str::upper(Str::random(5));
+            session(['toss_checkout.'.$tossOrderId => [
+                'store_id' => $user->store_id,
+                'user_id' => $user->id,
+                'type' => $type,
+                'note' => $data['note'] ?? null,
+                'qty' => $selected->all(),
+                'unit' => $data['unit'] ?? [],
+                'amount' => $amount,
+                'created_at' => now()->toDateTimeString(),
+            ]]);
+
+            // 결제 완료 전에는 발주를 만들지 않는다 → 결제(팝업형 상단) 화면으로
+            return redirect()->route('portal.store.pay.checkout', ['co' => $tossOrderId]);
+        }
+
+        // 비토스/샘플 — 기존 흐름: 즉시 생성 + 접수
         try {
-            $order = DB::transaction(function () use ($user, $selected, $data, $type) {
-                $order = Order::create([
-                    'order_no' => $this->generateOrderNo($type),
-                    'store_id' => $user->store_id,
-                    'user_id' => $user->id,
-                    'status' => 'pending',
-                    'order_type' => $type,
-                    'note' => $data['note'] ?? null,
-                ]);
-                $this->buildItems($order, $selected, collect($data['unit'] ?? []), $type === 'sample');
-                (new SalesOrderGenerator())->generate($order);
-                // 본사 가용재고 확인 후 출고예정 예약 (부족 시 발주 차단)
-                app(\App\Services\Inventory\HqStockService::class)->reserveOrder($order);
-
-                // 거래처 원장 차감 (정식 발주만; 잔액 = 예치/미수)
-                if ($type === 'normal') {
-                    app(\App\Services\Settlement\LedgerService::class)->syncOrder($order->loadMissing('store'), $user->id);
-                }
-
-                return $order;
-            });
+            $order = $this->createOrderCore($user, $selected, $data, $type);
         } catch (\App\Exceptions\StockShortageException $e) {
             return back()->withErrors(['qty' => $e->summary()])->withInput();
         }
 
-        // 본사 + 해당 공급처에 새 발주 알림(FCM)
-        $notifications->notifyNewOrder($order);
-
-        // 토스 결제 매장(정식 발주) — 입금요청 SMS 대신 결제 페이지로 이동
-        $tossPay = $type === 'normal' && $store && $store->toss_enabled;
-
-        // 정식 발주는 공급처(직배송 품목)로 발주서 PDF 이메일 자동 발송
-        if ($type === 'normal') {
-            $orderMailer->sendForOrder($order);
-            if ($tossPay) {
-                $order->update(['payment_status' => 'awaiting']);
-            } else {
-                app(\App\Services\Order\PaymentRequestSms::class)->send($order);
-            }
-        }
-
-        if ($tossPay) {
-            return redirect()->route('portal.store.orders.pay', $order);
-        }
+        $this->finalizeOrder($order, sms: true);
 
         if ($type === 'sample') {
             return redirect()->route('portal.store.orders.show', $order)
@@ -151,6 +151,57 @@ class OrderController extends Controller
 
         return redirect()->route('portal.store.orders.show', $order)
             ->with('success', '발주가 접수되었습니다. 공급처 품목은 해당 공급처로 동시에 전달되었습니다.');
+    }
+
+    /**
+     * 발주 생성 코어 — 아이템·판매주문·재고예약·원장. (아직 본사 접수 알림/메일은 보내지 않음)
+     * 결제 전 금액 산정(previewAmount)과 결제 성공 후 실제 생성(PaymentController) 양쪽에서 공용.
+     */
+    public function createOrderCore($user, $selected, array $data, string $type): Order
+    {
+        return DB::transaction(function () use ($user, $selected, $data, $type) {
+            $order = Order::create([
+                'order_no' => $this->generateOrderNo($type),
+                'store_id' => $user->store_id,
+                'user_id' => $user->id,
+                'status' => 'pending',
+                'order_type' => $type,
+                'note' => $data['note'] ?? null,
+            ]);
+            $this->buildItems($order, $selected, collect($data['unit'] ?? []), $type === 'sample');
+            (new SalesOrderGenerator())->generate($order);
+            app(\App\Services\Inventory\HqStockService::class)->reserveOrder($order);
+            if ($type === 'normal') {
+                app(\App\Services\Settlement\LedgerService::class)->syncOrder($order->loadMissing('store'), $user->id);
+            }
+
+            return $order;
+        });
+    }
+
+    /** 본사 접수 알림(FCM) + 공급처 발주서 이메일. 토스 매장은 결제 완료 후 호출(sms=false). */
+    public function finalizeOrder(Order $order, bool $sms = false): void
+    {
+        app(\App\Services\Notification\NotificationService::class)->notifyNewOrder($order);
+        if ($order->order_type === 'normal') {
+            app(\App\Services\Order\SupplierOrderMailer::class)->sendForOrder($order);
+            if ($sms) {
+                app(\App\Services\Order\PaymentRequestSms::class)->send($order);
+            }
+        }
+    }
+
+    /** 결제 전 결제금액 산정 — 실제 생성 후 롤백해 정확한 합계와 재고 검증을 동시에 한다. */
+    public function previewAmount($user, $selected, array $data, string $type): int
+    {
+        DB::beginTransaction();
+        try {
+            $order = $this->createOrderCore($user, $selected, $data, $type);
+
+            return (int) $order->order_total;
+        } finally {
+            DB::rollBack();
+        }
     }
 
     public function edit(Order $order)

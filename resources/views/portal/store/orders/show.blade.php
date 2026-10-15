@@ -22,11 +22,10 @@
         </div>
         <div class="flex flex-wrap items-center gap-1.5">
             @unless ($isSample)
-                @if (optional($order->store)->toss_enabled && in_array($order->payment_status, ['awaiting', 'failed'], true) && $order->status !== 'canceled')
-                    <a href="{{ route('portal.store.orders.pay', $order) }}" target="_top"
-                       class="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 text-xs transition">💳 결제하기</a>
-                @elseif ($order->payment_status === 'waiting_deposit')
+                @if ($order->payment_status === 'waiting_deposit')
                     <span class="rounded-lg bg-amber-100 text-amber-700 font-bold px-3 py-1.5 text-xs">🏦 가상계좌 입금대기</span>
+                @elseif ($order->payment_status === 'paid')
+                    <span class="rounded-lg bg-emerald-100 text-emerald-700 font-bold px-3 py-1.5 text-xs">💳 결제완료</span>
                 @endif
                 <button type="button" @click="open = {{ $order->id }}"
                         class="rounded-lg bg-mango-500 hover:bg-mango-600 text-white font-bold px-3 py-1.5 text-xs transition">🧾 거래명세서</button>

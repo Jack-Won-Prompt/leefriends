@@ -225,8 +225,8 @@ Route::prefix('portal')->name('portal.')->group(function () {
             Route::delete('orders/{order}/items/{item}', [Portal\Store\OrderController::class, 'destroyItem'])->name('orders.items.destroy');
             Route::delete('orders/{order}', [Portal\Store\OrderController::class, 'destroy'])->name('orders.destroy');
 
-            // 토스페이먼츠 결제 (토스 사용 매장)
-            Route::get('orders/{order}/pay', [Portal\Store\PaymentController::class, 'pay'])->name('orders.pay');
+            // 토스페이먼츠 결제 (토스 사용 매장) — 결제창(팝업형) + 성공/실패 리다이렉트
+            Route::get('pay/checkout', [Portal\Store\PaymentController::class, 'checkout'])->name('pay.checkout');
             Route::get('pay/success', [Portal\Store\PaymentController::class, 'success'])->name('pay.success');
             Route::get('pay/fail', [Portal\Store\PaymentController::class, 'fail'])->name('pay.fail');
 
