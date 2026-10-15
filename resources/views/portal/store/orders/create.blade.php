@@ -34,6 +34,9 @@
                 'spec' => $p->spec,
                 'category' => $cat,
                 'market' => (bool) $p->is_market_price,
+                'image' => $p->image ? asset($p->image) : null,
+                'delivery_cycle' => $p->delivery_cycle,
+                'refund_policy' => $p->refund_policy,
                 'units' => $p->units->map(fn ($u) => ['id' => $u->id, 'name' => $u->name, 'price' => (int) $u->store_price])->values(),
             ];
         }
@@ -154,6 +157,8 @@
                                             @endif
                                         @endunless
                                         <span class="text-[11px] text-neutral-400">{{ $p->code }}</span>
+                                        <button type="button" @click="openDetail({{ $p->id }})"
+                                                class="text-[11px] font-bold px-2 py-0.5 rounded-full border border-neutral-200 text-neutral-500 hover:border-mango-300 hover:text-mango-600 transition">ⓘ 상세</button>
                                         @if ($out)
                                             <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-rose-100 text-rose-600">재고 없음</span>
                                         @else
@@ -312,6 +317,58 @@
         </template>
     </div>
 
+    {{-- 상품 상세 팝업 (단가·배송주기·환불정책) --}}
+    <template x-if="detailOpen && detailPid && catalog[detailPid]">
+        <div x-show="detailOpen" x-cloak class="fixed inset-0 z-[60] grid place-items-center bg-black/50 p-4"
+             @click.self="detailOpen = false" @keydown.escape.window="detailOpen = false">
+            <div class="w-full max-w-md bg-white rounded-2xl shadow-xl overflow-hidden max-h-[90vh] overflow-y-auto">
+                <template x-if="catalog[detailPid].image">
+                    <img :src="catalog[detailPid].image" alt="" class="w-full max-h-56 object-cover">
+                </template>
+                <div class="p-5 space-y-4">
+                    <div class="flex items-start justify-between gap-2">
+                        <div class="min-w-0">
+                            <h3 class="text-lg font-black text-neutral-900" x-text="catalog[detailPid].name"></h3>
+                            <p class="text-xs text-neutral-400 mt-0.5">
+                                <span x-text="catalog[detailPid].code"></span><span x-show="catalog[detailPid].spec"> · </span><span x-text="catalog[detailPid].spec"></span>
+                            </p>
+                        </div>
+                        <button type="button" @click="detailOpen = false" class="text-neutral-400 hover:text-neutral-600 shrink-0">✕</button>
+                    </div>
+
+                    <div>
+                        <p class="text-xs font-bold text-neutral-500 mb-1">단가</p>
+                        <template x-if="catalog[detailPid].market">
+                            <p class="text-sm font-bold text-mango-700">싯가 (본사 확정)</p>
+                        </template>
+                        <template x-if="!catalog[detailPid].market">
+                            <ul class="text-sm text-neutral-800 space-y-0.5">
+                                <template x-for="u in catalog[detailPid].units" :key="u.id">
+                                    <li><span x-text="u.name"></span> · <span class="font-bold text-mango-700" x-text="u.price.toLocaleString() + '원'"></span></li>
+                                </template>
+                            </ul>
+                        </template>
+                    </div>
+
+                    <div x-show="catalog[detailPid].delivery_cycle">
+                        <p class="text-xs font-bold text-neutral-500 mb-1">🚚 배송주기</p>
+                        <p class="text-sm text-neutral-800" x-text="catalog[detailPid].delivery_cycle"></p>
+                    </div>
+
+                    <div x-show="catalog[detailPid].refund_policy">
+                        <p class="text-xs font-bold text-neutral-500 mb-1">↩️ 환불정책</p>
+                        <p class="text-sm text-neutral-700 leading-relaxed whitespace-pre-line" x-text="catalog[detailPid].refund_policy"></p>
+                    </div>
+
+                    <div class="pt-1">
+                        <button type="button" @click="detailOpen = false"
+                                class="w-full rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-700 font-bold px-4 py-2.5 text-sm transition">닫기</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
     {{-- 발주 확인 팝업 (커스텀 alert) --}}
     <div x-show="confirmOpen" x-cloak
          class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
@@ -358,6 +415,8 @@
             itemCount: 0, totalQty: 0, totalAmount: 0,
             confirmOpen: false, // 발주 확인 팝업
             submitting: false,  // 전송 중(중복 클릭 방지)
+            detailOpen: false, detailPid: null, // 상품 상세 팝업
+            openDetail(pid) { this.detailPid = pid; this.detailOpen = true; },
             askConfirm() {
                 if (this.itemCount === 0 || this.submitting) return;
                 this.confirmOpen = true;

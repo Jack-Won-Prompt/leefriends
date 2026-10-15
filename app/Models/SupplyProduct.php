@@ -10,6 +10,7 @@ class SupplyProduct extends Model
         'code', 'barcode', 'name', 'category', 'category_code', 'unit', 'spec', 'supply_type', 'supplier_id',
         'supply_price', 'store_price', 'is_market_price', 'tax_type', 'image', 'sort_order', 'is_active',
         'approval_status', 'registered_by', 'approval_note',
+        'delivery_cycle', 'refund_policy',
     ];
 
     /** 신규 상품 표시 기간(등록 후 N일 이내면 '신규') */

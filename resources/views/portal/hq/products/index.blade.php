@@ -26,7 +26,7 @@
 
 <x-wms.page-head title="품목 관리" subtitle="매장이 발주하는 품목(마카롱·쿠키·재료)과 단가를 관리합니다" icon="🍧">
     <x-slot:actions>
-        <button type="button" @click="openCreate('{{ route('portal.hq.products.store') }}', { is_active: true, category: '{{ $finishedCategories[0] }}', unit: '개', spec: '', store_price: 0, tax_type: 'inc', supply_type: 'hq', supplier_id: '', supply_price: 0, is_market_price: false, sort_order: 0, image: null, stock: 100 })"
+        <button type="button" @click="openCreate('{{ route('portal.hq.products.store') }}', { is_active: true, category: '{{ $finishedCategories[0] }}', unit: '개', spec: '', delivery_cycle: '', refund_policy: '', store_price: 0, tax_type: 'inc', supply_type: 'hq', supplier_id: '', supply_price: 0, is_market_price: false, sort_order: 0, image: null, stock: 100 })"
                 class="inline-flex items-center gap-1 rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2 text-sm transition">+ 새 품목 추가</button>
     </x-slot:actions>
 </x-wms.page-head>
@@ -89,6 +89,7 @@
         'destroy_url' => route('portal.hq.products.destroy', $p),
         'edit' => [
             'name' => $p->name, 'code' => $p->code, 'category' => $p->category, 'spec' => $p->spec, 'unit' => $p->unit,
+            'delivery_cycle' => $p->delivery_cycle ?: '', 'refund_policy' => $p->refund_policy ?: '',
             'store_price' => $p->store_price, 'tax_type' => $p->tax_type ?: 'inc', 'sort_order' => $p->sort_order, 'is_active' => (bool) $p->is_active,
             'is_market_price' => (bool) $p->is_market_price,
             'supply_type' => $p->supply_type, 'supplier_id' => $p->supplier_id, 'supply_price' => $p->supply_price,
@@ -138,6 +139,10 @@
                     <input type="text" name="spec" x-model="form.spec" class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400" placeholder="10개입 / 1.68L / 3kg">
                 </div>
                 <div>
+                    <label class="block text-sm font-bold text-neutral-700 mb-1.5">배송주기 <span class="text-neutral-400 font-normal">(선택)</span></label>
+                    <input type="text" name="delivery_cycle" x-model="form.delivery_cycle" maxlength="100" class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400" placeholder="예: 주 2회(화·금) / 입고 차수별">
+                </div>
+                <div>
                     <label class="block text-sm font-bold text-neutral-700 mb-1.5">단위</label>
                     <input type="text" name="unit" x-model="form.unit" required class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400" placeholder="BOX / EA">
                 </div>
@@ -170,6 +175,10 @@
                         <span class="block text-[11px] font-normal text-neutral-400">망고처럼 시세가 매일 바뀌는 품목. 매장엔 «싯가»로 표시되고, 발주가 들어오면 «받은 발주»에서 단가를 확정합니다.</span>
                     </span>
                 </label>
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-bold text-neutral-700 mb-1.5">환불정책 <span class="text-neutral-400 font-normal">(선택 · 매장 상품 상세에 표시)</span></label>
+                    <textarea name="refund_policy" x-model="form.refund_policy" rows="3" maxlength="2000" class="w-full rounded-xl border-neutral-200 focus:border-mango-400 focus:ring-mango-400" placeholder="예: 신선식품 특성상 단순변심 환불 불가. 상품 하자·오배송 시 수령 후 24시간 내 사진과 함께 접수하면 교환·환불."></textarea>
+                </div>
             </div>
 
             {{-- 공급 구분 --}}

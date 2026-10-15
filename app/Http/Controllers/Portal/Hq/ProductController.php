@@ -217,6 +217,8 @@ class ProductController extends Controller
             'name' => ['required', 'string', 'max:100'],
             'category' => ['required', 'string', 'max:50'],
             'spec' => ['nullable', 'string', 'max:50'],
+            'delivery_cycle' => ['nullable', 'string', 'max:100'],
+            'refund_policy' => ['nullable', 'string', 'max:2000'],
             'unit' => ['required', 'string', 'max:30'],
             'store_price' => ['required', 'integer', 'min:0'],
             'tax_type' => ['nullable', 'in:inc,exc,exempt'],
