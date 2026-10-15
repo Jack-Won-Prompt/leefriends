@@ -140,9 +140,11 @@ class StoreController extends Controller
             'biz_class' => ['nullable', 'string', 'max:100'],
             'is_active' => ['nullable', 'boolean'],
             'order_blocked' => ['nullable', 'boolean'],
+            'toss_enabled' => ['nullable', 'boolean'],
         ]);
         $data['is_active'] = $request->boolean('is_active');
         $data['order_blocked'] = $request->boolean('order_blocked');
+        $data['toss_enabled'] = $request->boolean('toss_enabled');
 
         $store->update($data);
 

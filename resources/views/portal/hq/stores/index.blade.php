@@ -5,9 +5,9 @@
 <div x-data="{
         inviteOpen: {{ $errors->has('email') && old('_invite') ? 'true' : 'false' }},
         editOpen: false,
-        editForm: { id: null, name: '', region: '', phone: '', email: '', postcode: '', address: '', address_detail: '', biz_no: '', ceo: '', biz_type: '', biz_class: '', is_active: true, order_blocked: false },
+        editForm: { id: null, name: '', region: '', phone: '', email: '', postcode: '', address: '', address_detail: '', biz_no: '', ceo: '', biz_type: '', biz_class: '', is_active: true, order_blocked: false, toss_enabled: false },
         msgOpen: false,
-        openEdit(s) { this.editForm = Object.assign({ postcode:'', address:'', address_detail:'', biz_no:'', ceo:'', biz_type:'', biz_class:'', order_blocked:false }, s); this.editOpen = true; },
+        openEdit(s) { this.editForm = Object.assign({ postcode:'', address:'', address_detail:'', biz_no:'', ceo:'', biz_type:'', biz_class:'', order_blocked:false, toss_enabled:false }, s); this.editOpen = true; },
      }"
      @store-edit-open.window="openEdit($event.detail)">
 
@@ -62,6 +62,7 @@
                 'biz_no' => $st->biz_no, 'ceo' => $st->ceo, 'biz_type' => $st->biz_type, 'biz_class' => $st->biz_class,
                 'is_active' => (bool) $st->is_active,
                 'order_blocked' => (bool) $st->order_blocked,
+                'toss_enabled' => (bool) $st->toss_enabled,
             ],
             'order_blocked' => (bool) $st->order_blocked,
         ];
@@ -154,6 +155,12 @@
             <label class="flex items-center gap-2 rounded-xl bg-rose-50 border border-rose-100 px-3 py-2.5">
                 <input type="checkbox" name="order_blocked" value="1" x-model="editForm.order_blocked" class="rounded text-rose-500 focus:ring-rose-400">
                 <span class="text-sm font-bold text-rose-700">🚫 주문 불가 (미정산 등으로 발주 등록 차단)</span>
+            </label>
+            <label class="flex items-start gap-2 rounded-xl bg-emerald-50 border border-emerald-100 px-3 py-2.5">
+                <input type="checkbox" name="toss_enabled" value="1" x-model="editForm.toss_enabled" class="mt-0.5 rounded text-emerald-600 focus:ring-emerald-400">
+                <span class="text-sm font-bold text-emerald-700">💳 결제 후 발주 확정
+                    <span class="block text-[11px] font-normal text-emerald-600/80">체크 시 이 매장은 토스 결제를 완료해야 발주가 접수됩니다. 체크 안 하면 결제 없이 발주됩니다.</span>
+                </span>
             </label>
             <div class="flex gap-2 pt-1">
                 <button type="submit" class="flex-1 rounded-xl bg-mango-500 hover:bg-mango-600 text-white font-bold px-4 py-2.5 text-sm transition">저장</button>
