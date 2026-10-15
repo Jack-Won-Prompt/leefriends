@@ -107,16 +107,16 @@ class OrderController extends Controller
         if ($tossPay) {
             // 싯가(가격 미확정) 품목은 선결제 불가
             if (SupplyProduct::whereIn('id', $selected->keys())->where('is_market_price', true)->exists()) {
-                return back()->withErrors(['qty' => '싯가(가격 미확정) 품목은 결제 발주에 포함할 수 없습니다. 별도 발주해 주세요.'])->withInput();
+                return $this->jsonOrBack($request, ['qty' => '싯가(가격 미확정) 품목은 결제 발주에 포함할 수 없습니다. 별도 발주해 주세요.']);
             }
 
             try {
                 $amount = $this->previewAmount($user, $selected, $data, $type);
             } catch (\App\Exceptions\StockShortageException $e) {
-                return back()->withErrors(['qty' => $e->summary()])->withInput();
+                return $this->jsonOrBack($request, ['qty' => $e->summary()]);
             }
             if ($amount <= 0) {
-                return back()->withErrors(['qty' => '결제 금액이 올바르지 않습니다.'])->withInput();
+                return $this->jsonOrBack($request, ['qty' => '결제 금액이 올바르지 않습니다.']);
             }
 
             $tossOrderId = 'LF-'.now()->format('ymdHis').'-'.Str::upper(Str::random(5));
@@ -131,7 +131,25 @@ class OrderController extends Controller
                 'created_at' => now()->toDateTimeString(),
             ]]);
 
-            // 결제 완료 전에는 발주를 만들지 않는다 → 결제(팝업형 상단) 화면으로
+            $pay = [
+                'clientKey' => $toss->clientKey(),
+                'amount' => $amount,
+                'tossOrderId' => $tossOrderId,
+                'orderName' => ($store->name ?? '매장').' 발주',
+                'customerKey' => 'store_'.$user->store_id,
+                'customerName' => $store->name ?? '매장',
+                'successUrl' => route('portal.store.pay.success'),
+                'failUrl' => route('portal.store.pay.fail'),
+                'testMode' => $toss->isTestMode(),
+                'checkoutUrl' => route('portal.store.pay.checkout', ['co' => $tossOrderId]),
+            ];
+
+            // 결제 완료 전에는 발주를 만들지 않는다.
+            // AJAX(재료 발주하기 화면)면 결제정보를 반환해 상단창 팝업으로, 아니면 결제창 페이지로.
+            if ($request->expectsJson() || $request->boolean('ajax')) {
+                return response()->json(['pay' => $pay]);
+            }
+
             return redirect()->route('portal.store.pay.checkout', ['co' => $tossOrderId]);
         }
 
@@ -151,6 +169,16 @@ class OrderController extends Controller
 
         return redirect()->route('portal.store.orders.show', $order)
             ->with('success', '발주가 접수되었습니다. 공급처 품목은 해당 공급처로 동시에 전달되었습니다.');
+    }
+
+    /** AJAX 요청이면 422 JSON, 아니면 back+withErrors. */
+    private function jsonOrBack(Request $request, array $errors)
+    {
+        if ($request->expectsJson() || $request->boolean('ajax')) {
+            return response()->json(['errors' => $errors], 422);
+        }
+
+        return back()->withErrors($errors)->withInput();
     }
 
     /**

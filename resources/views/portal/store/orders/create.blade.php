@@ -58,7 +58,7 @@
 @endif
 
 <form method="POST" action="{{ $editOrder ? route('portal.store.orders.update', $editOrder) : route('portal.store.orders.store') }}"
-      x-data="orderForm({{ \Illuminate\Support\Js::from($catalog) }}, {{ \Illuminate\Support\Js::from($initialCart) }}, {{ $editOrder ? 'true' : 'false' }}, {{ \Illuminate\Support\Js::from($pastOrders) }})" x-init="init()">
+      x-data="orderForm({{ \Illuminate\Support\Js::from($catalog) }}, {{ \Illuminate\Support\Js::from($initialCart) }}, {{ $editOrder ? 'true' : 'false' }}, {{ \Illuminate\Support\Js::from($pastOrders) }}, {{ ($tossEnabled ?? false) ? 'true' : 'false' }})" x-init="init()">
     @csrf
     @if ($editOrder) @method('PUT') @endif
     <input type="hidden" name="order_type" value="{{ $isSample ? 'sample' : 'normal' }}">
@@ -388,7 +388,7 @@
             <div class="flex gap-2 mt-6">
                 <button type="button" @click="confirmOpen = false" :disabled="submitting"
                         class="flex-1 rounded-xl bg-neutral-100 hover:bg-neutral-200 text-neutral-600 font-bold py-3 disabled:opacity-50">취소</button>
-                <button type="button" @click="submitOrder()" :disabled="submitting"
+                <button type="button" @click="onConfirmSubmit()" :disabled="submitting"
                         class="flex-1 rounded-xl text-white font-bold py-3 disabled:opacity-60 {{ $isSample ? 'bg-violet-500 hover:bg-violet-600' : 'bg-mango-500 hover:bg-mango-600' }}">
                     <span x-show="!submitting">{{ $isSample ? '주문하기' : '발주하기' }}</span>
                     <span x-show="submitting" x-cloak>처리 중…</span>
@@ -400,11 +400,12 @@
 
 @push('scripts')
 <script>
-    function orderForm(catalog = {}, initialCart = {}, editMode = false, pastOrders = []) {
+    function orderForm(catalog = {}, initialCart = {}, editMode = false, pastOrders = [], tossEnabled = false) {
         return {
             catalog: catalog,
             editMode: editMode,
             pastOrders: pastOrders,
+            tossEnabled: tossEnabled,
             selectedPast: '',
             search: '',
             pastMsg: '',
@@ -428,6 +429,39 @@
                 const form = (this.$el && this.$el.closest) ? this.$el.closest('form') : null;
                 const target = form || this.$el;
                 HTMLFormElement.prototype.submit.call(target);
+            },
+            // 발주하기 — 토스 매장은 발주를 만들지 않고(AJAX) 결제 팝업을 띄운다. 그 외는 기존 제출.
+            async onConfirmSubmit() {
+                if (!this.tossEnabled) { this.submitOrder(); return; }
+                if (this.submitting) return;
+                this.submitting = true;
+                const form = this.$el.closest('form');
+                try {
+                    const res = await fetch(form.action, {
+                        method: 'POST',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' },
+                        body: new FormData(form),
+                    });
+                    const json = await res.json().catch(() => ({}));
+                    this.submitting = false;
+                    this.confirmOpen = false;
+                    if (!res.ok) {
+                        const msg = json.errors ? Object.values(json.errors).flat().join('\n') : '발주를 처리하지 못했습니다.';
+                        this.pastMsg = '';
+                        alert(msg);
+                        return;
+                    }
+                    const pay = json.pay;
+                    // 최상단 창(MDI)의 결제 오버레이를 띄운다. iframe 탭이 아니면(직접 접속) 결제창 페이지로.
+                    const top = (window.parent && window.parent !== window) ? window.parent : window;
+                    if (top.LEEFRIENDS_openPayment) { top.LEEFRIENDS_openPayment(pay); }
+                    else if (window.top && window.top.LEEFRIENDS_openPayment) { window.top.LEEFRIENDS_openPayment(pay); }
+                    else { window.location.href = pay.checkoutUrl; }
+                } catch (e) {
+                    this.submitting = false;
+                    this.confirmOpen = false;
+                    alert('네트워크 오류로 발주를 처리하지 못했습니다.');
+                }
             },
             matchesSearch(pid) {
                 const q = (this.search || '').trim().toLowerCase();

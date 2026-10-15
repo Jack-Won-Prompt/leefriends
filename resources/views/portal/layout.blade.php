@@ -311,6 +311,73 @@
         </div>
     </div>
 </div>
+
+{{-- 토스 결제 오버레이 — 최상단 창에서 띄운다(발주 iframe 탭이 LEEFRIENDS_openPayment 로 호출).
+     토스 결제는 iframe 안에서 동작하지 않으므로 여기(최상단)에서 처리해 발주 화면 위 팝업으로 보인다. --}}
+<div id="pay-overlay" class="fixed inset-0 z-[9999] hidden items-center justify-center p-4" style="background:rgba(17,17,17,.6);backdrop-filter:blur(2px)">
+    <div class="w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden">
+        <div class="px-6 py-4 border-b border-neutral-100 flex items-center justify-between">
+            <h2 class="text-lg font-black text-neutral-900">🧾 발주 결제</h2>
+            <button type="button" id="pay-close" class="text-neutral-400 hover:text-neutral-600 text-lg">✕</button>
+        </div>
+        <div class="px-6 py-4 bg-neutral-50 border-b border-neutral-100">
+            <div class="flex items-center justify-between">
+                <span class="text-neutral-500 text-sm">결제 금액</span>
+                <span id="pay-amount" class="text-2xl font-black text-neutral-900">0원</span>
+            </div>
+            <p class="mt-1 text-[12px] text-neutral-400">결제가 완료되어야 발주가 본사에 접수됩니다.</p>
+        </div>
+        <div class="p-5 max-h-[70vh] overflow-y-auto">
+            <div id="pay-method"></div>
+            <div id="pay-agreement" class="mt-2"></div>
+            <p id="pay-error" class="hidden mt-3 text-sm text-rose-600 font-semibold"></p>
+            <button type="button" id="pay-button" class="mt-5 w-full rounded-xl text-white font-bold px-4 py-3.5 text-base transition hover:brightness-95 disabled:opacity-50" style="background:#F2784B">결제하기</button>
+            <p id="pay-testnote" class="hidden text-center text-[11px] text-neutral-400 mt-3">토스페이먼츠 안전결제 · <b>테스트 모드</b></p>
+        </div>
+    </div>
+</div>
+<script>
+window.LEEFRIENDS_openPayment = function (pay) {
+    const $ = (id) => document.getElementById(id);
+    const overlay = $('pay-overlay'); if (!overlay) return;
+    const methodEl = $('pay-method'), agreeEl = $('pay-agreement'), btn = $('pay-button'), errEl = $('pay-error');
+    const showErr = (m) => { errEl.textContent = m; errEl.classList.remove('hidden'); };
+    const close = () => { overlay.classList.add('hidden'); overlay.classList.remove('flex'); methodEl.innerHTML = ''; agreeEl.innerHTML = ''; errEl.classList.add('hidden'); btn.disabled = false; };
+
+    methodEl.innerHTML = ''; agreeEl.innerHTML = ''; errEl.classList.add('hidden'); btn.disabled = false;
+    $('pay-amount').textContent = Number(pay.amount).toLocaleString() + '원';
+    btn.textContent = Number(pay.amount).toLocaleString() + '원 결제하기';
+    $('pay-testnote').classList.toggle('hidden', !pay.testMode);
+    $('pay-close').onclick = close;
+    overlay.classList.remove('hidden'); overlay.classList.add('flex');
+
+    const boot = async () => {
+        try {
+            const tp = TossPayments(pay.clientKey);
+            const widgets = tp.widgets({ customerKey: pay.customerKey });
+            await widgets.setAmount({ currency: 'KRW', value: pay.amount });
+            await Promise.all([
+                widgets.renderPaymentMethods({ selector: '#pay-method', variantKey: 'DEFAULT' }),
+                widgets.renderAgreement({ selector: '#pay-agreement', variantKey: 'AGREEMENT' }),
+            ]);
+            btn.onclick = async () => {
+                errEl.classList.add('hidden'); btn.disabled = true;
+                try {
+                    await widgets.requestPayment({ orderId: pay.tossOrderId, orderName: pay.orderName, successUrl: pay.successUrl, failUrl: pay.failUrl, customerName: pay.customerName });
+                } catch (e) { btn.disabled = false; if (e && e.code !== 'USER_CANCEL') showErr(e.message || '결제를 시작하지 못했습니다.'); }
+            };
+        } catch (e) { showErr('결제 수단을 불러오지 못했습니다.'); }
+    };
+
+    if (window.TossPayments) { boot(); }
+    else {
+        const s = document.createElement('script');
+        s.src = 'https://js.tosspayments.com/v2/standard';
+        s.onload = boot; s.onerror = () => showErr('결제 모듈을 불러오지 못했습니다.');
+        document.head.appendChild(s);
+    }
+};
+</script>
 @endif
 <script defer src="https://cdn.jsdelivr.net/npm/@alpinejs/collapse@3.x.x/dist/cdn.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
