@@ -41,8 +41,8 @@
 
         <div class="border-t border-white/10 mt-12 pt-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4 text-xs">
             <div class="space-y-1">
-                <p>주식회사 오다네트웍스 &nbsp;|&nbsp; 대표 이윤석 &nbsp;|&nbsp; 사업자등록번호 827-81-03115</p>
-                <p>경기도 의정부시 천보로 14, 1113호(민락동)</p>
+                <p>주식회사 리프렌즈 &nbsp;|&nbsp; 대표 이윤석 &nbsp;|&nbsp; 사업자등록번호 887-86-04431</p>
+                <p>서울특별시 영등포구 경인로77길 49, 109동 상가 2층 202-141호 (문래동4가, 리버뷰 신안인스빌)</p>
                 <p class="text-neutral-500">© {{ date('Y') }} LEEFRIENDS. All rights reserved.</p>
             </div>
             <div class="flex gap-4">
