@@ -3,15 +3,20 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Controllers\Payment\AppPaymentController;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\SalesOrder;
 use App\Models\SupplyProduct;
 use App\Services\Fulfillment\OrderChangeService;
 use App\Services\Fulfillment\SalesOrderGenerator;
+use App\Services\Payment\TossService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Str;
 
 /**
  * 매장 발주 API. 웹 포털 Store\OrderController 와 동일한 발주 생성 규칙
@@ -133,6 +138,13 @@ class OrderController extends Controller
         }
 
         $user = $request->user();
+
+        // 토스 결제 매장(정식 발주): 결제 전에는 발주를 만들지 않고 결제 URL 을 돌려준다(웹과 동일 규칙).
+        $toss = app(TossService::class);
+        $store = $user->store;
+        if ($type === 'normal' && $store && $store->toss_enabled && $toss->isConfigured()) {
+            return $this->tossCheckout($user, $store, $lines, $data, $toss);
+        }
 
         try {
             $order = DB::transaction(function () use ($user, $storeId, $lines, $data, $type) {
@@ -406,6 +418,88 @@ class OrderController extends Controller
     {
         return ! in_array($order->status, ['canceled', 'completed'], true)
             && ! $order->items()->whereNotNull('shipment_id')->exists();
+    }
+
+    /**
+     * 토스 결제 매장 — 금액만 산정하고 결제 URL 반환(발주 미생성).
+     * 금액 산정·재고 검증은 웹 Store\OrderController 의 previewAmount 를 그대로 쓴다.
+     */
+    private function tossCheckout($user, $store, $lines, array $data, TossService $toss): JsonResponse
+    {
+        $qty = [];   // product_id => qty
+        $unit = [];  // product_id => unit_id
+        foreach ($lines as $line) {
+            $pid = (int) $line['product_id'];
+            $qty[$pid] = ($qty[$pid] ?? 0) + (int) $line['qty'];
+            if (! empty($line['unit_id'])) {
+                $unit[$pid] = (int) $line['unit_id'];
+            }
+        }
+
+        // 싯가(가격 미확정) 품목은 선결제 불가 — 웹과 같은 제한
+        if (SupplyProduct::whereIn('id', array_keys($qty))->where('is_market_price', true)->exists()) {
+            return response()->json([
+                'message' => '싯가(가격 미확정) 품목은 결제 발주에 포함할 수 없습니다. 별도 발주해 주세요.',
+            ], 422);
+        }
+
+        $orderData = ['note' => $data['note'] ?? null, 'unit' => $unit];
+        $storeOrders = app(\App\Http\Controllers\Portal\Store\OrderController::class);
+
+        try {
+            $amount = $storeOrders->previewAmount($user, collect($qty), $orderData, 'normal');
+        } catch (\App\Exceptions\StockShortageException $e) {
+            return response()->json(['message' => $e->summary(), 'shortages' => $e->shortages], 422);
+        }
+        if ($amount <= 0) {
+            return response()->json(['message' => '결제 금액이 올바르지 않습니다.'], 422);
+        }
+
+        $co = 'LFA-'.now()->format('ymdHis').'-'.Str::upper(Str::random(5));
+        Cache::put(AppPaymentController::checkoutKey($co), [
+            'store_id' => $user->store_id,
+            'store_name' => $store->name,
+            'user_id' => $user->id,
+            'type' => 'normal',
+            'note' => $data['note'] ?? null,
+            'qty' => $qty,
+            'unit' => $unit,
+            'amount' => $amount,
+        ], now()->addMinutes(30));
+
+        return response()->json([
+            'payment' => [
+                'required' => true,
+                'checkout_id' => $co,
+                'amount' => $amount,
+                'checkout_url' => URL::temporarySignedRoute('pay.app.checkout', now()->addMinutes(30), ['co' => $co]),
+                'done_path' => '/pay/app/done',   // 앱 웹뷰가 이 경로로 가면 닫는다
+                'test_mode' => $toss->isTestMode(),
+            ],
+        ]);
+    }
+
+    /**
+     * GET /api/v1/orders/checkout/{co} — 결제 결과 확인.
+     * 앱은 웹뷰 리다이렉트를 믿지 않고 이 API 로 확인한 뒤 완료 처리한다.
+     */
+    public function checkoutStatus(Request $request, string $co): JsonResponse
+    {
+        $this->storeId($request); // 매장 계정만
+
+        $result = Cache::get(AppPaymentController::resultKey($co));
+        if ($result) {
+            return response()->json(['data' => $result]);
+        }
+
+        return response()->json([
+            'data' => [
+                'status' => Cache::has(AppPaymentController::checkoutKey($co)) ? 'pending' : 'unknown',
+                'message' => Cache::has(AppPaymentController::checkoutKey($co))
+                    ? '결제가 완료되지 않았습니다.'
+                    : '결제 결과를 확인할 수 없습니다. 발주 내역에서 확인해 주세요.',
+            ],
+        ]);
     }
 
     /** 요청 items 중 활성 품목(qty>0)만 남긴 컬렉션 */

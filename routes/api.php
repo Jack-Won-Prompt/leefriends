@@ -57,6 +57,8 @@ Route::prefix('v1')->group(function () {
         Route::get('supply-products', [SupplyProductController::class, 'index'])->name('api.supply_products.index');
         Route::get('orders', [OrderController::class, 'index'])->name('api.orders.index');
         Route::post('orders', [OrderController::class, 'store'])->name('api.orders.store');
+        // 앱 토스 결제 결과 확인 (웹뷰가 닫힌 뒤 앱이 다시 확인)
+        Route::get('orders/checkout/{co}', [OrderController::class, 'checkoutStatus'])->name('api.orders.checkout_status');
         Route::get('orders/{order}', [OrderController::class, 'show'])->name('api.orders.show');
         Route::put('orders/{order}', [OrderController::class, 'update'])->name('api.orders.update');
         Route::post('orders/{order}/items', [OrderController::class, 'addItem'])->name('api.orders.items.add');

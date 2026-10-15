@@ -6,6 +6,7 @@ use App\Http\Controllers\NoticeController;
 use App\Http\Controllers\PageController;
 use App\Http\Controllers\StoreController;
 use App\Http\Controllers\Admin;
+use App\Http\Controllers\Payment;
 use App\Http\Controllers\Portal;
 use Illuminate\Support\Facades\Route;
 
@@ -29,6 +30,20 @@ Route::get('/notice/{notice}', [NoticeController::class, 'show'])->name('notice.
 Route::get('/franchise', [FranchiseController::class, 'index'])->name('franchise');
 Route::post('/franchise/inquiry', [FranchiseController::class, 'store'])->name('franchise.store');
 Route::get('/franchise/thanks', [FranchiseController::class, 'thanks'])->name('franchise.thanks');
+
+/*
+|--------------------------------------------------------------------------
+| 모바일 앱 발주 결제 (토스) — 앱 웹뷰에서 열림
+| 앱은 토큰 인증이라 웹 세션이 없다. 결제창은 서명된 URL + 캐시 토큰으로 연다.
+|--------------------------------------------------------------------------
+*/
+Route::prefix('pay/app')->name('pay.app.')->group(function () {
+    Route::get('checkout/{co}', [Payment\AppPaymentController::class, 'checkout'])
+        ->middleware('signed')->name('checkout');
+    Route::get('success', [Payment\AppPaymentController::class, 'success'])->name('success');
+    Route::get('fail', [Payment\AppPaymentController::class, 'fail'])->name('fail');
+    Route::get('done', [Payment\AppPaymentController::class, 'done'])->name('done');
+});
 
 /*
 |--------------------------------------------------------------------------
